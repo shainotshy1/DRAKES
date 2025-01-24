@@ -222,7 +222,8 @@ if args.base_model == 'new':
                         )
     new_fmif_model.to(device)
     new_fmif_model.finetune_init()
-    new_fmif_model.load_state_dict(torch.load(os.path.join(args.base_path, 'protein_rewardbp/finetuned_if_model.ckpt'))['model_state_dict'])
+    new_fmif_model.load_state_dict(torch.load(os.path.join(args.base_path, 'protein_rewardbp/finetuned_if_model.ckpt')))
+    #new_fmif_model.load_state_dict(torch.load(os.path.join(args.base_path, 'protein_rewardbp/finetuned_if_model.ckpt'))['model_state_dict'])
     model_to_test_list = [new_fmif_model]
 elif args.base_model == 'old':
     model_to_test_list = [old_fmif_model]
@@ -348,7 +349,7 @@ for testing_model in model_to_test_list:
     results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge.csv')
 
     results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
-                    'Model Log Likelihood': all_model_logl.mean(), 
+                    #'Model Log Likelihood': all_model_logl.mean(), 
                     'Mean Reward': rewards_eval.mean(), 
                     'Positive Reward Proportion': np.mean(rewards_eval>0), 
                     'Mean Reward (ft)': rewards.mean(), 
