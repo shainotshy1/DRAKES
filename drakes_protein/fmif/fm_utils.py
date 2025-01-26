@@ -87,8 +87,14 @@ class Interpolant:
             self,
             model,
             X, mask, chain_M, residue_idx, chain_encoding_all,
+            reward_model = None,
             cls=None, w=None,
+            n = 10
         ):
+
+        if type(n) != int or n < 1 or reward_model is None:
+            print("Invalid BON configuration - Using normal denoising")
+            n = 1
 
         num_batch, num_res = mask.shape
         aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
@@ -96,26 +102,37 @@ class Interpolant:
         num_timesteps = self._cfg.num_timesteps
         ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
         t_1 = ts[0]
-        aatypes_t_1 = aatypes_0 # [bsz, seqlen]
+        generations = [[aatypes_0, None, 0] for _ in range(n)] # TODO: don't make redundant first iteration model call
+        #aatypes_t_1 = aatypes_0 # [bsz, seqlen]
         prot_traj = [aatypes_0.detach().cpu()] 
         clean_traj = []
         for t_2 in ts[1:]:
             d_t = t_2 - t_1
-            with torch.no_grad():
-                if cls is not None:
-                    uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
-                    cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
-                    model_out_uncond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
-                    model_out_cond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
-                    model_out = (1+w) * model_out_cond - w * model_out_uncond
-                else:
-                    model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
+            # generations = []
+            # for _ in range(n):
+            for i, gen in enumerate(generations):
+                aatypes_t_1, _, _ = gen
+                with torch.no_grad():
+                    if cls is not None:
+                        uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
+                        cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
+                        model_out_uncond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+                        model_out_cond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+                        model_out = (1+w) * model_out_cond - w * model_out_uncond
+                    else:
+                        model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
 
-            pred_logits_1 = model_out # [bsz, seqlen, 22]
-            pred_logits_wo_mask = pred_logits_1.clone()
-            pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-            pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
-            clean_traj.append(pred_aatypes_1.detach().cpu())
+                pred_logits_1 = model_out # [bsz, seqlen, 22]
+                pred_logits_wo_mask = pred_logits_1.clone()
+                pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+                pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
+                generations[i][0] = pred_aatypes_1
+                generations[i][1] = pred_logits_1
+                if reward_model is not None:
+                    generations[i][2] = reward_model(pred_aatypes_1).detach().cpu().numpy().mean()
+            best_generation = max(generations, key=lambda gen : gen[2])
+            pred_aatypes_1, pred_logits_1, _ = best_generation
+            clean_traj.append(pred_aatypes_1.cpu().detach())
 
             pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
             pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, 
@@ -128,11 +145,13 @@ class Interpolant:
             move_chance_s = 1.0 - t_2
             q_xs = pred_logits_1.exp() * d_t
             q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
-            _x = _sample_categorical(q_xs)
-            copy_flag = (aatypes_t_1 != mu.MASK_TOKEN_INDEX).to(aatypes_t_1.dtype)
-            aatypes_t_2 = aatypes_t_1 * copy_flag + _x * (1 - copy_flag)
-            aatypes_t_1 = aatypes_t_2.long()
-            prot_traj.append(aatypes_t_2.cpu().detach())
+            for i in range(n):
+                _x = _sample_categorical(q_xs)
+                copy_flag = (aatypes_t_1 != mu.MASK_TOKEN_INDEX).to(aatypes_t_1.dtype)
+                aatypes_t_2 = aatypes_t_1 * copy_flag + _x * (1 - copy_flag)
+                aatypes_t_1 = aatypes_t_2.long()
+                generations[i][0] = aatypes_t_1
+            prot_traj.append(aatypes_t_2.cpu().detach()) # Only add one sample of the trajectory
             t_1 = t_2
 
         t_1 = ts[-1]

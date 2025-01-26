@@ -20,7 +20,8 @@ from protein_oracle.utils import set_seed
 from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
 from protein_oracle.model_utils import ProteinMPNNOracle
 from fmif.model_utils import ProteinMPNNFMIF
-from fmif.fm_utils import Interpolant
+#from fmif.fm_utils import Interpolant
+from fm_utils import Interpolant
 from tqdm import tqdm
 from multiflow.models import folding_model
 from types import SimpleNamespace
@@ -321,7 +322,8 @@ for testing_model in model_to_test_list:
                 S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
                     reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
             elif args.decoding == 'original':
-                S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all)
+                reward_fn = lambda S : reward_model_eval(X, S, mask, chain_M, residue_idx, chain_encoding_all)
+                S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_fn, n=20)
                 mask_for_loss = mask*chain_M
                 for i, S_sp_traj in enumerate(prot_traj):
                     if i < len(clean_traj):
@@ -353,7 +355,7 @@ for testing_model in model_to_test_list:
     reward_average = [x / total_seq_count for x in reward_average]
     range_column = list(range(1, len(mask_proportion) + 1))
     data = zip(range_column, mask_proportion, reward_average)
-    with open(f'diffusion_analysis_new_7JJK.csv', mode='w', newline='') as file:
+    with open(f'diffusion_analysis_new_7JJK_bon.csv', mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
         writer.writerows(data)
