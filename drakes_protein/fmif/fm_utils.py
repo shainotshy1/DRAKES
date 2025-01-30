@@ -90,12 +90,14 @@ class Interpolant:
             X, mask, chain_M, residue_idx, chain_encoding_all,
             cls=None, w=None,
             reward_model=None,
-            n = 1
+            n = 1,
+            bon_batch_size=10
         ):
 
         if type(n) != int or n < 1 or reward_model is None:
             print("Invalid BON configuration (n must be positive integer, reward_model can't be None - Using normal denoising")
             n = 1
+        assert type(bon_batch_size) is int and bon_batch_size > 0, "BON Batch size must be positive integer"
 
         num_batch, num_res = mask.shape
         aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
@@ -117,22 +119,31 @@ class Interpolant:
                     model_out = (1+w) * model_out_cond - w * model_out_uncond
                 else:
                     model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
-
-            pred_logits_1 = model_out # [bsz, seqlen, 22]
-            pred_logits_wo_mask = pred_logits_1.clone()
-            pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-            pred_sampler = Categorical(logits=pred_logits_wo_mask)
-            sample_mat = torch.zeros((n, num_batch, num_res), device='cuda')
-            reward_mat = torch.zeros((n, num_batch), device='cuda')
-            pred_aatypes_1 = torch.zeros((num_batch, num_res), dtype=torch.int)
-            if n > 1:
-                for i in range(n):
-                    prot_sample = pred_sampler.sample()
-                    reward_mat[i] = reward_model(prot_sample)
-                    sample_mat[i] = prot_sample
-                best_rewards = torch.argmax(reward_mat, dim=0)
-                for i in range(num_batch):
-                    pred_aatypes_1[i] = sample_mat[best_rewards[i]][i]
+            target_n = n
+            if target_n > 1:
+                pred_aatypes_1 = torch.zeros((num_batch, num_res), dtype=torch.int, device=X.device)
+                curr_reward = torch.full((num_batch, ), float('-inf'), device=X.device)
+                while target_n > 0:
+                    batch_size = min(bon_batch_size, target_n)
+                    target_n -= bon_batch_size
+                    pred_logits_1 = model_out # [bsz, seqlen, 22]
+                    pred_logits_wo_mask = pred_logits_1.clone()
+                    pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+                    pred_sampler = Categorical(logits=pred_logits_wo_mask)
+                    sample_mat = torch.zeros((batch_size, num_batch, num_res), device=X.device)
+                    reward_mat = torch.zeros((batch_size, num_batch), device=X.device)
+                    for i in range(batch_size):
+                        prot_sample = pred_sampler.sample()
+                        reward_mat[i] = reward_model(prot_sample)
+                        sample_mat[i] = prot_sample
+                    best_rewards = torch.argmax(reward_mat, dim=0)
+                    rewards = []
+                    for i in range(num_batch):
+                        rewards.append(reward_mat[best_rewards[i]][i])
+                    for i in range(num_batch):
+                        if rewards[i] > curr_reward[i]:
+                            curr_reward[i] = rewards[i]
+                            pred_aatypes_1[i] = sample_mat[best_rewards[i]][i]
             else:
                 pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
             clean_traj.append(pred_aatypes_1.detach().cpu())
