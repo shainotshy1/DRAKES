@@ -62,6 +62,7 @@ def cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_pa
         true_folded_pdb_path = os.path.join(true_folded_dir, 'folded_true_seq_1.pdb')
         true_folded_pose = pyrosetta.pose_from_file(true_folded_pdb_path)
 
+        print("    Computing True Folded Relax...")
         scorefxn = pyrosetta.create_score_function("ref2015_cart")
         tf = TaskFactory()
         tf.push_back(RestrictToRepacking())
@@ -89,7 +90,9 @@ def cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_pa
 
         foldtrue_true_bbrmsd = pyrosetta.rosetta.core.scoring.bb_rmsd(true_pose, true_folded_pose)
     
-        for _it, ssp in enumerate(S_sp):
+        print("    Computing Samples Folded Relax...")
+        print(f"     - Memory: {torch.cuda.mem_get_info()}")
+        for _it, ssp in tqdm(enumerate(S_sp)):
             num = item_idx * 16 + _it
             sc_output_dir = os.path.join(sc_output_dir_base, f'{num}')
             os.makedirs(sc_output_dir, exist_ok=True)
@@ -287,7 +290,7 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-for n in [10, 25]:
+for n in [25]:
     for testing_model in model_to_test_list:
         testing_model.eval()
         print(f'Testing Model (BON: {n})... Sampling {args.decoding}')
@@ -385,7 +388,7 @@ for n in [10, 25]:
         success_rate = results_merge['success'].mean()
         print('success rate: ', success_rate)
 
-        results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge.csv')
+        results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}.csv')
 
         results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
                         #'Model Log Likelihood': all_model_logl.mean(), 

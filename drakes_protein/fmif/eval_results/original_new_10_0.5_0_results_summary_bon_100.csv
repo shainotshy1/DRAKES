@@ -1,0 +1,12 @@
+,Value
+Sequence Recovery Accuracy,0.3521107456140351
+Mean Reward,1.766216516494751
+Positive Reward Proportion,1.0
+Mean Reward (ft),0.5854734182357788
+Positive Reward Proportion (ft),0.9921875
+Median Reward,1.8123040199279785
+Median Reward (ft),0.6119679808616638
+Median gen_true RMSD,0.9319915771484375
+Mean gen_true RMSD,1.0256962075363845
+Good RMSD Proportion,0.953125
+Success Rate,0.953125
