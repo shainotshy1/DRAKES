@@ -290,118 +290,118 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-n = 25
-for bon_step_inteval in [1, 2, 5, 10, 25, 50]:
-    for testing_model in model_to_test_list:
-        testing_model.eval()
-        print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')
-        repeat_num=16
-        valid_sp_acc, valid_sp_weights = 0., 0.
-        results_merge = []
-        all_model_logl = []
-        rewards_eval = []
-        rewards = []
-        mask_proportion = []
-        reward_average = []
-        total_seq_count = 0
-        total_avg_count = 0
-        #for _step, batch in tqdm(enumerate(loader_test)):
-        num = 1
-        for _step, batch in enumerate(loader_test):
-            if batch['protein_name'][0] != '7JJK.pdb':
-                continue
-            for item_idx in range(8):
-                print(f"    [{num}] {batch['protein_name'][0]}")
-                num += 1
-                X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
-                X = X.repeat(repeat_num, 1, 1, 1)
-                mask = mask.repeat(repeat_num, 1)
-                chain_M = chain_M.repeat(repeat_num, 1)
-                residue_idx = residue_idx.repeat(repeat_num, 1)
-                chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
-                if args.decoding == 'cg':
-                    S_sp, _, _ = noise_interpolant.sample_controlled_CG(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
-                        guidance_scale=args.dps_scale, reward_model=reward_model)
-                elif args.decoding == 'smc':
-                    S_sp, _, _ = noise_interpolant.sample_controlled_SMC(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
-                        reward_model=reward_model, alpha=args.tds_alpha)
-                elif args.decoding == 'tds': 
-                    S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
-                        reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
-                elif args.decoding == 'original':
-                    reward_fn = lambda S : reward_model_eval(X, S, mask, chain_M, residue_idx, chain_encoding_all)
-                    S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_fn, n=n, bon_batch_size=10, bon_step_inteval=bon_step_inteval)
-                    mask_for_loss = mask*chain_M
-                    for i, S_sp_traj in enumerate(prot_traj):
-                        if i < len(clean_traj):
-                            dg_pred_eval = reward_model_eval(X, clean_traj[i].to('cuda'), mask, chain_M, residue_idx, chain_encoding_all)
-                            dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
-                            if len(reward_average) == 0:
-                                reward_average = [0] * len(clean_traj)
-                            reward_average[i] += dg_pred_eval.mean()
-                        total_prop = 0
-                        if len(mask_proportion) == 0:
-                            mask_proportion = [0] * len(prot_traj)
-                        for _it, ssp in enumerate(S_sp_traj):
-                            mask_detect = [(x >= len(ALPHABET)).item() for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
-                            total_prop += sum(mask_detect) / len(mask_detect)
-                        mask_proportion[i] += total_prop / len(S_sp_traj)
-                    total_seq_count += 1 # Terrible code, here for clarity :)
-                # dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                # rewards.append(dg_pred.detach().cpu().numpy())
-                # dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                # rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
-                # true_false_sp = (S_sp == S).float()
-                # mask_for_loss = mask*chain_M
-                # valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
-                # valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
-                # results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
-                # results_merge.extend(results_list)
-        mask_proportion = [x / total_seq_count for x in mask_proportion]
-        reward_average = [x / total_seq_count for x in reward_average]
-        range_column = list(range(1, len(mask_proportion) + 1))
-        data = zip(range_column, mask_proportion, reward_average)
-        with open(f'diffusion_analysis_new_7JJK_bon_{n}_interval_{bon_step_inteval}.csv', mode='w', newline='') as file:
-           writer = csv.writer(file)
-           writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
-           writer.writerows(data)
-        print(mask_proportion)
-        print(reward_average)
-        continue
-        valid_sp_accuracy = valid_sp_acc / valid_sp_weights
-        print('Sequence recovery accuracy: ', valid_sp_accuracy)
+for n in [5, 10, 50, 100]:
+    for bon_step_inteval in [6, 7, 8, 9]:
+        for testing_model in model_to_test_list:
+            testing_model.eval()
+            print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')
+            repeat_num=16
+            valid_sp_acc, valid_sp_weights = 0., 0.
+            results_merge = []
+            all_model_logl = []
+            rewards_eval = []
+            rewards = []
+            mask_proportion = []
+            reward_average = []
+            total_seq_count = 0
+            total_avg_count = 0
+            #for _step, batch in tqdm(enumerate(loader_test)):
+            num = 1
+            for _step, batch in enumerate(loader_test):
+                if batch['protein_name'][0] != '7JJK.pdb':
+                    continue
+                for item_idx in range(8):
+                    print(f"    [{num}] {batch['protein_name'][0]}")
+                    num += 1
+                    X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
+                    X = X.repeat(repeat_num, 1, 1, 1)
+                    mask = mask.repeat(repeat_num, 1)
+                    chain_M = chain_M.repeat(repeat_num, 1)
+                    residue_idx = residue_idx.repeat(repeat_num, 1)
+                    chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
+                    if args.decoding == 'cg':
+                        S_sp, _, _ = noise_interpolant.sample_controlled_CG(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
+                            guidance_scale=args.dps_scale, reward_model=reward_model)
+                    elif args.decoding == 'smc':
+                        S_sp, _, _ = noise_interpolant.sample_controlled_SMC(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
+                            reward_model=reward_model, alpha=args.tds_alpha)
+                    elif args.decoding == 'tds': 
+                        S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
+                            reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
+                    elif args.decoding == 'original':
+                        reward_fn = lambda S : reward_model_eval(X, S, mask, chain_M, residue_idx, chain_encoding_all)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_fn, n=n, bon_batch_size=10, bon_step_inteval=bon_step_inteval)
+                        mask_for_loss = mask*chain_M
+                        for i, S_sp_traj in enumerate(prot_traj):
+                            if i < len(clean_traj):
+                                dg_pred_eval = reward_model_eval(X, clean_traj[i].to('cuda'), mask, chain_M, residue_idx, chain_encoding_all)
+                                dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
+                                if len(reward_average) == 0:
+                                    reward_average = [0] * len(clean_traj)
+                                reward_average[i] += dg_pred_eval.mean()
+                            total_prop = 0
+                            if len(mask_proportion) == 0:
+                                mask_proportion = [0] * len(prot_traj)
+                            for _it, ssp in enumerate(S_sp_traj):
+                                mask_detect = [(x >= len(ALPHABET)).item() for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
+                                total_prop += sum(mask_detect) / len(mask_detect)
+                            mask_proportion[i] += total_prop / len(S_sp_traj)
+                        total_seq_count += 1 # Terrible code, here for clarity :)
+                    # dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    # rewards.append(dg_pred.detach().cpu().numpy())
+                    # dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    # rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
+                    # true_false_sp = (S_sp == S).float()
+                    # mask_for_loss = mask*chain_M
+                    # valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
+                    # valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
+                    # results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
+                    # results_merge.extend(results_list)
+            mask_proportion = [x / total_seq_count for x in mask_proportion]
+            reward_average = [x / total_seq_count for x in reward_average]
+            range_column = list(range(1, len(mask_proportion) + 1))
+            data = zip(range_column, mask_proportion, reward_average)
+            with open(f'diffusion_analysis_new_7JJK_bon_{n}_interval_{bon_step_inteval}.csv', mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
+                writer.writerows(data)
+            print(mask_proportion)
+            print(reward_average)
+            continue
+            valid_sp_accuracy = valid_sp_acc / valid_sp_weights
+            print('Sequence recovery accuracy: ', valid_sp_accuracy)
 
-        rewards_eval = np.hstack(rewards_eval)
-        rewards = np.hstack(rewards)
-        print('Mean reward: ', rewards_eval.mean(), "Positive reward prop %f"%np.mean(rewards_eval>0), "Mean reward (ft): ", rewards.mean(), "Positive reward prop (ft) %f"%np.mean(rewards>0))
-        print('median reward: ', np.median(rewards_eval), 'median reward (ft): ', np.median(rewards))
+            rewards_eval = np.hstack(rewards_eval)
+            rewards = np.hstack(rewards)
+            print('Mean reward: ', rewards_eval.mean(), "Positive reward prop %f"%np.mean(rewards_eval>0), "Mean reward (ft): ", rewards.mean(), "Positive reward prop (ft) %f"%np.mean(rewards>0))
+            print('median reward: ', np.median(rewards_eval), 'median reward (ft): ', np.median(rewards))
 
-        results_merge = pd.concat(results_merge)
-        avg_rmsd = results_merge['gen_true_bb_rmsd'].mean()
-        mid_rmsd = results_merge['gen_true_bb_rmsd'].median()
-        rmsd_rate = results_merge['gen_true_bb_rmsd'].apply(lambda x: 1 if x < 2 else 0).mean()
-        print('Median gen_true RMSD: ', mid_rmsd, 'Mean gen_true RMSD: ', avg_rmsd, 'Good RMSD prop: ', rmsd_rate)
+            results_merge = pd.concat(results_merge)
+            avg_rmsd = results_merge['gen_true_bb_rmsd'].mean()
+            mid_rmsd = results_merge['gen_true_bb_rmsd'].median()
+            rmsd_rate = results_merge['gen_true_bb_rmsd'].apply(lambda x: 1 if x < 2 else 0).mean()
+            print('Median gen_true RMSD: ', mid_rmsd, 'Mean gen_true RMSD: ', avg_rmsd, 'Good RMSD prop: ', rmsd_rate)
 
-        results_merge['rewards_eval'] = rewards_eval
-        results_merge['rewards'] = rewards
-        results_merge['success'] = (results_merge['gen_true_bb_rmsd'] < 2) & (results_merge['rewards_eval'] > 0)
+            results_merge['rewards_eval'] = rewards_eval
+            results_merge['rewards'] = rewards
+            results_merge['success'] = (results_merge['gen_true_bb_rmsd'] < 2) & (results_merge['rewards_eval'] > 0)
 
-        success_rate = results_merge['success'].mean()
-        print('success rate: ', success_rate)
+            success_rate = results_merge['success'].mean()
+            print('success rate: ', success_rate)
 
-        results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}.csv')
+            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}.csv')
 
-        results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
-                        #'Model Log Likelihood': all_model_logl.mean(), 
-                        'Mean Reward': rewards_eval.mean(), 
-                        'Positive Reward Proportion': np.mean(rewards_eval>0), 
-                        'Mean Reward (ft)': rewards.mean(), 
-                        'Positive Reward Proportion (ft)': np.mean(rewards>0), 
-                        'Median Reward': np.median(rewards_eval), 
-                        'Median Reward (ft)': np.median(rewards), 
-                        'Median gen_true RMSD': mid_rmsd, 
-                        'Mean gen_true RMSD': avg_rmsd,
-                        'Good RMSD Proportion': rmsd_rate,
-                        'Success Rate': success_rate} 
-        results_df_final = pd.DataFrame.from_dict(results_dict, orient='index', columns=['Value'])
-        results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_bon_{n}.csv')
+            results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
+                            #'Model Log Likelihood': all_model_logl.mean(), 
+                            'Mean Reward': rewards_eval.mean(), 
+                            'Positive Reward Proportion': np.mean(rewards_eval>0), 
+                            'Mean Reward (ft)': rewards.mean(), 
+                            'Positive Reward Proportion (ft)': np.mean(rewards>0), 
+                            'Median Reward': np.median(rewards_eval), 
+                            'Median Reward (ft)': np.median(rewards), 
+                            'Median gen_true RMSD': mid_rmsd, 
+                            'Mean gen_true RMSD': avg_rmsd,
+                            'Good RMSD Proportion': rmsd_rate,
+                            'Success Rate': success_rate} 
+            results_df_final = pd.DataFrame.from_dict(results_dict, orient='index', columns=['Value'])
+            results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_bon_{n}.csv')
