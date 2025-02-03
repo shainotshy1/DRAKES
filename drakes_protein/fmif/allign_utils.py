@@ -41,7 +41,8 @@ class BONSampler():
                     sample_mat = torch.zeros((batch_size, num_samples, sample_shape), device=sample.device, dtype=sample.dtype)
                     reward_mat = torch.full((batch_size, num_samples), float('-inf'), device=torch.device('cpu'))
                     curr_reward = torch.full((num_samples, ), float('-inf'), device=torch.device('cpu'))
-                    best_sample = sample
+                    if num_samples > 1:
+                        best_sample = torch.zeros(sample.shape, device=sample.device, dtype=sample.dtype)
                 # Store samples
                 reward_mat[i] = reward_oracle(sample)
                 sample_mat[i] = sample
