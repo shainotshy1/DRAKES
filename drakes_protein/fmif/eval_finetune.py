@@ -291,7 +291,7 @@ noise_interpolant.set_device(device)
 set_seed(args.seed, use_cuda=True)
 
 for n in [5, 10, 50, 100]:
-    for bon_step_inteval in [6, 7, 8, 9]:
+    for bon_step_inteval in [1, 2, 3, 4, 5, 10, 15, 25, 50]:
         for testing_model in model_to_test_list:
             testing_model.eval()
             print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')

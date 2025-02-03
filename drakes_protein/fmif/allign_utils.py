@@ -39,29 +39,31 @@ class BONSampler():
                 # Initialize sample and reward matrices
                 if sample_mat is None:
                     sample_mat = torch.zeros((batch_size, num_samples, sample_shape), device=sample.device, dtype=sample.dtype)
-                    reward_mat = torch.zeros((batch_size, num_samples), device=torch.device('cpu'))
+                    reward_mat = torch.full((batch_size, num_samples), float('-inf'), device=torch.device('cpu'))
                     curr_reward = torch.full((num_samples, ), float('-inf'), device=torch.device('cpu'))
-                    if num_samples > 1:
-                        best_sample = torch.zeros(sample.shape, device=sample.device, dtype=sample.dtype)
+                    best_sample = sample
                 # Store samples
                 reward_mat[i] = reward_oracle(sample)
                 sample_mat[i] = sample
             best_rewards = torch.argmax(reward_mat, dim=0)
-            rewards = []
             for i in range(num_samples):
-                rewards.append(reward_mat[best_rewards[i]][i])
-                if rewards[i] > curr_reward[i]:
-                    curr_reward[i] = rewards[i]
+                reward = reward_mat[best_rewards[i]][i]
+                if reward > curr_reward[i]:
+                    curr_reward[i] = reward
                     # Sample() yields 1 sample per call
                     if num_samples == 1:
-                        best_sample = sample_mat[best_rewards[i]][i]
+                        best_sample = sample_mat[best_rewards[i]][i].clone()
                     # Sample() yields multiple samples per call
                     else:
-                        best_sample[i] = sample_mat[best_rewards[i]][i]
+                        best_sample[i] = sample_mat[best_rewards[i]][i].clone()
         return best_sample
     
 class CategoricalBONSampler(BONSampler):
     def __init__(self, distribution, logits=False):
+        # Parameter validation
+        assert type(distribution) is torch.Tensor, "distribution must be a torch tensor"
+
+        # Construct distribution
         if logits:
             self.sampler = Categorical(logits=distribution)
         else:
