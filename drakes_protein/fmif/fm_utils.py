@@ -129,8 +129,8 @@ class Interpolant:
             pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
             if bon_interval and n > 1:
                 # BON Sample
-                prot_sampler = CategoricalBONSampler(pred_logits_wo_mask, logits=True)
-                pred_aatypes_1 = prot_sampler.sample_aligned(reward_oracle=reward_model, n=n, bon_batch_size=bon_batch_size)
+                prot_sampler = CategoricalBONSampler(pred_logits_wo_mask, logits=True, n=n, bon_batch_size=bon_batch_size)
+                pred_aatypes_1 = prot_sampler.sample_aligned(reward_oracle=reward_model)
             else:
                 # Argmax Sample
                 pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)

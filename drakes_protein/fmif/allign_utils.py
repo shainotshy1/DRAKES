@@ -2,7 +2,7 @@ import inspect
 import torch
 from torch.distributions import Categorical
 
-class BONSampler():   
+class AlignSampler():
     def __init__(self):
         # 'sample' function must have no arguments
         subclass_method = self.__class__.__dict__.get("sample")
@@ -14,17 +14,24 @@ class BONSampler():
     def sample(self):
         raise NotImplemented
 
-    def sample_aligned(self, reward_oracle, n=1, bon_batch_size=1):
+class BONSampler(AlignSampler):   
+    def __init__(self, n, bon_batch_size):
         # Parameter validation
         assert type(n) is int, "n must be type 'int'"
         assert type(bon_batch_size) is int, "bon_batch_size must be type 'int'"
         assert n > 0, "n must be a positive integer"
         assert bon_batch_size > 0, "bon_batch_size must be a positive integer"
+        self.n = n
+        self.bon_batch_size = bon_batch_size
+        super().__init__()
+
+    def sample_aligned(self, reward_oracle):
 
         sample_mat, reward_mat, curr_reward, best_sample = None, None, None, None
-        while n > 0:
-            batch_size = min(n, bon_batch_size)
-            n -= batch_size
+        target_n = self.n
+        while target_n > 0:
+            batch_size = min(target_n, self.bon_batch_size)
+            target_n -= batch_size
             for i in range(batch_size):
                 # Sample from sampler
                 sample = self.sample()
@@ -60,9 +67,10 @@ class BONSampler():
         return best_sample
     
 class CategoricalBONSampler(BONSampler):
-    def __init__(self, distribution, logits=False):
+    def __init__(self, distribution, logits=False, n=1, bon_batch_size=1):
         # Parameter validation
         assert type(distribution) is torch.Tensor, "distribution must be a torch tensor"
+        super().__init__(n, bon_batch_size)
 
         # Construct distribution
         if logits:
