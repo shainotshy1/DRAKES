@@ -11,16 +11,17 @@ class AlignSampler():
             if len(sig.parameters) != 1:
                 raise TypeError(f"{self.__class__.__name__}.sample() must be defined without additional parameters.")        
     
-    def sample(self):
+    def sample_aligned(self, reward_oracle):
         raise NotImplemented
 
-class BONSampler(AlignSampler):   
-    def __init__(self, n, bon_batch_size):
+class BONSampler(AlignSampler):
+    def __init__(self, sampler, n, bon_batch_size):
         # Parameter validation
         assert type(n) is int, "n must be type 'int'"
         assert type(bon_batch_size) is int, "bon_batch_size must be type 'int'"
         assert n > 0, "n must be a positive integer"
         assert bon_batch_size > 0, "bon_batch_size must be a positive integer"
+        self.sampler = sampler
         self.n = n
         self.bon_batch_size = bon_batch_size
         super().__init__()
@@ -34,7 +35,7 @@ class BONSampler(AlignSampler):
             target_n -= batch_size
             for i in range(batch_size):
                 # Sample from sampler
-                sample = self.sample()
+                sample = self.sampler()
                 # Sample shape validation
                 assert len(sample.shape) <= 2, "Sample shape must be length 1 or 2: (sample_shape,) or (num_samples, sample_shape,)"
                 if len(sample.shape) == 2:
@@ -66,17 +67,43 @@ class BONSampler(AlignSampler):
                         best_sample[i] = sample_mat[best_rewards[i]][i].clone()
         return best_sample
     
-class CategoricalBONSampler(BONSampler):
-    def __init__(self, distribution, logits=False, n=1, bon_batch_size=1):
+class TreeStateSampler(AlignSampler):
+    def __init__(self, state_fn, sampler, depth, child_n):
         # Parameter validation
-        assert type(distribution) is torch.Tensor, "distribution must be a torch tensor"
-        super().__init__(n, bon_batch_size)
+        assert type(depth) is int, "depth must be type 'int'"
+        assert depth > 0, "depth must be a positive integer"
+        assert type(child_n) is int, "child_n must be type 'int'"
+        assert child_n > 1, "child_n must be a positive integer"
+        self.state_fn = state_fn
+        self.sampler = sampler
+        self.depth = depth
+        self.child_n = child_n
+        super().__init__()
 
-        # Construct distribution
-        if logits:
-            self.sampler = Categorical(logits=distribution)
-        else:
-            self.sampler = Categorical(probs=distribution)
+class MCTSSampler(AlignSampler):   
+    def __init__(self, state_fn, sampler, depth, child_n, C):
+        # Parameter validation
+        assert C > 0, "C must be value greater than 0"
+        self.C = C
+        super().__init__(state_fn, sampler, depth, child_n)
 
-    def sample(self):
-        return self.sampler.sample()
+    def sample_aligned(self, reward_oracle):
+        return self.sample()
+
+class BeamSampler(AlignSampler):   
+    def __init__(self, state_fn, sampler, depth, child_n, W):
+        # Parameter validation
+        assert type(W) is int, "W must be type 'int"
+        assert W > 0, "W must be a positive integer"
+        self.W = W
+        super().__init__(state_fn, sampler, depth, child_n)
+
+    def sample_aligned(self, reward_oracle):
+        return self.sample()
+    
+distr = torch.tensor([0.3, 0.5, 0.2])
+reward_oracle = lambda x : x
+prob = Categorical(probs=distr)
+sampler = lambda : prob.sample()
+a = BONSampler(sampler, n=100, bon_batch_size=1)
+print([a.sample_aligned(reward_oracle).item() for _ in range(10)])
