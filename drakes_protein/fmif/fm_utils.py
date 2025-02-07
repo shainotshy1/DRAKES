@@ -83,9 +83,6 @@ class Interpolant:
         noisy_batch['S_t'] = aatypes_t
         return noisy_batch
 
-
-    # TODO: Implement sampler_gen, initial_state, depth, child_n, W, reward_oracle (that takes in a state)
-
     class ProteinDiffusionState():
         def __init__(self, masked_seq, clean_seq, step, parent_state):
             self.masked_seq = masked_seq
@@ -93,29 +90,7 @@ class Interpolant:
             self.step = step
             self.parent_state
 
-    def sample(
-            self,
-            model,
-            X, mask, chain_M, residue_idx, chain_encoding_all,
-            cls=None, w=None,
-            reward_model=None,
-            n = 1,
-            bon_batch_size=1,
-            bon_step_inteval=1, # 1 bon step for each interval
-        ):
-
-        if type(n) != int or n < 1 or reward_model is None:
-            print("Invalid BON configuration (n must be positive integer, reward_model can't be None - Using normal denoising")
-            n = 1
-        assert type(bon_batch_size) is int and bon_batch_size > 0, "BON Batch size must be positive integer"
-        assert type(bon_step_inteval) is int and bon_step_inteval > 0, "BON step interval must be positive integer"
-
-        num_batch, num_res = mask.shape
-        aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
-        
-        num_timesteps = self._cfg.num_timesteps
-        ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
-        
+    def build_sampler_gen(self, model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts):
         def sampler_gen(state):
             t_1, t_2 = ts[state.step], ts[state.step + 1]
             d_t = t_2 - t_1
@@ -153,8 +128,33 @@ class Interpolant:
                 return sample_state
             
             return sample
+        return sampler_gen
 
+    def sample(
+            self,
+            model,
+            X, mask, chain_M, residue_idx, chain_encoding_all,
+            cls=None, w=None,
+            reward_model=None,
+            n = 1,
+            bon_batch_size=1,
+            bon_step_inteval=1, # 1 bon step for each interval
+        ):
+
+        if type(n) != int or n < 1 or reward_model is None:
+            print("Invalid BON configuration (n must be positive integer, reward_model can't be None - Using normal denoising")
+            n = 1
+        assert type(bon_batch_size) is int and bon_batch_size > 0, "BON Batch size must be positive integer"
+        assert type(bon_step_inteval) is int and bon_step_inteval > 0, "BON step interval must be positive integer"
+
+        num_batch, num_res = mask.shape
+        aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
+        
+        num_timesteps = self._cfg.num_timesteps
+        ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
+        
         initial_state = self.ProteinDiffusionState(aatypes_0, None, 0, None)
+        sampler_gen = self.build_sampler_gen(self, model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts)
         reward_oracle = lambda state : reward_model(state.clean_seq)
         diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps, n, W=1)
         best_sample = diffusion_sampler.sample_aligned(reward_oracle=reward_oracle)
