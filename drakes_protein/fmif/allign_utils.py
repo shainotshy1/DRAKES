@@ -73,15 +73,14 @@ class BONSampler(AlignSampler):
         return best_sample
     
 class TreeStateSampler(AlignSampler):
-    def __init__(self, sampler_gen, initial_state, sampler, depth, child_n):
+    def __init__(self, sampler_gen, initial_state, depth, child_n):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
         assert type(child_n) is int, "child_n must be type 'int'"
-        assert child_n > 1, "child_n must be a positive integer"
+        assert child_n > 0, "child_n must be a positive integer"
         self.sampler_gen = sampler_gen
         self.initial_state = initial_state
-        self.sampler = sampler
         self.depth = depth
         self.child_n = child_n
         super().__init__()
@@ -172,15 +171,15 @@ class BeamSampler(TreeStateSampler):
         super().__init__(sampler_gen, initial_state, depth, child_n)
 
     def sample_aligned(self, reward_oracle):
-        states = [self.intial_state]
+        states = [self.initial_state]
         sampler = self.sampler_gen(self.initial_state)
         bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1) 
         for _ in range(self.depth):
             next_states = []
             for state in states:
                 sampler = self.sampler_gen(state)
-                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1)
-                next_states += bon_sampler.sample_aligned(reward_oracle=reward_oracle)
+                bon_sampler = sampler#BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1)
+                next_states += [sampler()]#bon_sampler.sample_aligned(reward_oracle=reward_oracle)
             states = next_states
         return max(states, key=reward_oracle)
     
