@@ -153,7 +153,7 @@ class MCTSSampler(TreeStateSampler):
             state = sampler.sample()
             # Simulation
             reward = reward_oracle(state)
-            new_child = self.Node(state=state, value=reward)
+            new_child = self.Node(state=state, value=reward) # TODO: construct the sampler only one time - the first time best_node is sampled from
             # Backpropogation
             best_node.add_child(new_child)
             new_child.backpropogate()

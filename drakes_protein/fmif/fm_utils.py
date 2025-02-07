@@ -5,7 +5,7 @@ from collections import defaultdict
 from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from allign_utils import CategoricalBONSampler
+from allign_utils import BeamSampler, MCTSSampler
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -84,6 +84,15 @@ class Interpolant:
         return noisy_batch
 
 
+    # TODO: Implement sampler_gen, initial_state, depth, child_n, W, reward_oracle (that takes in a state)
+
+    class ProteinDiffusionState():
+        def __init__(self, masked_seq, clean_seq, step, parent_state):
+            self.masked_seq = masked_seq
+            self.clean_seq = clean_seq
+            self.step = step
+            self.parent_state
+
     def sample(
             self,
             model,
@@ -103,60 +112,110 @@ class Interpolant:
 
         num_batch, num_res = mask.shape
         aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
-
+        
         num_timesteps = self._cfg.num_timesteps
         ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
-        t_1 = ts[0]
-        aatypes_t_1 = aatypes_0 # [bsz, seqlen]
-        prot_traj = [aatypes_0.detach().cpu()] 
-        clean_traj = []
-        step = 0
-        for t_2 in ts[1:]:
-            bon_interval = step % bon_step_inteval == 0
-            step += 1
+        
+        def sampler_gen(state):
+            t_1, t_2 = ts[state.step], ts[state.step + 1]
             d_t = t_2 - t_1
             with torch.no_grad():
                 if cls is not None:
                     uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
                     cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
-                    model_out_uncond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
-                    model_out_cond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+                    model_out_uncond = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+                    model_out_cond = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
                     model_out = (1+w) * model_out_cond - w * model_out_uncond
                 else:
-                    model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
+                    model_out = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
             pred_logits_1 = model_out # [bsz, seqlen, 22]
             pred_logits_wo_mask = pred_logits_1.clone()
             pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-            if bon_interval and n > 1:
-                # BON Sample
-                prot_sampler = CategoricalBONSampler(pred_logits_wo_mask, logits=True, n=n, bon_batch_size=bon_batch_size)
-                pred_aatypes_1 = prot_sampler.sample_aligned(reward_oracle=reward_model)
-            else:
-                # Argmax Sample
-                pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
-            clean_traj.append(pred_aatypes_1.detach().cpu())
+            prot_sampler = Categorical(logits=pred_logits_wo_mask)
 
             pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
             pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, 
                                                                             dim=-1, keepdim=True)
-            unmasked_indices = (aatypes_t_1 != mu.MASK_TOKEN_INDEX)
+            unmasked_indices = (state.masked_seq != mu.MASK_TOKEN_INDEX)
             pred_logits_1[unmasked_indices] = self.neg_infinity
-            pred_logits_1[unmasked_indices, aatypes_t_1[unmasked_indices]] = 0
+            pred_logits_1[unmasked_indices, state.masked_seq[unmasked_indices]] = 0
             
-            move_chance_t = 1.0 - t_1
             move_chance_s = 1.0 - t_2
             q_xs = pred_logits_1.exp() * d_t
             q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
             _x = _sample_categorical(q_xs)
-            copy_flag = (aatypes_t_1 != mu.MASK_TOKEN_INDEX).to(aatypes_t_1.dtype)
-            aatypes_t_2 = aatypes_t_1 * copy_flag + _x * (1 - copy_flag)
-            aatypes_t_1 = aatypes_t_2.long()
-            prot_traj.append(aatypes_t_2.cpu().detach())
-            t_1 = t_2
+            copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
+            aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
 
-        t_1 = ts[-1]
+            def sample():
+                pred_aatypes_1 = prot_sampler.sample()
+                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, state.step + 1, state)
+                return sample_state
+            
+            return sample
 
-        return pred_aatypes_1, prot_traj, clean_traj
+        initial_state = self.ProteinDiffusionState(aatypes_0, None, 0, None)
+        reward_oracle = lambda state : reward_model(state.clean_seq)
+        diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps, n, W=1)
+        best_sample = diffusion_sampler.sample_aligned(reward_oracle=reward_oracle)
+        
+        prot_traj = []
+        clean_traj = []
+        curr = best_sample
+        while curr is not initial_state:
+            prot_traj.append(curr.masked_seq)
+            clean_traj.append(curr.clean_seq)
+            curr = curr.parent
+        prot_traj = prot_traj[::-1]
+        clean_traj = clean_traj[::-1]
+        return best_sample, prot_traj, clean_traj
+
+        # for t_2 in ts[1:]:
+        #     bon_interval = step % bon_step_inteval == 0
+        #     step += 1
+        #     d_t = t_2 - t_1
+        #     with torch.no_grad():
+        #         if cls is not None:
+        #             uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
+        #             cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
+        #             model_out_uncond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+        #             model_out_cond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+        #             model_out = (1+w) * model_out_cond - w * model_out_uncond
+        #         else:
+        #             model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
+        #     pred_logits_1 = model_out # [bsz, seqlen, 22]
+        #     pred_logits_wo_mask = pred_logits_1.clone()
+        #     pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+        #     if bon_interval and n > 1:
+        #         # BON Sample
+        #         prot_sampler = None#CategoricalBONSampler(pred_logits_wo_mask, logits=True, n=n, bon_batch_size=bon_batch_size)
+        #         pred_aatypes_1 = prot_sampler.sample_aligned(reward_oracle=reward_model)
+        #     else:
+        #         # Argmax Sample
+        #         pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
+        #     clean_traj.append(pred_aatypes_1.detach().cpu())
+
+        #     pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
+        #     pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, 
+        #                                                                     dim=-1, keepdim=True)
+        #     unmasked_indices = (aatypes_t_1 != mu.MASK_TOKEN_INDEX)
+        #     pred_logits_1[unmasked_indices] = self.neg_infinity
+        #     pred_logits_1[unmasked_indices, aatypes_t_1[unmasked_indices]] = 0
+            
+        #     move_chance_t = 1.0 - t_1
+        #     move_chance_s = 1.0 - t_2
+        #     q_xs = pred_logits_1.exp() * d_t
+        #     q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
+        #     _x = _sample_categorical(q_xs)
+        #     copy_flag = (aatypes_t_1 != mu.MASK_TOKEN_INDEX).to(aatypes_t_1.dtype)
+        #     aatypes_t_2 = aatypes_t_1 * copy_flag + _x * (1 - copy_flag)
+        #     aatypes_t_1 = aatypes_t_2.long()
+        #     prot_traj.append(aatypes_t_2.cpu().detach())
+        #     t_1 = t_2
+
+        # t_1 = ts[-1]
+
+        # return pred_aatypes_1, prot_traj, clean_traj
 
     def sample_gradient(
             self,
