@@ -42,23 +42,24 @@ class BONSampler(AlignSampler):
                 # Sample from sampler
                 sample = self.sampler()
                 # Sample shape validation
-                assert len(sample.shape) <= 2, "Sample shape must be length 1 or 2: (sample_shape,) or (num_samples, sample_shape,)"
-                if len(sample.shape) == 2:
-                    num_samples, sample_shape = sample.shape
-                elif len(sample.shape) == 1:
-                    num_samples, sample_shape = 1, sample.shape[0]
+                state_val = sample.get_state_value()
+                assert len(state_val.shape) <= 2, "State value shape must be length 1 or 2: (sample_shape,) or (num_samples, sample_shape)"
+                if len(state_val.shape) == 2:
+                    num_samples, sample_shape = state_val.shape
+                elif len(state_val.shape) == 1:
+                    num_samples, sample_shape = 1, state_val.shape[0]
                 else:
                     num_samples, sample_shape = 1, 1
                 # Initialize sample and reward matrices
                 if sample_mat is None:
-                    sample_mat = torch.zeros((batch_size, num_samples, sample_shape), device=sample.device, dtype=sample.dtype)
+                    sample_mat = torch.zeros((batch_size, num_samples, sample_shape), device=state_val.device, dtype=state_val.dtype)
                     reward_mat = torch.full((batch_size, num_samples), float('-inf'), device=torch.device('cpu'))
                     curr_reward = torch.full((num_samples, ), float('-inf'), device=torch.device('cpu'))
                     if num_samples > 1:
-                        best_sample = torch.zeros(sample.shape, device=sample.device, dtype=sample.dtype)
+                        best_sample = torch.zeros(state_val.shape, device=state_val.device, dtype=state_val.dtype)
                 # Store samples
                 reward_mat[i] = reward_oracle(sample)
-                sample_mat[i] = sample
+                sample_mat[i] = state_val
             best_rewards = torch.argmax(reward_mat, dim=0)
             for i in range(num_samples):
                 reward = reward_mat[best_rewards[i]][i]
@@ -70,7 +71,8 @@ class BONSampler(AlignSampler):
                     # Sample() yields multiple samples per call
                     else:
                         best_sample[i] = sample_mat[best_rewards[i]][i].clone()
-        return best_sample
+        sample.set_state_value(best_sample) # Currently only returns top-1, not top-W
+        return [sample]
     
 class TreeStateSampler(AlignSampler):
     def __init__(self, sampler_gen, initial_state, depth, child_n):
@@ -178,14 +180,14 @@ class BeamSampler(TreeStateSampler):
             next_states = []
             for state in states:
                 sampler = self.sampler_gen(state)
-                bon_sampler = sampler#BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1)
-                next_states += [sampler()]#bon_sampler.sample_aligned(reward_oracle=reward_oracle)
+                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1)
+                next_states += bon_sampler.sample_aligned(reward_oracle=reward_oracle)
             states = next_states
         return max(states, key=reward_oracle)
     
-distr = torch.tensor([0.3, 0.5, 0.2])
-reward_oracle = lambda x : x
-prob = Categorical(probs=distr)
-sampler = lambda : prob.sample()
-a = BONSampler(sampler, n=100, W=1, bon_batch_size=1)
-print([a.sample_aligned(reward_oracle).item() for _ in range(10)])
+# distr = torch.tensor([0.3, 0.5, 0.2])
+# reward_oracle = lambda x : x
+# prob = Categorical(probs=distr)
+# sampler = lambda : prob.sample()
+# a = BONSampler(sampler, n=100, W=1, bon_batch_size=1)
+# print([a.sample_aligned(reward_oracle).item() for _ in range(10)])

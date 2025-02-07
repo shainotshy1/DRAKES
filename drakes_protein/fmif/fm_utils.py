@@ -90,6 +90,12 @@ class Interpolant:
             self.step = step
             self.parent_state = parent_state
 
+        def get_state_value(self):
+            return self.clean_seq
+        
+        def set_state_value(self, state_value):
+            self.clean_seq = state_value
+
     def build_sampler_gen(self, model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts):
         def sampler_gen(state):
             t_1, t_2 = ts[state.step], ts[state.step + 1]
@@ -156,7 +162,7 @@ class Interpolant:
         initial_state = self.ProteinDiffusionState(aatypes_0, None, 0, None)
         sampler_gen = self.build_sampler_gen(model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts)
         reward_oracle = lambda state : reward_model(state.clean_seq)
-        diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, 1, 1)
+        diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
         best_sample = diffusion_sampler.sample_aligned(reward_oracle=reward_oracle)
         
         prot_traj = []
