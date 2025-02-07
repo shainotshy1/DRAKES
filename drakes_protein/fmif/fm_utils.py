@@ -5,7 +5,7 @@ from collections import defaultdict
 from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from allign_utils import BeamSampler, MCTSSampler
+from allign_utils import BeamSampler, MCTSSampler, AlignSamplerState
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -83,18 +83,12 @@ class Interpolant:
         noisy_batch['S_t'] = aatypes_t
         return noisy_batch
 
-    class ProteinDiffusionState():
+    class ProteinDiffusionState(AlignSamplerState):
         def __init__(self, masked_seq, clean_seq, step, parent_state):
             self.masked_seq = masked_seq
-            self.clean_seq = clean_seq
             self.step = step
             self.parent_state = parent_state
-
-        def get_state_value(self):
-            return self.clean_seq
-        
-        def set_state_value(self, state_value):
-            self.clean_seq = state_value
+            super().__init__(clean_seq) # state value is clean_seq
 
     def build_sampler_gen(self, model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts):
         def sampler_gen(state):
@@ -159,9 +153,9 @@ class Interpolant:
         num_timesteps = self._cfg.num_timesteps
         ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
         
-        initial_state = self.ProteinDiffusionState(aatypes_0, None, 0, None)
+        initial_state = self.ProteinDiffusionState(aatypes_0, aatypes_0, 0, None)
         sampler_gen = self.build_sampler_gen(model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts)
-        reward_oracle = lambda state : reward_model(state.clean_seq)
+        reward_oracle = lambda state : reward_model(state.state_value)
         diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
         best_sample = diffusion_sampler.sample_aligned(reward_oracle=reward_oracle)
         
@@ -170,7 +164,7 @@ class Interpolant:
         curr = best_sample
         while curr is not initial_state:
             prot_traj.append(curr.masked_seq)
-            clean_traj.append(curr.clean_seq)
+            clean_traj.append(curr.state_value)
             curr = curr.parent_state
         prot_traj = prot_traj[::-1]
         clean_traj = clean_traj[::-1]

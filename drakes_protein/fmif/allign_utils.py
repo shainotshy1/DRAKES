@@ -15,6 +15,17 @@ class AlignSampler():
     def sample_aligned(self, reward_oracle):
         raise NotImplemented
 
+class AlignSamplerState():
+        def __init__(self, state_value):
+            assert type(state_value) is torch.Tensor, f"Got type {type(state_value)} but State value must be of type 'torch.Tensor'"
+            self.state_value = state_value
+            
+        def get_state_value(self):
+            return self.state_value
+        
+        def set_state_value(self, state_value):
+            self.state_value = state_value
+
 class BONSampler(AlignSampler):
     def __init__(self, sampler, n, W, bon_batch_size):
         # Parameter validation
@@ -41,6 +52,7 @@ class BONSampler(AlignSampler):
             for i in range(batch_size):
                 # Sample from sampler
                 sample = self.sampler()
+                assert isinstance(sample, AlignSamplerState), f"{type(sample)} is not an instance of 'AlignSamplerState'"
                 # Sample shape validation
                 state_val = sample.get_state_value()
                 assert len(state_val.shape) <= 2, "State value shape must be length 1 or 2: (sample_shape,) or (num_samples, sample_shape)"
@@ -61,6 +73,7 @@ class BONSampler(AlignSampler):
                 reward_mat[i] = reward_oracle(sample)
                 sample_mat[i] = state_val
             best_rewards = torch.argmax(reward_mat, dim=0)
+            # top_rewards, top_indices = torch.topk(reward_mat, self.W, dim=0) => concatenate everything globally and then to one top-k
             for i in range(num_samples):
                 reward = reward_mat[best_rewards[i]][i]
                 if reward > curr_reward[i]:
