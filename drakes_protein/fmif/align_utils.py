@@ -136,8 +136,11 @@ class BeamSampler(TreeStateSampler):
             for state in states:
                 assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
                 sampler = self.sampler_gen(state)
-                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n)
-                next_states += bon_sampler.sample_aligned()
+                if self.child_n > 1:
+                    bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n)
+                    next_states += bon_sampler.sample_aligned()
+                else:
+                    next_states.append(sampler())
             states = next_states
         return max(states, key=lambda s : s.calc_reward())
     

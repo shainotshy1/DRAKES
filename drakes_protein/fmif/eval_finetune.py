@@ -291,12 +291,12 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-for n in [10]:
+for n in [5, 10, 25]:
     for bon_step_inteval in [1]:
         for testing_model in model_to_test_list:
             testing_model.eval()
             print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')
-            repeat_num=2 #16
+            repeat_num=16
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -357,8 +357,6 @@ for n in [10]:
                     # valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
                     # results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
                     # results_merge.extend(results_list)
-                    break
-                break
             mask_proportion = [x / total_seq_count for x in mask_proportion]
             reward_average = [x / total_seq_count for x in reward_average]
             range_column = list(range(1, len(mask_proportion) + 1))

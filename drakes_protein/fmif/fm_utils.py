@@ -6,7 +6,7 @@ import model_utils as mu
 #from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from align_utils import BeamSampler, MCTSSampler, AlignSamplerState
+from align_utils import BeamSampler, MCTSSampler, BONSampler, AlignSamplerState
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -105,7 +105,11 @@ class Interpolant:
             self.cls = cls
             self.w = w
 
-    def build_sampler_gen(self, model, model_params, ts, reward_oracle):
+    class ProteinBatchTreeSearch():
+        def __init__(self):
+            return
+
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle, choose_best=False):
         # Extract parameters
         X = model_params.X
         mask = model_params.mask
@@ -148,7 +152,10 @@ class Interpolant:
             aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
 
             def sample():
-                pred_aatypes_1 = prot_sampler.sample()
+                if choose_best:
+                    pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
+                else:
+                    pred_aatypes_1 = prot_sampler.sample()
                 sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, state.step + 1, state, reward_oracle)
                 return sample_state
             
@@ -186,18 +193,26 @@ class Interpolant:
             model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
 
             reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
-            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i)
+            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i, choose_best=True) # Temporary!
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             initial_state = self.ProteinDiffusionState(aatypes_0, aatypes_0, 0, None, reward_model_i)
 
-            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
-            samplers.append(sampler)
+            # Currently just using Beam for the normal diffusion process and using BON on the whole process
+            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, 1, 1)
+
+            # BON on entire process
+            bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
+
+            #samplers.append(sampler)
+            samplers.append(bon_sampler)
         
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
         clean_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
         for i, sampler in enumerate(samplers):
             best_sample = sampler.sample_aligned()
+            if type(best_sample) is list: # TODO: probably temporary
+                best_sample = best_sample[0] # If BON just take first element of the list
             prot_traj.append([])
             clean_traj.append([])
             best_samples.append(best_sample)
