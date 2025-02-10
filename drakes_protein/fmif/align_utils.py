@@ -3,91 +3,32 @@ import torch
 from torch.distributions import Categorical
 import numpy as np
 
-class AlignSampler():
-    def __init__(self):
-        # 'sample' function must have no arguments
-        subclass_method = self.__class__.__dict__.get("sample")
-        if subclass_method:
-            sig = inspect.signature(subclass_method)
-            if len(sig.parameters) != 1:
-                raise TypeError(f"{self.__class__.__name__}.sample() must be defined without additional parameters.")        
-    
-    def sample_aligned(self, reward_oracle):
+class AlignSamplerState():
+    def calc_reward(self):
         raise NotImplemented
 
-class AlignSamplerState():
-        def __init__(self, state_value):
-            assert type(state_value) is torch.Tensor, f"Got type {type(state_value)} but State value must be of type 'torch.Tensor'"
-            self.state_value = state_value
-            
-        def get_state_value(self):
-            return self.state_value
-        
-        def set_state_value(self, state_value):
-            self.state_value = state_value
-
-class BONSampler(AlignSampler):
-    def __init__(self, sampler, n, W, bon_batch_size):
+class BONSampler():
+    def __init__(self, sampler, n, W):
         # Parameter validation
         assert type(n) is int, "n must be type 'int'"
         assert type(W) is int, "W must be type 'int"
-        assert type(bon_batch_size) is int, "bon_batch_size must be type 'int'"
         assert n > 0, "n must be a positive integer"
-        assert bon_batch_size > 0, "bon_batch_size must be a positive integer"
         assert W > 0, "W must be a positive integer"
         assert W <= n, "W must be less than or equal to n"
         self.sampler = sampler
         self.n = n # number of samples to generate
         self.W = W # top W results returned
-        self.bon_batch_size = bon_batch_size
         super().__init__()
 
-    def sample_aligned(self, reward_oracle):
-
-        sample_mat, reward_mat, curr_reward, best_sample = None, None, None, None
-        target_n = self.n
-        while target_n > 0:
-            batch_size = min(target_n, self.bon_batch_size)
-            target_n -= batch_size
-            for i in range(batch_size):
-                # Sample from sampler
-                sample = self.sampler()
-                assert isinstance(sample, AlignSamplerState), f"{type(sample)} is not an instance of 'AlignSamplerState'"
-                # Sample shape validation
-                state_val = sample.get_state_value()
-                assert len(state_val.shape) <= 2, "State value shape must be length 1 or 2: (sample_shape,) or (num_samples, sample_shape)"
-                if len(state_val.shape) == 2:
-                    num_samples, sample_shape = state_val.shape
-                elif len(state_val.shape) == 1:
-                    num_samples, sample_shape = 1, state_val.shape[0]
-                else:
-                    num_samples, sample_shape = 1, 1
-                # Initialize sample and reward matrices
-                if sample_mat is None:
-                    sample_mat = torch.zeros((batch_size, num_samples, sample_shape), device=state_val.device, dtype=state_val.dtype)
-                    reward_mat = torch.full((batch_size, num_samples), float('-inf'), device=torch.device('cpu'))
-                    curr_reward = torch.full((num_samples, ), float('-inf'), device=torch.device('cpu'))
-                    if num_samples > 1:
-                        best_sample = torch.zeros(state_val.shape, device=state_val.device, dtype=state_val.dtype)
-                # Store samples
-                reward_mat[i] = reward_oracle(sample)
-                sample_mat[i] = state_val
-            best_rewards = torch.argmax(reward_mat, dim=0)
-            # top_rewards, top_indices = torch.topk(reward_mat, self.W, dim=0) => concatenate everything globally and then to one top-k
-            for i in range(num_samples):
-                reward = reward_mat[best_rewards[i]][i]
-                if reward > curr_reward[i]:
-                    curr_reward[i] = reward
-                    # Sample() yields 1 sample per call
-                    if num_samples == 1:
-                        best_sample = sample_mat[best_rewards[i]][i].clone()
-                    # Sample() yields multiple samples per call
-                    else:
-                        best_sample[i] = sample_mat[best_rewards[i]][i].clone()
-        sample.set_state_value(best_sample) # Currently only returns top-1, not top-W
-        return [sample]
+    def sample_aligned(self):
+        samples = [self.sampler() for _ in range(self.n)]
+        for s in samples:
+            assert isinstance(s, AlignSamplerState), "Sample must be instance of AlignSamplerState"
+        rewards = [s.calc_reward() for s in samples]
+        _, top_indices = torch.topk(torch.tensor(rewards), self.W, dim=0)
+        return [samples[i] for i in top_indices]
     
-class TreeStateSampler(AlignSampler):
+class TreeStateSampler():
     def __init__(self, sampler_gen, initial_state, depth, child_n):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
@@ -98,7 +39,6 @@ class TreeStateSampler(AlignSampler):
         self.initial_state = initial_state
         self.depth = depth
         self.child_n = child_n
-        super().__init__()
 
 class MCTSSampler(TreeStateSampler):   
     class Node():
@@ -142,6 +82,7 @@ class MCTSSampler(TreeStateSampler):
     def __init__(self, sampler_gen, initial_state, depth, child_n, C, max_iter=1000):
         # Parameter validation
         assert C > 0, "C must be value greater than 0"
+        assert isinstance(initial_state, AlignSamplerState), "Initial state must be instance of AlignSamplerState"
         self.C = C
         self.max_iter = max_iter
         super().__init__(sampler_gen, initial_state, depth, child_n)
@@ -153,9 +94,9 @@ class MCTSSampler(TreeStateSampler):
         best_ucb = max(candidates, key=lambda c : c.S) # Select node with best UCB
         return best_ucb
 
-    def sample_aligned(self, reward_oracle):
+    def sample_aligned(self):
         # Initialize node to initial state
-        root = self.Node(state=self.initial_state, value=reward_oracle(self.initial_state), C=self.C)
+        root = self.Node(state=self.initial_state, value=self.initial_state.calc_reward(), C=self.C)
         # MCTS
         for _ in range(self.max_iter):
             # Selection
@@ -165,8 +106,9 @@ class MCTSSampler(TreeStateSampler):
             # Expansion
             sampler = self.sampler_gen(best_node.state)
             state = sampler.sample()
+            assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
             # Simulation
-            reward = reward_oracle(state)
+            reward = state.calc_reward()
             new_child = self.Node(state=state, value=reward) # TODO: construct the sampler only one time - the first time best_node is sampled from
             # Backpropogation
             best_node.add_child(new_child)
@@ -185,22 +127,23 @@ class BeamSampler(TreeStateSampler):
         self.W = W
         super().__init__(sampler_gen, initial_state, depth, child_n)
 
-    def sample_aligned(self, reward_oracle):
+    def sample_aligned(self):
         states = [self.initial_state]
         sampler = self.sampler_gen(self.initial_state)
-        bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1) 
+        bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n) 
         for _ in range(self.depth):
             next_states = []
             for state in states:
+                assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
                 sampler = self.sampler_gen(state)
-                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n, bon_batch_size=1)
-                next_states += bon_sampler.sample_aligned(reward_oracle=reward_oracle)
+                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n)
+                next_states += bon_sampler.sample_aligned()
             states = next_states
-        return max(states, key=reward_oracle)
+        return max(states, key=lambda s : s.calc_reward())
     
 # distr = torch.tensor([0.3, 0.5, 0.2])
 # reward_oracle = lambda x : x
 # prob = Categorical(probs=distr)
 # sampler = lambda : prob.sample()
-# a = BONSampler(sampler, n=100, W=1, bon_batch_size=1)
+# a = BONSampler(sampler, n=100, W=1)
 # print([a.sample_aligned(reward_oracle).item() for _ in range(10)])

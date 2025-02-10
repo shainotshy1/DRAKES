@@ -19,7 +19,8 @@ import os.path
 from protein_oracle.utils import set_seed
 from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
 from protein_oracle.model_utils import ProteinMPNNOracle
-from fmif.model_utils import ProteinMPNNFMIF
+#from fmif.model_utils import ProteinMPNNFMIF
+from model_utils import ProteinMPNNFMIF
 #from fmif.fm_utils import Interpolant
 from fm_utils import Interpolant
 from tqdm import tqdm
@@ -295,7 +296,7 @@ for n in [10]:
         for testing_model in model_to_test_list:
             testing_model.eval()
             print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')
-            repeat_num=16
+            repeat_num=2 #16
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -329,8 +330,7 @@ for n in [10]:
                         S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
-                        reward_fn = lambda S : reward_model_eval(X, S, mask, chain_M, residue_idx, chain_encoding_all)
-                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_fn, n=n, bon_batch_size=10, bon_step_inteval=bon_step_inteval)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model_eval, n=n, bon_step_inteval=bon_step_inteval)
                         mask_for_loss = mask*chain_M
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):

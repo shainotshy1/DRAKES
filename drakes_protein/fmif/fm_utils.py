@@ -2,10 +2,11 @@ import torch
 import copy
 import torch.nn.functional as F
 from collections import defaultdict
-from fmif import model_utils as mu
+import model_utils as mu
+#from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from allign_utils import BeamSampler, MCTSSampler, AlignSamplerState
+from align_utils import BeamSampler, MCTSSampler, AlignSamplerState
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -84,13 +85,37 @@ class Interpolant:
         return noisy_batch
 
     class ProteinDiffusionState(AlignSamplerState):
-        def __init__(self, masked_seq, clean_seq, step, parent_state):
+        def __init__(self, masked_seq, clean_seq, step, parent_state, reward_oracle):
             self.masked_seq = masked_seq
             self.step = step
+            self.clean_seq = clean_seq
             self.parent_state = parent_state
-            super().__init__(clean_seq) # state value is clean_seq
+            self.reward_oracle = reward_oracle
+        
+        def calc_reward(self):
+            return self.reward_oracle(self.clean_seq)
+    
+    class ProteinModelParams():
+        def __init__(self, X, mask, chain_M, residue_idx, chain_encoding_all, cls=None, w=None):
+            self.X = X
+            self.mask = mask
+            self.chain_M = chain_M
+            self.residue_idx = residue_idx
+            self.chain_encoding_all = chain_encoding_all
+            self.cls = cls
+            self.w = w
 
-    def build_sampler_gen(self, model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts):
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle):
+        # Extract parameters
+        X = model_params.X
+        mask = model_params.mask
+        chain_M = model_params.chain_M
+        residue_idx = model_params.residue_idx
+        chain_encoding_all = model_params.chain_encoding_all
+        cls = model_params.cls
+        w = model_params.w
+
+        # Generate sampler
         def sampler_gen(state):
             t_1, t_2 = ts[state.step], ts[state.step + 1]
             d_t = t_2 - t_1
@@ -124,7 +149,7 @@ class Interpolant:
 
             def sample():
                 pred_aatypes_1 = prot_sampler.sample()
-                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, state.step + 1, state)
+                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, state.step + 1, state, reward_oracle)
                 return sample_state
             
             return sample
@@ -137,38 +162,66 @@ class Interpolant:
             cls=None, w=None,
             reward_model=None,
             n = 1,
-            bon_batch_size=1,
             bon_step_inteval=1, # 1 bon step for each interval
         ):
 
         if type(n) != int or n < 1 or reward_model is None:
             print("Invalid BON configuration (n must be positive integer, reward_model can't be None - Using normal denoising")
             n = 1
-        assert type(bon_batch_size) is int and bon_batch_size > 0, "BON Batch size must be positive integer"
         assert type(bon_step_inteval) is int and bon_step_inteval > 0, "BON step interval must be positive integer"
 
-        num_batch, num_res = mask.shape
-        aatypes_0 = _masked_categorical(num_batch, num_res, self._device).long()
-        
+        num_batch, num_res = mask.shape        
         num_timesteps = self._cfg.num_timesteps
         ts = torch.linspace(self._cfg.min_t, 1.0, num_timesteps)
         
-        initial_state = self.ProteinDiffusionState(aatypes_0, aatypes_0, 0, None)
-        sampler_gen = self.build_sampler_gen(model, X, mask, chain_M, residue_idx, chain_encoding_all, cls, w, ts)
-        reward_oracle = lambda state : reward_model(state.state_value)
-        diffusion_sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
-        best_sample = diffusion_sampler.sample_aligned(reward_oracle=reward_oracle)
+        samplers = [] # (num_batch, )
+        for i in range(num_batch):
+            X_i = X[i].unsqueeze(0)
+            mask_i = mask[i].unsqueeze(0)
+            chain_M_i = chain_M[i].unsqueeze(0)
+            residue_idx_i = residue_idx[i].unsqueeze(0)
+            chain_encoding_all_i = chain_encoding_all[i].unsqueeze(0)
+            cls_i = cls[i].unsqueeze(0) if cls is not None else None
+            w_i = w[i].unsqueeze(0) if w is not None else None
+            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
+
+            reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
+            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i)
+            aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
+            initial_state = self.ProteinDiffusionState(aatypes_0, aatypes_0, 0, None, reward_model_i)
+
+            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
+            samplers.append(sampler)
         
-        prot_traj = []
-        clean_traj = []
-        curr = best_sample
-        while curr is not initial_state:
-            prot_traj.append(curr.masked_seq)
-            clean_traj.append(curr.state_value)
-            curr = curr.parent_state
-        prot_traj = prot_traj[::-1]
-        clean_traj = clean_traj[::-1]
-        return best_sample, prot_traj, clean_traj
+        best_samples = [] # (num_batch, )
+        prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
+        clean_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
+        for i, sampler in enumerate(samplers):
+            best_sample = sampler.sample_aligned()
+            prot_traj.append([])
+            clean_traj.append([])
+            best_samples.append(best_sample)
+            curr = best_sample
+            while curr.parent_state is not None:
+                prot_traj[-1].append(curr.masked_seq)
+                clean_traj[-1].append(curr.clean_seq)
+                curr = curr.parent_state
+            prot_traj[-1] = prot_traj[-1][::-1]
+            clean_traj[-1] = clean_traj[-1][::-1]
+
+        seq_dtype = prot_traj[0][0].dtype
+        concat_prot_traj = []
+        concat_clean_traj = []
+        concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype)
+        for i in range(len(prot_traj[0])):
+            concat_prot_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
+            concat_clean_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
+            for j, best_sample in enumerate(best_samples):
+                concat_prot_traj[i][j] = prot_traj[j][i]
+                concat_clean_traj[i][j] = clean_traj[j][i]
+        for i, best_sample in enumerate(best_samples):
+            concat_best_samples[i] = best_sample.clean_seq
+        return concat_best_samples, concat_prot_traj, concat_clean_traj
 
         # for t_2 in ts[1:]:
         #     bon_interval = step % bon_step_inteval == 0
