@@ -85,8 +85,9 @@ class Interpolant:
         return noisy_batch
 
     class ProteinDiffusionState(AlignSamplerState):
-        def __init__(self, masked_seq, clean_seq, step, parent_state, reward_oracle):
+        def __init__(self, masked_seq, clean_seq, q_xs, step, parent_state, reward_oracle):
             self.masked_seq = masked_seq
+            self.q_xs = q_xs
             self.step = step
             self.clean_seq = clean_seq
             self.parent_state = parent_state
@@ -109,7 +110,7 @@ class Interpolant:
         def __init__(self):
             return
 
-    def build_sampler_gen(self, model, model_params, ts, reward_oracle, choose_best=False):
+    def generate_state_values(self, model, model_params, masked_seq, t_1, t_2):
         # Extract parameters
         X = model_params.X
         mask = model_params.mask
@@ -118,47 +119,44 @@ class Interpolant:
         chain_encoding_all = model_params.chain_encoding_all
         cls = model_params.cls
         w = model_params.w
+        d_t = t_2 - t_1
 
+        with torch.no_grad():
+            if cls is not None:
+                uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
+                cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
+                model_out_uncond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+                model_out_cond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+                model_out = (1+w) * model_out_cond - w * model_out_uncond
+            else:
+                model_out = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
+        pred_logits_1 = model_out # [bsz, seqlen, 22]
+        pred_logits_wo_mask = pred_logits_1.clone()
+        pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+        pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
+
+        pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
+        pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, dim=-1, keepdim=True)
+        unmasked_indices = (masked_seq != mu.MASK_TOKEN_INDEX)
+        pred_logits_1[unmasked_indices] = self.neg_infinity
+        pred_logits_1[unmasked_indices, masked_seq[unmasked_indices]] = 0
+        
+        move_chance_s = 1.0 - t_2
+        q_xs = pred_logits_1.exp() * d_t
+        q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
+        return q_xs, pred_aatypes_1
+
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle):
         # Generate sampler
         def sampler_gen(state):
-            t_1, t_2 = ts[state.step], ts[state.step + 1]
-            d_t = t_2 - t_1
-            with torch.no_grad():
-                if cls is not None:
-                    uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
-                    cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
-                    model_out_uncond = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
-                    model_out_cond = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
-                    model_out = (1+w) * model_out_cond - w * model_out_uncond
-                else:
-                    model_out = model(X, state.masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
-            pred_logits_1 = model_out # [bsz, seqlen, 22]
-            pred_logits_wo_mask = pred_logits_1.clone()
-            pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-            prot_sampler = Categorical(logits=pred_logits_wo_mask)
-
-            pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
-            pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, 
-                                                                            dim=-1, keepdim=True)
-            unmasked_indices = (state.masked_seq != mu.MASK_TOKEN_INDEX)
-            pred_logits_1[unmasked_indices] = self.neg_infinity
-            pred_logits_1[unmasked_indices, state.masked_seq[unmasked_indices]] = 0
-            
-            move_chance_s = 1.0 - t_2
-            q_xs = pred_logits_1.exp() * d_t
-            q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
-            _x = _sample_categorical(q_xs)
-            copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
-            aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
-
             def sample():
-                if choose_best:
-                    pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
-                else:
-                    pred_aatypes_1 = prot_sampler.sample()
-                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, state.step + 1, state, reward_oracle)
+                _x = _sample_categorical(state.q_xs)
+                copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
+                aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
+                t_1, t_2 = ts[state.step], ts[state.step + 1]
+                q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, state.step + 1, state, reward_oracle)
                 return sample_state
-            
             return sample
         return sampler_gen
 
@@ -193,18 +191,19 @@ class Interpolant:
             model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
 
             reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
-            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i, choose_best=True) # Temporary!
+            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i)
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
-            initial_state = self.ProteinDiffusionState(aatypes_0, aatypes_0, 0, None, reward_model_i)
+            q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_0, ts[0], ts[1])
+            initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, 1, None, reward_model_i)
 
             # Currently just using Beam for the normal diffusion process and using BON on the whole process
-            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, 1, 1)
+            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
 
             # BON on entire process
-            bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
+            #bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
 
-            #samplers.append(sampler)
-            samplers.append(bon_sampler)
+            samplers.append(sampler)
+            #samplers.append(bon_sampler)
         
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
@@ -217,7 +216,7 @@ class Interpolant:
             clean_traj.append([])
             best_samples.append(best_sample)
             curr = best_sample
-            while curr.parent_state is not None:
+            while curr is not None:
                 prot_traj[-1].append(curr.masked_seq)
                 clean_traj[-1].append(curr.clean_seq)
                 curr = curr.parent_state
@@ -237,53 +236,6 @@ class Interpolant:
         for i, best_sample in enumerate(best_samples):
             concat_best_samples[i] = best_sample.clean_seq
         return concat_best_samples, concat_prot_traj, concat_clean_traj
-
-        # for t_2 in ts[1:]:
-        #     bon_interval = step % bon_step_inteval == 0
-        #     step += 1
-        #     d_t = t_2 - t_1
-        #     with torch.no_grad():
-        #         if cls is not None:
-        #             uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
-        #             cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
-        #             model_out_uncond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
-        #             model_out_cond = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
-        #             model_out = (1+w) * model_out_cond - w * model_out_uncond
-        #         else:
-        #             model_out = model(X, aatypes_t_1, mask, chain_M, residue_idx, chain_encoding_all)
-        #     pred_logits_1 = model_out # [bsz, seqlen, 22]
-        #     pred_logits_wo_mask = pred_logits_1.clone()
-        #     pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        #     if bon_interval and n > 1:
-        #         # BON Sample
-        #         prot_sampler = None#CategoricalBONSampler(pred_logits_wo_mask, logits=True, n=n, bon_batch_size=bon_batch_size)
-        #         pred_aatypes_1 = prot_sampler.sample_aligned(reward_oracle=reward_model)
-        #     else:
-        #         # Argmax Sample
-        #         pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
-        #     clean_traj.append(pred_aatypes_1.detach().cpu())
-
-        #     pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
-        #     pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, 
-        #                                                                     dim=-1, keepdim=True)
-        #     unmasked_indices = (aatypes_t_1 != mu.MASK_TOKEN_INDEX)
-        #     pred_logits_1[unmasked_indices] = self.neg_infinity
-        #     pred_logits_1[unmasked_indices, aatypes_t_1[unmasked_indices]] = 0
-            
-        #     move_chance_t = 1.0 - t_1
-        #     move_chance_s = 1.0 - t_2
-        #     q_xs = pred_logits_1.exp() * d_t
-        #     q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
-        #     _x = _sample_categorical(q_xs)
-        #     copy_flag = (aatypes_t_1 != mu.MASK_TOKEN_INDEX).to(aatypes_t_1.dtype)
-        #     aatypes_t_2 = aatypes_t_1 * copy_flag + _x * (1 - copy_flag)
-        #     aatypes_t_1 = aatypes_t_2.long()
-        #     prot_traj.append(aatypes_t_2.cpu().detach())
-        #     t_1 = t_2
-
-        # t_1 = ts[-1]
-
-        # return pred_aatypes_1, prot_traj, clean_traj
 
     def sample_gradient(
             self,
