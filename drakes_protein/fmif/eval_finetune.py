@@ -291,12 +291,12 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-for n in [3, 4]:
+for n in [1]:
     for bon_step_inteval in [1]:
         for testing_model in model_to_test_list:
             testing_model.eval()
             print(f'Testing Model (BON: {n} Interval: {bon_step_inteval})... Sampling {args.decoding}')
-            repeat_num=2
+            repeat_num=1
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -344,6 +344,9 @@ for n in [3, 4]:
                                 mask_proportion = [0] * len(prot_traj)
                             for _it, ssp in enumerate(S_sp_traj):
                                 mask_detect = [(x >= len(ALPHABET)).item() for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
+                                mask_output = ['-' if (x >= len(ALPHABET)).item() else ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
+                                mask_output = ''.join(mask_output)
+                                print(mask_output)
                                 total_prop += sum(mask_detect) / len(mask_detect)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
                         total_seq_count += 1 # Terrible code, here for clarity :)
