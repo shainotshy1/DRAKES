@@ -29,16 +29,13 @@ class BONSampler():
         return [samples[i] for i in top_indices]
     
 class TreeStateSampler():
-    def __init__(self, sampler_gen, initial_state, depth, child_n):
+    def __init__(self, sampler_gen, initial_state, params):
         # Parameter validation
-        assert type(depth) is int, "depth must be type 'int'"
-        assert depth > 0, "depth must be a positive integer"
-        assert type(child_n) is int, "child_n must be type 'int'"
-        assert child_n > 0, "child_n must be a positive integer"
+        assert isinstance(params, TreeParams), "params must be instance of 'TreeParams'"
         self.sampler_gen = sampler_gen
         self.initial_state = initial_state
-        self.depth = depth
-        self.child_n = child_n
+        self.depth = params.depth
+        self.child_n = params.child_n
 
 class MCTSSampler(TreeStateSampler):   
     class Node():
@@ -120,12 +117,11 @@ class MCTSSampler(TreeStateSampler):
         return best_state
 
 class BeamSampler(TreeStateSampler):   
-    def __init__(self, sampler_gen, initial_state, depth, child_n, W):
+    def __init__(self, sampler_gen, initial_state, params):
         # Parameter validation
-        assert type(W) is int, "W must be type 'int"
-        assert W > 0, "W must be a positive integer"
-        self.W = W
-        super().__init__(sampler_gen, initial_state, depth, child_n)
+        assert type(params) is BeamParams
+        self.W = params.W
+        super().__init__(sampler_gen, initial_state, params)
 
     def sample_aligned(self):
         states = [self.initial_state]
@@ -143,7 +139,23 @@ class BeamSampler(TreeStateSampler):
                 #    next_states.append(sampler())
             states = next_states
         return max(states, key=lambda s : s.calc_reward())
-    
+
+class TreeParams:
+    def __init__(self, depth, child_n):
+        assert type(depth) is int, "depth must be type 'int'"
+        assert depth > 0, "depth must be a positive integer"
+        assert type(child_n) is int, "child_n must be type 'int'"
+        assert child_n > 0, "child_n must be a positive integer"
+        self.depth = depth
+        self.child_n = child_n
+
+class BeamParams(TreeParams):
+    def __init__(self, depth, child_n, W):
+        assert type(W) is int, "W must be type 'int"
+        assert W > 0, "W must be a positive integer"
+        self.W = W
+        super().__init__(depth, child_n)
+
 # distr = torch.tensor([0.3, 0.5, 0.2])
 # reward_oracle = lambda x : x
 # prob = Categorical(probs=distr)

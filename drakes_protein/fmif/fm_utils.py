@@ -6,7 +6,8 @@ import model_utils as mu
 #from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from align_utils import BeamSampler, MCTSSampler, BONSampler, AlignSamplerState
+from align_utils import BeamSampler, MCTSSampler, BONSampler, AlignSamplerState, BeamParams, TreeParams
+import threading
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -83,6 +84,22 @@ class Interpolant:
         aatypes_t = self._corrupt_aatypes(aatypes_1, t, res_mask)
         noisy_batch['S_t'] = aatypes_t
         return noisy_batch
+    
+    class ProteinModelParams():
+        def __init__(self, X, mask, chain_M, residue_idx, chain_encoding_all, temp, cls=None, w=None):
+            self.X = X
+            self.mask = mask
+            self.chain_M = chain_M
+            self.residue_idx = residue_idx
+            self.chain_encoding_all = chain_encoding_all
+            self.temp = temp
+            self.cls = cls
+            self.w = w
+
+    class ProteinBatchTreeSearch():
+        def __init__(self):
+            return
+
 
     class ProteinDiffusionState(AlignSamplerState):
         def __init__(self, masked_seq, clean_seq, q_xs, step, parent_state, reward_oracle):
@@ -96,55 +113,44 @@ class Interpolant:
         def calc_reward(self):
             return self.reward_oracle(self.clean_seq)
     
-    class ProteinModelParams():
-        def __init__(self, X, mask, chain_M, residue_idx, chain_encoding_all, cls=None, w=None):
-            self.X = X
-            self.mask = mask
-            self.chain_M = chain_M
-            self.residue_idx = residue_idx
-            self.chain_encoding_all = chain_encoding_all
-            self.cls = cls
-            self.w = w
+        def generate_state_values(self, model, model_params, masked_seq, t_1, t_2):
+            # Extract parameters
+            X = model_params.X
+            mask = model_params.mask
+            chain_M = model_params.chain_M
+            residue_idx = model_params.residue_idx
+            chain_encoding_all = model_params.chain_encoding_all
+            cls = model_params.cls
+            w = model_params.w
+            d_t = t_2 - t_1
 
-    class ProteinBatchTreeSearch():
-        def __init__(self):
-            return
 
-    def generate_state_values(self, model, model_params, masked_seq, t_1, t_2):
-        # Extract parameters
-        X = model_params.X
-        mask = model_params.mask
-        chain_M = model_params.chain_M
-        residue_idx = model_params.residue_idx
-        chain_encoding_all = model_params.chain_encoding_all
-        cls = model_params.cls
-        w = model_params.w
-        d_t = t_2 - t_1
+            # TODO: Extract into its own function call along with condition variable acquire => wait => notify_all #
+            with torch.no_grad():
+                if cls is not None:
+                    uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
+                    cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
+                    model_out_uncond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+                    model_out_cond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+                    model_out = (1+w) * model_out_cond - w * model_out_uncond
+                else:
+                    model_out = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
+            #######################################
+            pred_logits_1 = model_out # [bsz, seqlen, 22]
+            pred_logits_wo_mask = pred_logits_1.clone()
+            pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+            pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
 
-        with torch.no_grad():
-            if cls is not None:
-                uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
-                cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
-                model_out_uncond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
-                model_out_cond = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
-                model_out = (1+w) * model_out_cond - w * model_out_uncond
-            else:
-                model_out = model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
-        pred_logits_1 = model_out # [bsz, seqlen, 22]
-        pred_logits_wo_mask = pred_logits_1.clone()
-        pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
-
-        pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
-        pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, dim=-1, keepdim=True)
-        unmasked_indices = (masked_seq != mu.MASK_TOKEN_INDEX)
-        pred_logits_1[unmasked_indices] = self.neg_infinity
-        pred_logits_1[unmasked_indices, masked_seq[unmasked_indices]] = 0
-        
-        move_chance_s = 1.0 - t_2
-        q_xs = pred_logits_1.exp() * d_t
-        q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
-        return q_xs, pred_aatypes_1
+            pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
+            pred_logits_1 = pred_logits_1 / self.temp - torch.logsumexp(pred_logits_1 / self.temp, dim=-1, keepdim=True)
+            unmasked_indices = (masked_seq != mu.MASK_TOKEN_INDEX)
+            pred_logits_1[unmasked_indices] = self.neg_infinity
+            pred_logits_1[unmasked_indices, masked_seq[unmasked_indices]] = 0
+            
+            move_chance_s = 1.0 - t_2
+            q_xs = pred_logits_1.exp() * d_t
+            q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
+            return q_xs, pred_aatypes_1
 
     def build_sampler_gen(self, model, model_params, ts, reward_oracle):
         # Generate sampler
@@ -154,11 +160,112 @@ class Interpolant:
                 copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
                 aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
                 t_1, t_2 = ts[state.step], ts[state.step + 1]
-                q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+                q_xs, pred_aatypes_1 = state.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
                 sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, state.step + 1, state, reward_oracle)
                 return sample_state
             return sample
         return sampler_gen
+        
+
+    def generate_sampler_gens(self, model, model_params, ts, reward_oracle):
+        X = model_params.X
+        mask = model_params.mask
+        chain_M = model_params.chain_M
+        residue_idx = model_params.residue_idx
+        chain_encoding_all = model_params.chain_encoding_all
+        cls = model_params.cls
+        w = model_params.w
+        num_batch, num_res = mask.shape    
+
+        def gen_sampler_gen(i):
+            def sampler_gen(state):
+                def sample():
+                    _x = _sample_categorical(state.q_xs)
+                    copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
+                    aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
+                    t_1, t_2 = ts[state.step], ts[state.step + 1]
+                    q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+                    sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, state.step + 1, state, reward_oracle)
+                    return sample_state
+                return sample
+            return sampler_gen
+
+        sampler_gens = []
+        for i in range(num_batch):
+            sampler_gens.append(gen_sampler_gen(i))
+        return sampler_gens
+
+    class ProteinTreeBatcher:
+        def __init__(self, reward_model, model, num_timesteps, min_t, max_t, batched_model_params, algorithm_params):
+            assert isinstance(algorithm_params, TreeParams)
+            X = batched_model_params.X
+            mask = batched_model_params.mask
+            chain_M = batched_model_params.chain_M
+            residue_idx = batched_model_params.residue_idx
+            chain_encoding_all = batched_model_params.chain_encoding_all
+            cls = batched_model_params.cls
+            w = batched_model_params.w
+            
+            num_batch, num_res = mask.shape  
+            self.mask_shape = mask.shape
+            self.device = mask.device      
+            ts = torch.linspace(min_t, max_t, num_timesteps)
+            
+            self.samplers = [] # (num_batch, )
+            for i in range(num_batch):
+                X_i = X[i].unsqueeze(0)
+                mask_i = mask[i].unsqueeze(0)
+                chain_M_i = chain_M[i].unsqueeze(0)
+                residue_idx_i = residue_idx[i].unsqueeze(0)
+                chain_encoding_all_i = chain_encoding_all[i].unsqueeze(0)
+                cls_i = cls[i].unsqueeze(0) if cls is not None else None
+                w_i = w[i].unsqueeze(0) if w is not None else None
+                model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
+                
+                reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
+                sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i)
+                aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
+                q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_0, ts[0], ts[1])
+                initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, 1, None, reward_model_i)
+
+                if type(algorithm_params) is BeamParams:
+                    sampler = BeamSampler(sampler_gen, initial_state, algorithm_params)
+                else:
+                    raise TypeError # temporary
+                self.samplers.append(sampler)
+
+        def sample_aligned(self):
+            best_samples = [] # (num_batch, )
+            prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
+            clean_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
+            for i, sampler in enumerate(self.samplers):
+                best_sample = sampler.sample_aligned()
+                if type(best_sample) is list: # TODO: probably temporary
+                    best_sample = best_sample[0] # If BON just take first element of the list
+                prot_traj.append([])
+                clean_traj.append([])
+                best_samples.append(best_sample)
+                curr = best_sample
+                while curr is not None:
+                    prot_traj[-1].append(curr.masked_seq)
+                    clean_traj[-1].append(curr.clean_seq)
+                    curr = curr.parent_state
+                prot_traj[-1] = prot_traj[-1][::-1]
+                clean_traj[-1] = clean_traj[-1][::-1]
+
+            seq_dtype = prot_traj[0][0].dtype
+            concat_prot_traj = []
+            concat_clean_traj = []
+            concat_best_samples = torch.zeros(self.mask_shape, device=self.device, dtype=seq_dtype)
+            for i in range(len(prot_traj[0])):
+                concat_prot_traj.append(torch.zeros(self.mask_shape, device=self.device, dtype=seq_dtype))
+                concat_clean_traj.append(torch.zeros(self.mask_shape, device=self.device, dtype=seq_dtype))
+                for j, best_sample in enumerate(best_samples):
+                    concat_prot_traj[i][j] = prot_traj[j][i]
+                    concat_clean_traj[i][j] = clean_traj[j][i]
+            for i, best_sample in enumerate(best_samples):
+                concat_best_samples[i] = best_sample.clean_seq
+            return concat_best_samples, concat_prot_traj, concat_clean_traj
 
     def sample(
             self,
