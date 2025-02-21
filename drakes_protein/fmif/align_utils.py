@@ -2,6 +2,8 @@ import inspect
 import torch
 from torch.distributions import Categorical
 import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -26,7 +28,7 @@ class BONSampler():
             assert isinstance(s, AlignSamplerState), "Sample must be instance of AlignSamplerState"
         rewards = [s.calc_reward() for s in samples]
         _, top_indices = torch.topk(torch.tensor(rewards), self.W, dim=0)
-        return [samples[i] for i in top_indices]
+        return samples, top_indices, rewards
     
 class TreeStateSampler():
     def __init__(self, sampler_gen, initial_state, depth, child_n):
@@ -39,6 +41,44 @@ class TreeStateSampler():
         self.initial_state = initial_state
         self.depth = depth
         self.child_n = child_n
+
+    def gen_tree_visual(self, gen_states, num_states, num_gens):
+        G = nx.DiGraph()
+
+        G.add_node("Root")
+
+        prev_layer_parents = ["Root"]
+        for i, level in enumerate(num_states):
+            new_prev_layer = []
+            gen_state = gen_states[i]
+            for j, n in enumerate(level):
+                parent = prev_layer_parents[j]
+                new_nodes = []
+                for _ in range(n):
+                    new_node = str(G.size())
+                    new_nodes.append(new_node)
+                    G.add_node(new_node)
+                    G.add_edge(parent, new_node)
+                w = num_gens[i][j]
+                new_parents = []
+                for k in range(w):
+                    new_parents.append(new_nodes[gen_state[k]])
+                new_parents = new_parents[::-1]
+                new_prev_layer.extend(new_parents)
+                gen_state = gen_state[w:]
+            prev_layer_parents = new_prev_layer
+            if i == 3:
+                break
+        
+        for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
+            for n in layer:
+                G.nodes[n]["layer"] = i
+
+        pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
+        nx.draw(G, pos, with_labels=False, node_size=250, node_color="lightblue", font_size=16, font_weight="bold", arrows=False)
+        plt.savefig('tree.png')
+
+
 
 class MCTSSampler(TreeStateSampler):   
     class Node():
@@ -120,29 +160,56 @@ class MCTSSampler(TreeStateSampler):
         return best_state
 
 class BeamSampler(TreeStateSampler):   
-    def __init__(self, sampler_gen, initial_state, depth, child_n, W):
+    def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False):
         # Parameter validation
         assert type(W) is int, "W must be type 'int"
         assert W > 0, "W must be a positive integer"
         self.W = W
+        self.save_visual = save_visual
         super().__init__(sampler_gen, initial_state, depth, child_n)
 
     def sample_aligned(self):
         states = [self.initial_state]
+        gen_states = []
+        num_states = []
+        num_gens = []
         sampler = self.sampler_gen(self.initial_state)
         bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n) 
-        for _ in range(self.depth - 1):
+        for i in range(self.depth - 1):
+            if self.save_visual:
+                gen_states.append([])
+                num_states.append([])
+                num_gens.append([])
+
             next_states = []
             for state in states:
                 assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
                 sampler = self.sampler_gen(state)
-                #if self.child_n > 1:
-                bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n)
-                next_states += bon_sampler.sample_aligned()
-                #else:
-                #    next_states.append(sampler())
+
+                w_ = self.W if i == 0 else 1
+                n_ = self.child_n if i == 0 else self.child_n // self.W
+                bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_)
+
+                samples, top_indices, _ = bon_sampler.sample_aligned()
+                next_states += [samples[i] for i in top_indices]
+
+                if self.save_visual:
+                    gen_states[-1].extend([int(k.item()) for k in top_indices])
+                    num_states[-1].append(n_)
+                    num_gens[-1].append(w_)
+                    
             states = next_states
-        return max(states, key=lambda s : s.calc_reward())
+        
+        if self.save_visual:
+            self.gen_tree_visual(gen_states, num_states, num_gens)
+
+        max_state = max(states, key=lambda s : s.calc_reward())
+
+        if self.save_visual:
+            gen_states[-1].append([states.index(max_state)])
+        #print(gen_states)
+        return max_state
+
     
 # distr = torch.tensor([0.3, 0.5, 0.2])
 # reward_oracle = lambda x : x

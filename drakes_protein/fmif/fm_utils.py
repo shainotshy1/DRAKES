@@ -197,7 +197,7 @@ class Interpolant:
             initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, 1, None, reward_model_i)
 
             # Currently just using Beam for the normal diffusion process and using BON on the whole process
-            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
+            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 2, save_visual=True)
 
             # BON on entire process
             #bon_sampler = BONSampler(sampler.sample_aligned, n, 1)

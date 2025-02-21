@@ -291,7 +291,7 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-for n in [1]:
+for n in [8]:
     for bon_step_inteval in [1]:
         for testing_model in model_to_test_list:
             testing_model.eval()
