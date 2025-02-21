@@ -42,29 +42,31 @@ class TreeStateSampler():
         self.depth = depth
         self.child_n = child_n
 
-    def gen_tree_visual(self, gen_states, num_states, num_gens):
+    def gen_tree_visual(self, gen_states, num_states, num_gens, labels):
         G = nx.DiGraph()
+        color_map = {}
 
-        G.add_node("Root")
+        G.add_node(G.size(), label=labels[0][0][0])
+        color_map[G.size()] = '#83F061'
 
-        prev_layer_parents = ["Root"]
+        prev_layer_parents = [0]
         for i, level in enumerate(num_states):
             new_prev_layer = []
             gen_state = gen_states[i]
             for j, n in enumerate(level):
                 parent = prev_layer_parents[j]
                 new_nodes = []
-                for _ in range(n):
-                    new_node = str(G.size())
+                for k in range(n):
+                    new_node = G.size() + 1
                     new_nodes.append(new_node)
-                    G.add_node(new_node)
+                    G.add_node(new_node, label=labels[i][j][k])
                     G.add_edge(parent, new_node)
                 w = num_gens[i][j]
                 new_parents = []
                 for k in range(w):
+                    color_map[new_nodes[gen_state[k]]] = '#83F061'
                     new_parents.append(new_nodes[gen_state[k]])
-                new_parents = new_parents[::-1]
-                new_prev_layer.extend(new_parents)
+                new_prev_layer.extend(sorted(new_parents))
                 gen_state = gen_state[w:]
             prev_layer_parents = new_prev_layer
             if i == 3:
@@ -73,9 +75,11 @@ class TreeStateSampler():
         for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
             for n in layer:
                 G.nodes[n]["layer"] = i
-
+        
+        labels = {node: data["label"] for node, data in G.nodes(data=True)}
+        node_colors = [color_map.get(node, "#2BB6F0") for node in G.nodes()]
         pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
-        nx.draw(G, pos, with_labels=False, node_size=250, node_color="lightblue", font_size=16, font_weight="bold", arrows=False)
+        nx.draw(G, pos, with_labels=True, labels=labels, node_size=1000, node_color=node_colors, font_size=7, arrows=False)
         plt.savefig('tree.png')
 
 
@@ -173,6 +177,7 @@ class BeamSampler(TreeStateSampler):
         gen_states = []
         num_states = []
         num_gens = []
+        labels = []
         sampler = self.sampler_gen(self.initial_state)
         bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n) 
         for i in range(self.depth - 1):
@@ -180,6 +185,7 @@ class BeamSampler(TreeStateSampler):
                 gen_states.append([])
                 num_states.append([])
                 num_gens.append([])
+                labels.append([])
 
             next_states = []
             for state in states:
@@ -190,18 +196,19 @@ class BeamSampler(TreeStateSampler):
                 n_ = self.child_n if i == 0 else self.child_n // self.W
                 bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_)
 
-                samples, top_indices, _ = bon_sampler.sample_aligned()
+                samples, top_indices, rewards = bon_sampler.sample_aligned()
                 next_states += [samples[i] for i in top_indices]
 
                 if self.save_visual:
                     gen_states[-1].extend([int(k.item()) for k in top_indices])
                     num_states[-1].append(n_)
                     num_gens[-1].append(w_)
+                    labels[-1].append([f"{r.item():.1e}" for r in rewards])
                     
             states = next_states
         
         if self.save_visual:
-            self.gen_tree_visual(gen_states, num_states, num_gens)
+            self.gen_tree_visual(gen_states, num_states, num_gens, labels)
 
         max_state = max(states, key=lambda s : s.calc_reward())
 
