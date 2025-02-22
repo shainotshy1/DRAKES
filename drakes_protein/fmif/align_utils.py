@@ -1,9 +1,8 @@
-import inspect
 import torch
-from torch.distributions import Categorical
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib import colormaps
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -44,16 +43,21 @@ class TreeStateSampler():
 
     def gen_tree_visual(self, gen_states, num_states, labels):
         G = nx.DiGraph()
-        color_map = {}
+
+        color_grad = colormaps['inferno']
 
         G.add_node(G.size(), label=labels[0][0][0])
-        color_map[G.size()] = '#83F061'
 
         prev_layer_parents = [0]
+        global_min = float(labels[0][0][0])
+        global_max = float(labels[0][0][0])
         for i, level in enumerate(num_states):
             new_prev_layer = []
             original_pos = {}
             for j, n in sorted(list(enumerate(level)), key=lambda x : prev_layer_parents[x[0]]):
+                float_labels = [float(k) for k in labels[i][j]]
+                global_min = min(global_min, min(float_labels))
+                global_max = max(global_max, max(float_labels))
                 gen_state = gen_states[i][j]
                 parent = prev_layer_parents[j]
                 new_nodes = []
@@ -65,7 +69,6 @@ class TreeStateSampler():
                     G.add_edge(parent, new_node)
                 for k in gen_state:
                     next_gen = new_nodes[k]
-                    color_map[next_gen] = '#83F061'
                     new_parents.append(next_gen)
                     original_pos[next_gen] = j
                 new_prev_layer.extend(new_parents)
@@ -74,15 +77,19 @@ class TreeStateSampler():
             prev_layer_parents = new_prev_layer
             if i == 3:
                 break
-        
+
         for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
             for n in layer:
                 G.nodes[n]["layer"] = i
         
+        pad = (global_max - global_min) / 4
+        min_val, max_val = global_min - pad, global_max + pad
+        norm = plt.Normalize(min_val, max_val)
+        node_colors = [color_grad(1 - norm(float(data["label"]))) for _, data in G.nodes(data=True)]
         labels = {node: data["label"] for node, data in G.nodes(data=True)}
-        node_colors = [color_map.get(node, "#2BB6F0") for node in G.nodes()]
+
         pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
-        nx.draw(G, pos, with_labels=True, labels=labels, node_size=900, node_color=node_colors, font_size=7, arrows=False)
+        nx.draw(G, pos, with_labels=True, labels=labels, node_size=900, font_weight='bold', node_color=node_colors, font_size=6, font_color='white', arrows=False)
         plt.savefig('tree.png')
 
 class MCTSSampler(TreeStateSampler):   
