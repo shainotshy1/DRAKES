@@ -197,21 +197,21 @@ class Interpolant:
             initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, 1, None, reward_model_i)
 
             # Currently just using Beam for the normal diffusion process and using BON on the whole process
-            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 2)
+            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, 1, 1)#n, 1)
 
             # BON on entire process
-            #bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
-
-            samplers.append(sampler)
-            #samplers.append(bon_sampler)
+            bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
+            
+            #samplers.append(sampler)
+            samplers.append(bon_sampler)
         
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
         clean_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
         for i, sampler in enumerate(samplers):
             best_sample = sampler.sample_aligned()
-            if type(best_sample) is list: # TODO: probably temporary
-                best_sample = best_sample[0] # If BON just take first element of the list
+            if type(sampler) is BONSampler: # TODO: probably temporary
+                best_sample = best_sample[0][1] # If BON just take first element of the list => hard coded since bon returns 3 element tuple oops
             prot_traj.append([])
             clean_traj.append([])
             best_samples.append(best_sample)
