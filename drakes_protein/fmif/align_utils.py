@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -9,7 +10,7 @@ class AlignSamplerState():
         raise NotImplemented
 
 class BONSampler():
-    def __init__(self, sampler, n, W):
+    def __init__(self, sampler, n, W, soft=False):
         # Parameter validation
         assert type(n) is int, "n must be type 'int'"
         assert type(W) is int, "W must be type 'int"
@@ -19,6 +20,9 @@ class BONSampler():
         self.sampler = sampler
         self.n = n # number of samples to generate
         self.W = W # top W results returned
+        self.soft = soft # Soft max sampling used instead of argmax
+        if self.soft:
+            self.sm = nn.Softmax()
         super().__init__()
 
     def sample_aligned(self):
@@ -26,7 +30,11 @@ class BONSampler():
         for s in samples:
             assert isinstance(s, AlignSamplerState), "Sample must be instance of AlignSamplerState"
         rewards = [s.calc_reward() for s in samples]
-        _, top_indices = torch.topk(torch.tensor(rewards), self.W, dim=0)
+        if self.soft:
+            sm_rewards = self.sm(torch.tensor(rewards))
+            top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
+        else:
+            _, top_indices = torch.topk(torch.tensor(rewards), self.W, dim=0)
         return samples, top_indices, rewards
     
 class TreeStateSampler():
@@ -172,12 +180,13 @@ class MCTSSampler(TreeStateSampler):
         return best_state
 
 class BeamSampler(TreeStateSampler):   
-    def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False):
+    def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False):
         # Parameter validation
         assert type(W) is int, "W must be type 'int"
         assert W > 0, "W must be a positive integer"
         self.W = W
         self.save_visual = save_visual
+        self.soft = soft
         super().__init__(sampler_gen, initial_state, depth, child_n)
 
     def sample_aligned(self):
@@ -186,8 +195,6 @@ class BeamSampler(TreeStateSampler):
         num_states = []
         num_gens = []
         labels = []
-        sampler = self.sampler_gen(self.initial_state)
-        bon_sampler = BONSampler(sampler=sampler, W=self.W, n=self.child_n) 
         for i in range(self.depth - 1):
             if self.save_visual:
                 gen_states.append([])
@@ -202,7 +209,7 @@ class BeamSampler(TreeStateSampler):
 
                 w_ = self.W if i == 0 else 1
                 n_ = self.child_n if i == 0 else self.child_n // self.W
-                bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_)
+                bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_, soft=self.soft)
 
                 samples, top_indices, rewards = bon_sampler.sample_aligned()
                 next_states += [samples[i] for i in top_indices]

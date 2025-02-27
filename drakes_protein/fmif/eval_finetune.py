@@ -321,11 +321,11 @@ noise_interpolant.set_device(device)
 set_seed(args.seed, use_cuda=True)
 
 for n in [10]:
-    for beam_step_inteval in [1]:
+    for align_step_interval in [1]:
         for testing_model in model_to_test_list:
             testing_model.eval()
-            print(f'Testing Model (BON: {n} Interval: {beam_step_inteval})... Sampling {args.decoding}')
-            repeat_num=16
+            print(f'Testing Model (BON: {n} Interval: {align_step_interval})... Sampling {args.decoding}')
+            repeat_num=1
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -359,7 +359,7 @@ for n in [10]:
                         S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
-                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model_eval, n=n, bon_step_inteval=beam_step_inteval)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model_eval, n=n, bon_step_inteval=align_step_interval)
                         mask_for_loss = mask*chain_M
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
@@ -379,29 +379,29 @@ for n in [10]:
                                 total_prop += sum(mask_detect) / len(mask_detect)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
                         total_seq_count += 1 # Terrible code, here for clarity :)
-                    dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                    rewards.append(dg_pred.detach().cpu().numpy())
-                    dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                    rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
-                    true_false_sp = (S_sp == S).float()
-                    mask_for_loss = mask*chain_M
-                    valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
-                    valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
-                    results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
-                    results_merge.extend(results_list)
-                #     break
-                # break
-            # mask_proportion = [x / total_seq_count for x in mask_proportion]
-            # reward_average = [x / total_seq_count for x in reward_average]
-            # range_column = list(range(1, len(mask_proportion) + 1))
-            # data = zip(range_column, mask_proportion, reward_average)
-            # with open(f'diffusion_analysis_new_7JJK_bon_{n}_interval_{beam_step_interval}.csv', mode='w', newline='') as file:
-            #     writer = csv.writer(file)
-            #     writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
-            #     writer.writerows(data)
-            # print(mask_proportion)
-            # print(reward_average)
-            # continue
+                    # dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    # rewards.append(dg_pred.detach().cpu().numpy())
+                    # dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    # rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
+                    # true_false_sp = (S_sp == S).float()
+                    # mask_for_loss = mask*chain_M
+                    # valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
+                    # valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
+                    # results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
+                    # results_merge.extend(results_list)
+                    break
+                break
+            mask_proportion = [x / total_seq_count for x in mask_proportion]
+            reward_average = [x / total_seq_count for x in reward_average]
+            range_column = list(range(1, len(mask_proportion) + 1))
+            data = zip(range_column, mask_proportion, reward_average)
+            with open(f'diffusion_analysis_new_7JJK_soft_beam_{n}_interval_{align_step_interval}.csv', mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
+                writer.writerows(data)
+            print(mask_proportion)
+            print(reward_average)
+            continue
             valid_sp_accuracy = valid_sp_acc / valid_sp_weights
             print('Sequence recovery accuracy: ', valid_sp_accuracy)
 
@@ -423,7 +423,7 @@ for n in [10]:
             success_rate = results_merge['success'].mean()
             print('success rate: ', success_rate)
 
-            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}_interval_{beam_step_inteval}.csv')
+            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}_interval_{align_step_interval}.csv')
 
             results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
                             #'Model Log Likelihood': all_model_logl.mean(), 
@@ -438,4 +438,4 @@ for n in [10]:
                             'Good RMSD Proportion': rmsd_rate,
                             'Success Rate': success_rate} 
             results_df_final = pd.DataFrame.from_dict(results_dict, orient='index', columns=['Value'])
-            results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_bon_{n}_interval_{beam_step_inteval}.csv')
+            results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_bon_{n}_interval_{align_step_interval}.csv')
