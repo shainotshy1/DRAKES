@@ -146,16 +146,22 @@ class Interpolant:
         q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
         return q_xs, pred_aatypes_1
 
-    def build_sampler_gen(self, model, model_params, ts, reward_oracle):
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
+        assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
+        assert steps_per_level > 0, "steps_per_level must be a positive integer"
         # Generate sampler
         def sampler_gen(state):
             def sample():
-                _x = _sample_categorical(state.q_xs)
-                copy_flag = (state.masked_seq != mu.MASK_TOKEN_INDEX).to(state.masked_seq.dtype)
-                aatypes_t = state.masked_seq * copy_flag + _x * (1 - copy_flag)
-                t_1, t_2 = ts[state.step], ts[state.step + 1]
-                q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-                sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, state.step + 1, state, reward_oracle)
+                sample_state = state
+                for _ in range(steps_per_level):
+                    if sample_state.step >= num_timesteps - 1:
+                        return sample_state
+                    _x = _sample_categorical(sample_state.q_xs)
+                    copy_flag = (sample_state.masked_seq != mu.MASK_TOKEN_INDEX).to(sample_state.masked_seq.dtype)
+                    aatypes_t = sample_state.masked_seq * copy_flag + _x * (1 - copy_flag)
+                    t_1, t_2 = ts[sample_state.step], ts[sample_state.step + 1]
+                    q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+                    sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, sample_state.step + 1, sample_state, reward_oracle)
                 return sample_state
             return sample
         return sampler_gen
@@ -166,8 +172,10 @@ class Interpolant:
             X, mask, chain_M, residue_idx, chain_encoding_all,
             cls=None, w=None,
             reward_model=None,
+            scRMSD_reward=None,
             n = 1,
             bon_step_inteval=1, # 1 bon step for each interval
+            steps_per_level=1
         ):
 
         if type(n) != int or n < 1 or reward_model is None:
@@ -191,14 +199,15 @@ class Interpolant:
             model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
 
             reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
-            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i)
+            sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_0, ts[0], ts[1])
             initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, 1, None, reward_model_i)
 
             # Currently just using Beam for the normal diffusion process and using BON on the whole process
-            sampler = BeamSampler(sampler_gen, initial_state, num_timesteps-1, n, 1)
-
+            total_steps = num_timesteps // steps_per_level + 1
+            sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1, save_visual=True)
+                # MCTSSampler(sampler_gen, initial_state, total_steps, n, 1)
             # BON on entire process
             #bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
             

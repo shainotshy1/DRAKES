@@ -20,7 +20,7 @@ class BONSampler():
         self.sampler = sampler
         self.n = n # number of samples to generate
         self.W = W # top W results returned
-        self.soft = soft # Soft max sampling used instead of argmax
+        self.soft = soft # Soft max sampling used instead of argma
         if self.soft:
             self.sm = nn.Softmax()
         super().__init__()
@@ -83,18 +83,23 @@ class TreeStateSampler():
             new_prev_layer = sorted(new_prev_layer, key=lambda x : original_pos[x])
 
             prev_layer_parents = new_prev_layer
-            if i == 3:
-                break
+            # if i == 3:
+            #     break
 
         for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
             for n in layer:
                 G.nodes[n]["layer"] = i
+        max_layer = i + 1
         
         pad = (global_max - global_min) / 4
         min_val, max_val = global_min - pad, global_max + pad
         norm = plt.Normalize(min_val, max_val)
         node_colors = [color_grad(1 - norm(float(data["label"]))) for _, data in G.nodes(data=True)]
         labels = {node: data["label"] for node, data in G.nodes(data=True)}
+
+        fig_width = 6
+        fig_height = max_layer * 1.2
+        plt.figure(figsize=(fig_width, fig_height))
 
         pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
         nx.draw(G, pos, with_labels=True, labels=labels, node_size=900, font_weight='bold', node_color=node_colors, font_size=6, font_color='white', arrows=False)
@@ -156,7 +161,7 @@ class MCTSSampler(TreeStateSampler):
 
     def sample_aligned(self):
         # Initialize node to initial state
-        root = self.Node(state=self.initial_state, value=self.initial_state.calc_reward(), C=self.C)
+        root = self.Node(state=self.initial_state, state_value=self.initial_state.calc_reward(), C=self.C)
         # MCTS
         for _ in range(self.max_iter):
             # Selection
@@ -165,11 +170,11 @@ class MCTSSampler(TreeStateSampler):
                 return best_node.state # Return once the best node is at the final depth
             # Expansion
             sampler = self.sampler_gen(best_node.state)
-            state = sampler.sample()
+            state = sampler()
             assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
             # Simulation
             reward = state.calc_reward()
-            new_child = self.Node(state=state, value=reward) # TODO: construct the sampler only one time - the first time best_node is sampled from
+            new_child = self.Node(state=state, state_value=reward, C=self.C) # TODO: construct the sampler only one time - the first time best_node is sampled from
             # Backpropogation
             best_node.add_child(new_child)
             new_child.backpropogate()
@@ -180,7 +185,7 @@ class MCTSSampler(TreeStateSampler):
         return best_state
 
 class BeamSampler(TreeStateSampler):   
-    def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False):
+    def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
         # Parameter validation
         assert type(W) is int, "W must be type 'int"
         assert W > 0, "W must be a positive integer"
@@ -210,10 +215,8 @@ class BeamSampler(TreeStateSampler):
                 w_ = self.W if i == 0 else 1
                 n_ = self.child_n if i == 0 else self.child_n // self.W
                 bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_, soft=self.soft)
-
                 samples, top_indices, rewards = bon_sampler.sample_aligned()
                 next_states += [samples[i] for i in top_indices]
-
                 if self.save_visual:
                     gen_states[-1].append([int(k.item()) for k in top_indices])
                     num_states[-1].append(n_)

@@ -34,6 +34,8 @@ from pyrosetta.rosetta.protocols.minimization_packing import PackRotamersMover
 from pyrosetta.rosetta.protocols.relax import FastRelax
 from pyrosetta.rosetta.core.pack.task.operation import RestrictToRepacking
 from pyrosetta import *
+import esm
+import biotite.structure.io as bsio
 
 # def rmsd_reward(ssp, sc_output_dir_base, mask_for_loss, true_pose, num):
 #     sc_output_dir = os.path.join(sc_output_dir_base, f'{num}')
@@ -320,12 +322,65 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
+# from Bio import PDB
+
+# def get_structure_matrix(pdb_file):
+#     parser = PDB.PDBParser(QUIET=True)
+#     structure = parser.get_structure('protein', pdb_file)
+#     coordinates = []
+#     for model in structure:
+#         for chain in model:
+#             for residue in chain:
+#                 for atom in residue:
+#                     coordinates.append(atom.get_coord())    
+#     structure_matrix = torch.asarray(coordinates)
+#     return structure_matrix
+
+# def gen_scRMSD_reward(esm_model, true_seq, mask_for_loss):
+#     def get_pose(gen_folded_pdb_path):
+#         pose = pyrosetta.pose_from_file(gen_folded_pdb_path)
+#         # scorefxn = pyrosetta.create_score_function("ref2015_cart")
+#         # tf = TaskFactory()
+#         # tf.push_back(RestrictToRepacking())
+#         # packer = PackRotamersMover(scorefxn, tf.create_task_and_apply_taskoperations(pose))
+#         # packer.apply(pose)
+#         # relax = FastRelax()
+#         # relax.set_scorefxn(scorefxn)
+#         # relax.apply(pose)
+#         return pose
+#     true_seq = "".join([ALPHABET[x] for _ix, x in enumerate(true_seq[0]) if mask_for_loss[0][_ix] == 1])
+#     print(true_seq)
+#     with torch.no_grad():
+#         true_output = esm_model.infer_pdb(true_seq)
+#     with open(f"temp_true_result.pdb", "w") as f:
+#         f.write(true_output)
+#     true_pose = get_pose("temp_true_result.pdb")
+
+#     def reward_oracle(ssps):
+#         res = torch.zeros((ssps.shape[0]), device=ssps.device)
+#         for i, ssp in enumerate(ssps):
+#             ssp_str = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[0][_ix] == 1])
+#             with torch.no_grad():
+#                 output = esm_model.infer_pdb(ssp_str)
+#             with open("temp_result.pdb", "w") as f:
+#                 f.write(output)
+#             pose = get_pose("temp_result.pdb")
+#             res[i] = -1 * pyrosetta.rosetta.core.scoring.bb_rmsd(true_pose, pose)
+#             # print(res[i])
+#         return res
+        
+#     return reward_oracle
+
+# esm_model = esm.pretrained.esmfold_v1()
+# esm_model = esm_model.eval().cuda()
+
 for n in [10]:
-    for align_step_interval in [1]:
+    for align_step_interval in [50]:
         for testing_model in model_to_test_list:
+            test_name = f"new_7JJK_scrmsd_beam_{n}_{align_step_interval}"
             testing_model.eval()
-            print(f'Testing Model (BON: {n} Interval: {align_step_interval})... Sampling {args.decoding}')
-            repeat_num=1
+            print(f'Testing Model (scRMSD-BEAM: {n} Interval: {align_step_interval})... Sampling {args.decoding}')
+            repeat_num=1#6
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -359,15 +414,16 @@ for n in [10]:
                         S_sp, _, _ = noise_interpolant.sample_controlled_TDS(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
-                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model_eval, n=n, bon_step_inteval=align_step_interval)
                         mask_for_loss = mask*chain_M
+                        scRMSD_oracle = None#gen_scRMSD_reward(esm_model, S, mask_for_loss)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, scRMSD_reward=scRMSD_oracle, n=n, steps_per_level=align_step_interval)
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
                                 dg_pred_eval = reward_model_eval(X, clean_traj[i].to('cuda'), mask, chain_M, residue_idx, chain_encoding_all)
                                 dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
                                 if len(reward_average) == 0:
                                     reward_average = [0] * len(clean_traj)
-                                reward_average[i] += dg_pred_eval.mean()
+                            reward_average[i] += dg_pred_eval.mean()#scRMSD_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#dg_pred_eval.mean()
                             total_prop = 0
                             if len(mask_proportion) == 0:
                                 mask_proportion = [0] * len(prot_traj)
@@ -377,6 +433,7 @@ for n in [10]:
                                 #mask_output = ''.join(mask_output)
                                 #print(mask_output)
                                 total_prop += sum(mask_detect) / len(mask_detect)
+                                #reward_average[i] += scRMSD_oracle(ssp) / len(S_sp_traj)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
                         total_seq_count += 1 # Terrible code, here for clarity :)
                     # dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
@@ -395,7 +452,7 @@ for n in [10]:
             reward_average = [x / total_seq_count for x in reward_average]
             range_column = list(range(1, len(mask_proportion) + 1))
             data = zip(range_column, mask_proportion, reward_average)
-            with open(f'diffusion_analysis_new_7JJK_soft_beam_{n}_interval_{align_step_interval}.csv', mode='w', newline='') as file:
+            with open(f'diffusion_analysis_{test_name}.csv', mode='w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
                 writer.writerows(data)
@@ -423,7 +480,7 @@ for n in [10]:
             success_rate = results_merge['success'].mean()
             print('success rate: ', success_rate)
 
-            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_bon_{n}_interval_{align_step_interval}.csv')
+            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_{test_name}.csv')
 
             results_dict = {'Sequence Recovery Accuracy': valid_sp_accuracy, 
                             #'Model Log Likelihood': all_model_logl.mean(), 
@@ -438,4 +495,4 @@ for n in [10]:
                             'Good RMSD Proportion': rmsd_rate,
                             'Success Rate': success_rate} 
             results_df_final = pd.DataFrame.from_dict(results_dict, orient='index', columns=['Value'])
-            results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_bon_{n}_interval_{align_step_interval}.csv')
+            results_df_final.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_summary_{test_name}.csv')
