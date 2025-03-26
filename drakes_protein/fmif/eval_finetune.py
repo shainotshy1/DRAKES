@@ -322,65 +322,66 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
-# from Bio import PDB
+from Bio import PDB
 
-# def get_structure_matrix(pdb_file):
-#     parser = PDB.PDBParser(QUIET=True)
-#     structure = parser.get_structure('protein', pdb_file)
-#     coordinates = []
-#     for model in structure:
-#         for chain in model:
-#             for residue in chain:
-#                 for atom in residue:
-#                     coordinates.append(atom.get_coord())    
-#     structure_matrix = torch.asarray(coordinates)
-#     return structure_matrix
+def get_structure_matrix(pdb_file):
+    parser = PDB.PDBParser(QUIET=True)
+    structure = parser.get_structure('protein', pdb_file)
+    coordinates = []
+    for model in structure:
+        for chain in model:
+            for residue in chain:
+                for atom in residue:
+                    coordinates.append(atom.get_coord())    
+    structure_matrix = torch.asarray(coordinates)
+    return structure_matrix
 
-# def gen_scRMSD_reward(esm_model, true_seq, mask_for_loss):
-#     def get_pose(gen_folded_pdb_path):
-#         pose = pyrosetta.pose_from_file(gen_folded_pdb_path)
-#         # scorefxn = pyrosetta.create_score_function("ref2015_cart")
-#         # tf = TaskFactory()
-#         # tf.push_back(RestrictToRepacking())
-#         # packer = PackRotamersMover(scorefxn, tf.create_task_and_apply_taskoperations(pose))
-#         # packer.apply(pose)
-#         # relax = FastRelax()
-#         # relax.set_scorefxn(scorefxn)
-#         # relax.apply(pose)
-#         return pose
-#     true_seq = "".join([ALPHABET[x] for _ix, x in enumerate(true_seq[0]) if mask_for_loss[0][_ix] == 1])
-#     print(true_seq)
-#     with torch.no_grad():
-#         true_output = esm_model.infer_pdb(true_seq)
-#     with open(f"temp_true_result.pdb", "w") as f:
-#         f.write(true_output)
-#     true_pose = get_pose("temp_true_result.pdb")
+def gen_scRMSD_reward(esm_model, true_seq, mask_for_loss, name):
+    def get_pose(gen_folded_pdb_path):
+        pose = pyrosetta.pose_from_file(gen_folded_pdb_path)
+        # scorefxn = pyrosetta.create_score_function("ref2015_cart")
+        # tf = TaskFactory()
+        # tf.push_back(RestrictToRepacking())
+        # packer = PackRotamersMover(scorefxn, tf.create_task_and_apply_taskoperations(pose))
+        # packer.apply(pose)
+        # relax = FastRelax()
+        # relax.set_scorefxn(scorefxn)
+        # relax.apply(pose)
+        return pose
+    true_seq = "".join([ALPHABET[x] for _ix, x in enumerate(true_seq[0]) if mask_for_loss[0][_ix] == 1])
+    print(true_seq)
+    with torch.no_grad():
+        true_output = esm_model.infer_pdb(true_seq)
+    with open(f"temp_true_result_{name}.pdb", "w") as f:
+        f.write(true_output)
+    true_pose = get_pose(f"temp_true_result_{name}.pdb")
 
-#     def reward_oracle(ssps):
-#         res = torch.zeros((ssps.shape[0]), device=ssps.device)
-#         for i, ssp in enumerate(ssps):
-#             ssp_str = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[0][_ix] == 1])
-#             with torch.no_grad():
-#                 output = esm_model.infer_pdb(ssp_str)
-#             with open("temp_result.pdb", "w") as f:
-#                 f.write(output)
-#             pose = get_pose("temp_result.pdb")
-#             res[i] = -1 * pyrosetta.rosetta.core.scoring.bb_rmsd(true_pose, pose)
-#             # print(res[i])
-#         return res
+    def reward_oracle(ssps):
+        res = torch.zeros((ssps.shape[0]), device=ssps.device)
+        for i, ssp in enumerate(ssps):
+            ssp_str = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[0][_ix] == 1])
+            with torch.no_grad():
+                output = esm_model.infer_pdb(ssp_str)
+            with open(f"temp_result_{name}.pdb", "w") as f:
+                f.write(output)
+            pose = get_pose(f"temp_result_{name}.pdb")
+            res[i] = -1 * pyrosetta.rosetta.core.scoring.bb_rmsd(true_pose, pose)
+            # print(res[i])
+        return res
         
-#     return reward_oracle
+    return reward_oracle
 
-# esm_model = esm.pretrained.esmfold_v1()
-# esm_model = esm_model.eval().cuda()
+esm_model = esm.pretrained.esmfold_v1()
+esm_model = esm_model.eval().cuda()
 
-for n in [10]:
-    for align_step_interval in [50]:
+for n in [5]:
+    for align_step_interval in [5, 50]:
         for testing_model in model_to_test_list:
-            test_name = f"new_7JJK_scrmsd_beam_{n}_{align_step_interval}"
+            test_name = f"old_7JJK_scrmsd_beam_{n}_{align_step_interval}"
             testing_model.eval()
-            print(f'Testing Model (scRMSD-BEAM: {n} Interval: {align_step_interval})... Sampling {args.decoding}')
-            repeat_num=1#6
+            print(f'Testing Model (SCRMSD-BEAM: {n} Interval: {align_step_interval})... Sampling {args.decoding}')
+            #print(f'Testing Model (BON: {n})... Sampling {args.decoding}')
+            repeat_num=1
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -415,7 +416,7 @@ for n in [10]:
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
                         mask_for_loss = mask*chain_M
-                        scRMSD_oracle = None#gen_scRMSD_reward(esm_model, S, mask_for_loss)
+                        scRMSD_oracle = gen_scRMSD_reward(esm_model, S, mask_for_loss, test_name)
                         S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, scRMSD_reward=scRMSD_oracle, n=n, steps_per_level=align_step_interval)
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
@@ -423,7 +424,7 @@ for n in [10]:
                                 dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
                                 if len(reward_average) == 0:
                                     reward_average = [0] * len(clean_traj)
-                            reward_average[i] += dg_pred_eval.mean()#scRMSD_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#dg_pred_eval.mean()
+                            reward_average[i] += scRMSD_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#dg_pred_eval.mean()
                             total_prop = 0
                             if len(mask_proportion) == 0:
                                 mask_proportion = [0] * len(prot_traj)
@@ -436,16 +437,16 @@ for n in [10]:
                                 #reward_average[i] += scRMSD_oracle(ssp) / len(S_sp_traj)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
                         total_seq_count += 1 # Terrible code, here for clarity :)
-                    # dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                    # rewards.append(dg_pred.detach().cpu().numpy())
-                    # dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
-                    # rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
-                    # true_false_sp = (S_sp == S).float()
-                    # mask_for_loss = mask*chain_M
-                    # valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
-                    # valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
-                    # results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
-                    # results_merge.extend(results_list)
+                    dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    rewards.append(dg_pred.detach().cpu().numpy())
+                    dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
+                    rewards_eval.append(dg_pred_eval.detach().cpu().numpy())
+                    true_false_sp = (S_sp == S).float()
+                    mask_for_loss = mask*chain_M
+                    valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
+                    valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
+                    results_list = cal_rmsd(S_sp, S, batch, the_folding_model, pdb_path, mask_for_loss, save_path, args, item_idx, args.base_path)
+                    results_merge.extend(results_list)
                     break
                 break
             mask_proportion = [x / total_seq_count for x in mask_proportion]
@@ -458,7 +459,7 @@ for n in [10]:
                 writer.writerows(data)
             print(mask_proportion)
             print(reward_average)
-            continue
+            # continue
             valid_sp_accuracy = valid_sp_acc / valid_sp_weights
             print('Sequence recovery accuracy: ', valid_sp_accuracy)
 

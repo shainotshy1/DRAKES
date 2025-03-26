@@ -198,7 +198,7 @@ class Interpolant:
             w_i = w[i].unsqueeze(0) if w is not None else None
             model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
 
-            reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
+            reward_model_i = scRMSD_reward#lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
             sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_0, ts[0], ts[1])
@@ -206,7 +206,7 @@ class Interpolant:
 
             # Currently just using Beam for the normal diffusion process and using BON on the whole process
             total_steps = num_timesteps // steps_per_level + 1
-            sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1, save_visual=True)
+            sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1)
                 # MCTSSampler(sampler_gen, initial_state, total_steps, n, 1)
             # BON on entire process
             #bon_sampler = BONSampler(sampler.sample_aligned, n, 1)
