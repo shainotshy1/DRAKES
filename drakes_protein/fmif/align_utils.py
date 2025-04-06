@@ -184,6 +184,20 @@ class MCTSSampler(TreeStateSampler):
         best_state = best_node.state
         return best_state
 
+class OptSampler(TreeStateSampler):   
+    def __init__(self, sampler_gen, initial_state, depth, child_n, opt_selector):
+        self.opt_selector = opt_selector
+        super().__init__(sampler_gen, initial_state, depth, child_n)
+
+    def sample_aligned(self):
+        state = self.initial_state
+        for _ in range(self.depth - 1):
+            assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
+            sampler = self.sampler_gen(state)
+            samples = [sampler() for _ in range(self.child_n)]
+            state = self.opt_selector(samples)
+        return state
+            
 class BeamSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
         # Parameter validation

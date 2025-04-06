@@ -5,7 +5,7 @@ import logging
 import torch
 import json
 import numpy as np
-from multiflow.data import utils as du
+# from multiflow.data import utils as du
 from biotite.sequence.io import fasta
 import pandas as pd
 import glob
