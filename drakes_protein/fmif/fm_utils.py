@@ -243,8 +243,8 @@ class Interpolant:
             cls_i = cls[i].unsqueeze(0) if cls is not None else None
             w_i = w[i].unsqueeze(0) if w is not None else None
             model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
-#batch_oracle#
-            reward_model_i = lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
+##
+            reward_model_i = batch_oracle#lambda S : reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
             sampler_gen = self.build_sampler_gen(model, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
             # opt_selector = self.build_opt_selector(model, model_params, ts, reward_model_i, np.arange(len(mu.ALPHABET)), len(mu.ALPHABET))
             

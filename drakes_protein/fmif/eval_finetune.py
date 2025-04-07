@@ -196,6 +196,30 @@ noise_interpolant.set_device(device)
 
 set_seed(args.seed, use_cuda=True)
 
+from transformers import AutoTokenizer
+from transformers import GPT2LMHeadModel
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+tokenizer = AutoTokenizer.from_pretrained('nferruz/ProtGPT2')
+model = GPT2LMHeadModel.from_pretrained('nferruz/ProtGPT2').to(device)
+
+def prot_gpt_reward(samples):
+    ppls = []
+    for seq in samples:
+        seq_str = "".join([ALPHABET[x] for x in seq])
+        out = tokenizer(seq_str, return_tensors="pt")
+        input_ids = out.input_ids.cuda()
+
+        with torch.no_grad():
+            outputs = model(input_ids, labels=input_ids)
+
+        ppl = (outputs.loss * input_ids.shape[1]).item()
+        ppls.append(ppl)
+    
+    ppls = -1 * np.array(ppls)
+    return torch.tensor(ppls, device=samples[0].device)
+
 for n in [10]:
     for align_step_interval in [1]:
         for testing_model in model_to_test_list:
@@ -237,7 +261,7 @@ for n in [10]:
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
                         mask_for_loss = mask*chain_M
-                        batch_oracle = None#gen_scRMSD_reward(esm_model, S, mask_for_loss, test_name)
+                        batch_oracle = prot_gpt_reward#gen_scRMSD_reward(esm_model, S, mask_for_loss, test_name)
                         S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, batch_oracle=batch_oracle, n=n, steps_per_level=align_step_interval)
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
@@ -245,7 +269,7 @@ for n in [10]:
                                 dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
                                 if len(reward_average) == 0:
                                     reward_average = [0] * len(clean_traj)
-                            reward_average[i] += dg_pred_eval.mean()#batch_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#
+                            reward_average[i] += batch_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#dg_pred_eval.mean()
                             total_prop = 0
                             if len(mask_proportion) == 0:
                                 mask_proportion = [0] * len(prot_traj)
