@@ -5,7 +5,7 @@ import lightgbm as lgb
 from sklearn.model_selection import GridSearchCV
 
 def lgboost_fit(X, y):
-    model = lgb.LGBMRegressor(verbose=-1)
+    model = lgb.LGBMRegressor(verbose=-1, n_jobs=4)
 
     # Define the hyperparameter grid
     param_grid = {
@@ -140,7 +140,7 @@ class ExactSolver:
         vars = [(tuple(np.nonzero(key)[0]), val) for key, val in self.mobius_dictionary.items() if sum(key) > 0]
         self.locs, self.coefs = [i[0] for i in vars], [i[1] for i in vars]
         locs_set = set(self.locs)
-        print(f"Number of locations: {len(self.locs)}")
+        # print(f"Number of locations: {len(self.locs)}")
 
         # Define the variables and objective function
         y = self.model.addVars(len(self.locs), vtype=GRB.BINARY, name="y")
@@ -167,8 +167,8 @@ class ExactSolver:
                         expr.add(y[self.locs.index((idx,))])
                 self.model.addConstr(expr <= len(loc) + y[i] - 1)
                 count_constraint_2 += 1
-        print(f"Constraint 1: {count_constraint_1}")
-        print(f"Constraint 2: {count_constraint_2}")
+        # print(f"Constraint 1: {count_constraint_1}")
+        # print(f"Constraint 2: {count_constraint_2}")
 
         # (Optional) Constraint 3: \sum_{i \in n} y_{i} <= n
         if self.max_solution_order is not None:
@@ -179,6 +179,7 @@ class ExactSolver:
             self.model.addConstr(expr <= self.max_solution_order)
 
     def solve(self):
+        self.model.setParam('OutputFlag', 0)
         self.model.optimize()
         # Print the optimal values
         argmax = [0] * self.n
@@ -187,5 +188,4 @@ class ExactSolver:
                 argmax[self.locs[i][0]] = 1
 
         print(f"Est. {'argmax' if self.maximize else 'argmin'} {argmax} with est value {np.round(self.model.objVal + self.baseline_value, 3)}")
-        #print(f"est value {np.round(self.model.objVal + self.baseline_value, 3)}")
         return argmax

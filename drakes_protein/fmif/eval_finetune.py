@@ -48,7 +48,7 @@ def gen_results(S_sp, S, batch, mask_for_loss, save_path, args, item_idx, base_p
         true_detok_seq = "".join([ALPHABET[x] for _ix, x in enumerate(S[0]) if mask_for_loss[0][_ix] == 1])
         
         print(f"     - Memory: {torch.cuda.mem_get_info()}")
-        for _it, ssp in tqdm(enumerate(S_sp)):
+        for _it, ssp in enumerate(S_sp):
             num = item_idx * 16 + _it
             seq_revovery = (S_sp[_it] == S[0]).float().mean().item()
             resultdf = pd.DataFrame(columns=['seq_recovery'])
@@ -101,6 +101,11 @@ argparser.add_argument("--dps_scale", type=float, default=10)
 argparser.add_argument("--tds_alpha", type=float, default=0.5)
 argparser.add_argument("--base_model", type=str, default='old')
 
+argparser.add_argument("--align_type", type=str, default='bon')
+argparser.add_argument("--n_align", type=int, default=1)
+argparser.add_argument("--align_oracle", type=str, default="ddg")
+argparser.add_argument("--gpu", type=int, default=0)
+
 args = argparser.parse_args()
 pdb_path = os.path.join(args.base_path, 'proteindpo_data/AlphaFold_model_PDBs')
 max_len = 75  # Define the maximum length of proteins
@@ -119,7 +124,8 @@ dpo_test_dict = pickle.load(open(os.path.join(dpo_dict_path, 'dpo_test_dict_wt.p
 dpo_test_dataset = ProteinDPODataset(dpo_test_dict, pdb_idx_dict, pdb_structures)
 loader_test = DataLoader(dpo_test_dataset, batch_size=1, shuffle=False)
 
-device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
+device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu", args.gpu)
+print(f"DEVICE: {device}")
 old_fmif_model = ProteinMPNNFMIF(node_features=args.hidden_dim,
                     edge_features=args.hidden_dim,
                     hidden_dim=args.hidden_dim,
@@ -200,56 +206,75 @@ from transformers import AutoTokenizer
 from transformers import GPT2LMHeadModel
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = AutoTokenizer.from_pretrained('nferruz/ProtGPT2')
 model = GPT2LMHeadModel.from_pretrained('nferruz/ProtGPT2').to(device)
 
-def prot_gpt_reward(samples):
-    ppls = []
+def protgpt_oracle(samples):
+    rewards = []
     for seq in samples:
         seq_str = "".join([ALPHABET[x] for x in seq])
         out = tokenizer(seq_str, return_tensors="pt")
-        input_ids = out.input_ids.cuda()
-
+        input_ids = out.input_ids.cuda().to(seq.device)
         with torch.no_grad():
             outputs = model(input_ids, labels=input_ids)
-
-        ppl = (outputs.loss * input_ids.shape[1]).item()
-        ppls.append(ppl)
+        log_likelihood = -1 * (outputs.loss * input_ids.shape[1]).item()
     
-    ppls = -1 * np.array(ppls)
-    return torch.tensor(ppls, device=samples[0].device)
+        rewards.append(log_likelihood)
+    return torch.tensor(rewards, device=seq.device)
 
-for n in [10]:
+def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg"):
+    def ddg_oracle(samples):
+        with torch.no_grad():
+            return reward_model(X, samples, mask, chain_M, residue_idx, chain_encoding_all)
+    valid_modes = ["ddg", "protgpt", "balanced"]
+    assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
+    def balanced_reward(samples):
+        if mode == "ddg":
+            ddg_rewards = ddg_oracle(samples)
+            return ddg_rewards
+        elif mode == "protgpt":
+            prot_gpt_rewards = protgpt_oracle(samples)
+            return prot_gpt_rewards
+        elif mode == "balanced":
+            ddg_rewards = ddg_oracle(samples)
+            prot_gpt_rewards = protgpt_oracle(samples)
+            return ddg_rewards + alpha * prot_gpt_rewards
+    return balanced_reward
+
+reward_alpha = 0.025
+for n in [args.n_align]:
     for align_step_interval in [1]:
         for testing_model in model_to_test_list:
-            test_name = f"{args.base_model}_7JJK_protgpt_beam_{n}_{align_step_interval}"
+            test_name = f"{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}"
             testing_model.eval()
-            print(f'Testing Model (BEAM-N: {n}, Interval: {align_step_interval})... Sampling {args.decoding} - {args.base_model}')
-            repeat_num=3#6
+            print(f'Testing Model ({args.align_type}-{args.align_oracle}-N: {n}, Interval: {align_step_interval})... Sampling {args.decoding} - {args.base_model}')
+            repeat_num=16
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
             rewards_eval = []
             rewards = []
             mask_proportion = []
+            ddg_eval_average = []
+            ddg_train_average = []
+            protgpt_average = []
             reward_average = []
-            total_seq_count = 0
-            total_avg_count = 0
-            #for _step, batch in tqdm(enumerate(loader_test)):
+            total_batch_count = 0
             num = 1
-            for _step, batch in enumerate(loader_test):
+            for batch in loader_test:
                 if batch['protein_name'][0] != '7JJK.pdb':
                     continue
                 for item_idx in range(8):
                     print(f"    [{num}] {batch['protein_name'][0]}")
                     num += 1
                     X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
+                    balanced_oracle = build_reward_oracle(reward_alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode=args.align_oracle)
                     X = X.repeat(repeat_num, 1, 1, 1)
                     mask = mask.repeat(repeat_num, 1)
                     chain_M = chain_M.repeat(repeat_num, 1)
                     residue_idx = residue_idx.repeat(repeat_num, 1)
                     chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
+
                     if args.decoding == 'cg':
                         S_sp, _, _ = noise_interpolant.sample_controlled_CG(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,
                             guidance_scale=args.dps_scale, reward_model=reward_model)
@@ -261,15 +286,22 @@ for n in [10]:
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
                         mask_for_loss = mask*chain_M
-                        batch_oracle = prot_gpt_reward#gen_scRMSD_reward(esm_model, S, mask_for_loss, test_name)
-                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, batch_oracle=batch_oracle, n=n, steps_per_level=align_step_interval)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, batch_oracle=balanced_oracle, n=n, steps_per_level=align_step_interval, align_type=args.align_type)
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
-                                dg_pred_eval = reward_model_eval(X, clean_traj[i].to('cuda'), mask, chain_M, residue_idx, chain_encoding_all)
+                                dg_pred_eval = reward_model_eval(X, clean_traj[i].to(device), mask, chain_M, residue_idx, chain_encoding_all)
                                 dg_pred_eval = dg_pred_eval.detach().cpu().numpy()
+                                dg_pred_train = reward_model(X, clean_traj[i].to(device), mask, chain_M, residue_idx, chain_encoding_all)
+                                dg_pred_train = dg_pred_train.detach().cpu().numpy()
                                 if len(reward_average) == 0:
                                     reward_average = [0] * len(clean_traj)
-                            reward_average[i] += batch_oracle(clean_traj[i].to('cuda')).cpu().numpy().mean()#dg_pred_eval.mean()
+                                    ddg_eval_average = [0] * len(clean_traj)
+                                    ddg_train_average = [0] * len(clean_traj)
+                                    protgpt_average = [0] * len(clean_traj)
+                            reward_average[i] += balanced_oracle(clean_traj[i].to(device)).cpu().numpy().mean()
+                            ddg_eval_average[i] += dg_pred_eval.mean()
+                            ddg_train_average[i] += dg_pred_train.mean()
+                            protgpt_average[i] += protgpt_oracle(clean_traj[i]).cpu().numpy().mean()
                             total_prop = 0
                             if len(mask_proportion) == 0:
                                 mask_proportion = [0] * len(prot_traj)
@@ -280,27 +312,28 @@ for n in [10]:
                                 #print(mask_output)
                                 total_prop += sum(mask_detect) / len(mask_detect)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
-                        total_seq_count += 1 # Terrible code, here for clarity :)
+                        total_batch_count += 1 # REMOVE THIS
                     true_false_sp = (S_sp == S).float()
                     mask_for_loss = mask*chain_M
                     valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
                     valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
                     results_list = gen_results(S_sp, S, batch, mask_for_loss, save_path, args, item_idx, args.base_path)
                     results_merge.extend(results_list)
-                    break
-                break
-            mask_proportion = [x / total_seq_count for x in mask_proportion]
-            reward_average = [x / total_seq_count for x in reward_average]
+                #     break
+                # break
+            mask_proportion = [x / total_batch_count for x in mask_proportion]
+            reward_average = [x / total_batch_count for x in reward_average]
+            ddg_train_average = [x / total_batch_count for x in ddg_train_average]
+            ddg_eval_average = [x / total_batch_count for x in ddg_eval_average]
+            protgpt_average = [x / total_batch_count for x in protgpt_average]
             range_column = list(range(1, len(mask_proportion) + 1))
-            data = zip(range_column, mask_proportion, reward_average)
+            data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
             with open(f'diffusion_analysis_{test_name}.csv', mode='w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average'])
+                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
                 writer.writerows(data)
-            print(mask_proportion)
-            print(reward_average)
             valid_sp_accuracy = valid_sp_acc / valid_sp_weights
-            print('Sequence recovery accuracy: ', valid_sp_accuracy)
+            print(f"Recovery Accuracy: {round(valid_sp_accuracy, 3)} Reward Avg: {round(reward_average[-1], 3)}, DDG Train Avg: {round(ddg_train_average[-1], 3)} DDG Eval Avg: {round(ddg_eval_average[-1], 3)} ProtGPT Avg: {round(protgpt_average[-1], 3)}")
 
             results_merge = pd.concat(results_merge)
             results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_{test_name}.csv', index=False)

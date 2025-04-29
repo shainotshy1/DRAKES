@@ -4,10 +4,14 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
+from tqdm import tqdm
 
 class AlignSamplerState():
     def calc_reward(self):
         raise NotImplemented
+    
+    def return_early(self):
+        return False
 
 class BONSampler():
     def __init__(self, sampler, n, W, soft=False):
@@ -191,10 +195,13 @@ class OptSampler(TreeStateSampler):
 
     def sample_aligned(self):
         state = self.initial_state
-        for _ in range(self.depth - 1):
+        for _ in tqdm(range(self.depth - 1)):
             assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
             sampler = self.sampler_gen(state)
-            samples = [sampler() for _ in range(self.child_n)]
+            if state.return_early():
+                samples = [sampler()]
+            else:
+                samples = [sampler() for _ in range(self.child_n)]
             state = self.opt_selector(samples)
         return state
             
@@ -214,7 +221,7 @@ class BeamSampler(TreeStateSampler):
         num_states = []
         num_gens = []
         labels = []
-        for i in range(self.depth - 1):
+        for i in tqdm(range(self.depth - 1)):
             if self.save_visual:
                 gen_states.append([])
                 num_states.append([])

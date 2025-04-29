@@ -1,16 +1,16 @@
 from Bio import PDB
 
-def get_structure_matrix(pdb_file):
-    parser = PDB.PDBParser(QUIET=True)
-    structure = parser.get_structure('protein', pdb_file)
-    coordinates = []
-    for model in structure:
-        for chain in model:
-            for residue in chain:
-                for atom in residue:
-                    coordinates.append(atom.get_coord())    
-    structure_matrix = torch.asarray(coordinates)
-    return structure_matrix
+# def get_structure_matrix(pdb_file):
+#     parser = PDB.PDBParser(QUIET=True)
+#     structure = parser.get_structure('protein', pdb_file)
+#     coordinates = []
+#     for model in structure:
+#         for chain in model:
+#             for residue in chain:
+#                 for atom in residue:
+#                     coordinates.append(atom.get_coord())    
+#     structure_matrix = torch.asarray(coordinates)
+#     return structure_matrix
 
 # def gen_scRMSD_reward(esm_model, true_seq, mask_for_loss, name):
 #     def get_pose(gen_folded_pdb_path):
