@@ -10,6 +10,12 @@ class AlignSamplerState():
     def calc_reward(self):
         raise NotImplemented
     
+    def get_num_states(self):
+        raise NotImplemented
+    
+    def get_state(self, i):
+        raise NotImplemented
+    
     def return_early(self):
         return False
 
@@ -30,10 +36,10 @@ class BONSampler():
         super().__init__()
 
     def sample_aligned(self):
-        samples = [self.sampler() for _ in range(self.n)]
-        for s in samples:
-            assert isinstance(s, AlignSamplerState), "Sample must be instance of AlignSamplerState"
-        rewards = [s.calc_reward() for s in samples]
+        samples = self.sampler()#[self.sampler() for _ in range(self.n)]
+        # for s in samples:
+        assert isinstance(samples, AlignSamplerState), "Sample must be instance of AlignSamplerState"
+        rewards = samples.calc_reward()#[s.calc_reward() for s in samples]
         if self.soft:
             sm_rewards = self.sm(torch.tensor(rewards))
             top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
@@ -231,13 +237,13 @@ class BeamSampler(TreeStateSampler):
             next_states = []
             for state in states:
                 assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-                sampler = self.sampler_gen(state)
+                sampler = self.sampler_gen(state, self.child_n)
 
                 w_ = self.W if i == 0 else 1
                 n_ = self.child_n if i == 0 else self.child_n // self.W
                 bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_, soft=self.soft)
                 samples, top_indices, rewards = bon_sampler.sample_aligned()
-                next_states += [samples[i] for i in top_indices]
+                next_states += [samples.get_state(i) for i in top_indices]
                 if self.save_visual:
                     gen_states[-1].append([int(k.item()) for k in top_indices])
                     num_states[-1].append(n_)

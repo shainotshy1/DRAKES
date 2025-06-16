@@ -248,7 +248,7 @@ for n in [args.n_align]:
             test_name = f"{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}"
             testing_model.eval()
             print(f'Testing Model ({args.align_type}-{args.align_oracle}-N: {n}, Interval: {align_step_interval})... Sampling {args.decoding} - {args.base_model}')
-            repeat_num=16
+            repeat_num=1#6
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -319,8 +319,8 @@ for n in [args.n_align]:
                     valid_sp_weights += torch.sum(mask_for_loss).cpu().data.numpy()
                     results_list = gen_results(S_sp, S, batch, mask_for_loss, save_path, args, item_idx, args.base_path)
                     results_merge.extend(results_list)
-                #     break
-                # break
+                    break
+                break
             mask_proportion = [x / total_batch_count for x in mask_proportion]
             reward_average = [x / total_batch_count for x in reward_average]
             ddg_train_average = [x / total_batch_count for x in ddg_train_average]
