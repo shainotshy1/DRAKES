@@ -276,7 +276,7 @@ class Interpolant:
                 if (np.abs(rewards - target) <= eps).all():
                     best_demask = samples.demask[0].clone()
                 else:
-                    all_masks = samples.demask.cpu().numpy()#np.array([s.demask.detach().cpu().numpy().squeeze() for s in samples])
+                    all_masks = samples.demask.cpu().numpy()
                     if opt == "linear":
                         target_tokens = (samples.parent_state.masked_seq == mu.MASK_TOKEN_INDEX).detach().cpu().numpy().squeeze()
                         X = all_masks[:, target_tokens]

@@ -307,12 +307,9 @@ for n in [args.n_align]:
                                 mask_proportion = [0] * len(prot_traj)
                             for _it, ssp in enumerate(S_sp_traj):
                                 mask_detect = [(x >= len(ALPHABET)).item() for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
-                                #mask_output = ['-' if (x >= len(ALPHABET)).item() else ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1]
-                                #mask_output = ''.join(mask_output)
-                                #print(mask_output)
                                 total_prop += sum(mask_detect) / len(mask_detect)
                             mask_proportion[i] += total_prop / len(S_sp_traj)
-                        total_batch_count += 1 # REMOVE THIS
+                        total_batch_count += 1
                     true_false_sp = (S_sp == S).float()
                     mask_for_loss = mask*chain_M
                     valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
