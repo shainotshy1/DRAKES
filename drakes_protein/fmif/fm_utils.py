@@ -6,7 +6,7 @@ import model_utils as mu
 #from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from align_utils import BeamSampler, MCTSSampler, BONSampler, AlignSamplerState, OptSampler
+from align_utils import BeamSampler, BONSampler, AlignSamplerState, OptSampler
 from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, ExactSolver
 import time
 from sklearn.linear_model import LinearRegression
@@ -124,12 +124,19 @@ class Interpolant:
             return next_state
             
     class ProteinModelParams():
-        def __init__(self, X, mask, chain_M, residue_idx, chain_encoding_all, cls=None, w=None):
-            self.X = X
-            self.mask = mask
-            self.chain_M = chain_M
-            self.residue_idx = residue_idx
-            self.chain_encoding_all = chain_encoding_all
+        def __init__(self, X, mask, chain_M, residue_idx, chain_encoding_all, cls=None, w=None, n=1):
+            if n > 1:
+                self.X = X.repeat(n, 1, 1, 1)
+                self.mask = mask.repeat(n, 1)
+                self.chain_M = chain_M.repeat(n, 1)
+                self.residue_idx = residue_idx.repeat(n, 1)
+                self.chain_encoding_all = chain_encoding_all.repeat(n, 1)
+            else:
+                self.X = X
+                self.mask = mask
+                self.chain_M = chain_M
+                self.residue_idx = residue_idx
+                self.chain_encoding_all = chain_encoding_all
             self.cls = cls
             self.w = w
 
@@ -139,17 +146,11 @@ class Interpolant:
 
     def generate_state_values(self, model, model_params, masked_seq, t_1, t_2):
         # Extract parameters
-        # X = model_params.X
-        # mask = model_params.mask
-        # chain_M = model_params.chain_M
-        # residue_idx = model_params.residue_idx
-        # chain_encoding_all = model_params.chain_encoding_all
-        repeat_num = masked_seq.shape[0]
-        X = model_params.X.repeat(repeat_num, 1, 1, 1)
-        mask = model_params.mask.repeat(repeat_num, 1)
-        chain_M = model_params.chain_M.repeat(repeat_num, 1)
-        residue_idx = model_params.residue_idx.repeat(repeat_num, 1)
-        chain_encoding_all = model_params.chain_encoding_all.repeat(repeat_num, 1)
+        X = model_params.X
+        mask = model_params.mask
+        chain_M = model_params.chain_M
+        residue_idx = model_params.residue_idx
+        chain_encoding_all = model_params.chain_encoding_all
         cls = model_params.cls
         w = model_params.w
         d_t = t_2 - t_1
@@ -209,27 +210,12 @@ class Interpolant:
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
         q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
+        sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
 
     def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
-        # Generate sampler
-        def sampler_gen(state):
-            def sample():
-                sample_state = state
-                for _ in range(steps_per_level):                        
-                    if sample_state.step >= num_timesteps - 1:
-                        return sample_state
-                    if sample_state.return_early():
-                        sample_state = sample_state.copy_to_next_state()
-                        continue
-                    _x = _sample_categorical(sample_state.q_xs)
-                    sample_state = self.mask_to_state(_x, model, model_params, ts, reward_oracle, sample_state)
-                return sample_state
-            return sample
-
         def sampler_n_gen(state, n = 1):
             def sample():
                 sample_state = state
@@ -249,56 +235,58 @@ class Interpolant:
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         # Generate sampler
-        def sampler_gen(state):
+        def sampler_n_gen(state, n = 1):
             def sample():
-                sample_state = state
+                sample_states = state
                 for _ in range(steps_per_level):                        
-                    if sample_state.step >= num_timesteps - 1:
-                        return sample_state
-                    if sample_state.return_early():
-                        sample_state = sample_state.copy_to_next_state()
+                    if sample_states.step >= num_timesteps - 1:
+                        return sample_states
+                    if sample_states.return_early():
+                        sample_states = sample_states.copy_to_next_state()
                         continue
-                    unmasked = sample_state.masked_seq == mu.MASK_TOKEN_INDEX
+                    unmasked = (sample_states.masked_seq == mu.MASK_TOKEN_INDEX).squeeze()
                     num_masked = torch.sum(unmasked).cpu()
-                    demask_temp = torch.tensor(np.random.choice(2, size=(num_masked, )), device=state.q_xs.device)
-                    demask = torch.zeros(size=(sample_state.masked_seq.shape[0], sample_state.q_xs.shape[1], ), device=demask_temp.device, dtype=demask_temp.dtype)
-                    demask[unmasked] = demask_temp
-                    pred_wo_mask = sample_state.q_xs.clone()
+                    demask_temp = torch.bernoulli(torch.full((n, num_masked), 0.5, device=state.q_xs.device)).int()
+                    demask = torch.zeros(size=(sample_states.masked_seq.shape[0], sample_states.q_xs.shape[1], ), device=demask_temp.device, dtype=demask_temp.dtype).repeat(n, 1)
+                    demask[:, unmasked] = demask_temp
+                    pred_wo_mask = sample_states.q_xs.clone()
                     pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
                     best_pred = torch.argmax(pred_wo_mask, dim=-1)
                     _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
-                    sample_state = self.mask_to_state(_x, model, model_params, ts, reward_oracle, sample_state)
-                return sample_state
+                    sample_states = self.mask_to_states(_x, model, model_params, ts, reward_oracle, sample_states)
+                return sample_states
             return sample
-        return sampler_gen
+        return sampler_n_gen
 
     def build_opt_selector(self, model, model_params, ts, reward_oracle, opt="linear", max_solution_order=4):
         opt_options = ["linear", "spectral"]
         assert opt in opt_options, f"{opt} not in {opt_options}"
 
         def opt_selector(samples):
-            parent_state = samples[0].parent_state
-            if samples[0].return_early():
-               best_demask = samples[0].demask.clone()
+            parent_state = samples.parent_state
+
+            if samples.return_early():
+               best_demask = samples.demask[0].clone()
             else: 
+                seq_len = samples.masked_seq.shape[0]
                 # Assumes all samples have same parent state
-                rewards = np.zeros(len(samples)) if len(samples) <= 1 else np.array([s.calc_reward().item() for s in samples])
+                rewards = np.zeros(seq_len) if seq_len <= 1 else samples.calc_reward().cpu().numpy()
                 target = rewards[0]
                 eps = 1e-8
                 if (np.abs(rewards - target) <= eps).all():
-                    best_demask = samples[0].demask.clone()
+                    best_demask = samples.demask[0].clone()
                 else:
-                    all_masks = np.array([s.demask.detach().cpu().numpy().squeeze() for s in samples])
+                    all_masks = samples.demask.cpu().numpy()#np.array([s.demask.detach().cpu().numpy().squeeze() for s in samples])
                     if opt == "linear":
-                        target_tokens = (samples[0].parent_state.masked_seq == mu.MASK_TOKEN_INDEX).detach().cpu().numpy().squeeze()
+                        target_tokens = (samples.parent_state.masked_seq == mu.MASK_TOKEN_INDEX).detach().cpu().numpy().squeeze()
                         X = all_masks[:, target_tokens]
-                        clf = Lasso(alpha=0.005)#LinearRegression()
-                        clf.fit(X, rewards)
-                        # min ||Xa - r||_2^2 + lambda * ||a||_0
-                        # return arg-top-k(a)
-                        a = np.array(clf.coef_.flatten().tolist())
-                        b = clf.intercept_
-                        if len(a) > max_solution_order:
+                        if X.shape[1] > max_solution_order:
+                            # min ||Xa - r||_2^2 + lambda * ||a||_0
+                            # return arg-top-k(a)
+                            clf = Lasso(alpha=0.005)
+                            clf.fit(X, rewards)
+                            a = np.array(clf.coef_.flatten().tolist())
+                            b = clf.intercept_
                             indices = np.argpartition(-a, max_solution_order-1)[:max_solution_order]
                             demask_compact = np.zeros(a.shape, dtype=all_masks.dtype)
                             demask_compact[indices] = 1
@@ -308,13 +296,13 @@ class Interpolant:
                         best_demask = np.zeros(target_tokens.shape, dtype=all_masks.dtype)
                         best_demask[target_tokens] = demask_compact
                         print(f"Pred Reward: {pred_reward}")
-                        best_demask = torch.tensor(best_demask, device=samples[0].demask.device)
+                        best_demask = torch.tensor(best_demask, device=samples.demask.device)
                     elif opt == "spectral":    
                         best_model, cv_r2 = lgboost_fit(all_masks, rewards)
                         fourier_dict = lgboost_to_fourier(best_model)
                         fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
                         best_demask = ExactSolver(fourier_dict_trunc, maximize=True, max_solution_order=max_solution_order).solve()
-                        best_demask = torch.tensor(best_demask, device=samples[0].demask.device)
+                        best_demask = torch.tensor(best_demask, device=samples.demask.device)
                     else:
                         raise ValueError(f"{opt} is invalid Optimizer name")
             best_state = self.demask_to_pred_state(best_demask, model, model_params, ts, reward_oracle, parent_state)
@@ -355,22 +343,23 @@ class Interpolant:
             chain_encoding_all_i = chain_encoding_all[i].unsqueeze(0)
             cls_i = cls[i].unsqueeze(0) if cls is not None else None
             w_i = w[i].unsqueeze(0) if w is not None else None
-            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i)
+            single_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=1)
+            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n)
 
             def reward_model_i(S):
                 return reward_model(X_i, S, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i)
             reward_model_i = batch_oracle
             
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
-            q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_0, ts[0], ts[1])
+            q_xs, pred_aatypes_1 = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
             initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, reward_model_i)
             total_steps = num_timesteps // steps_per_level + 1
 
-            sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" else self.build_sampler_gen
+            sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
             sampler_gen = sample_gen_builder(model, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
 
             if align_type == "spectral" or align_type == "linear":
-                opt_selector = self.build_opt_selector(model, model_params, ts, reward_model_i, opt=align_type)
+                opt_selector = self.build_opt_selector(model, single_model_params, ts, reward_model_i, opt=align_type)
                 sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
             else: # BEAM / BON
                 sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1)            

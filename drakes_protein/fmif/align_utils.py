@@ -93,8 +93,6 @@ class TreeStateSampler():
             new_prev_layer = sorted(new_prev_layer, key=lambda x : original_pos[x])
 
             prev_layer_parents = new_prev_layer
-            # if i == 3:
-            #     break
 
         for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
             for n in layer:
@@ -115,85 +113,6 @@ class TreeStateSampler():
         nx.draw(G, pos, with_labels=True, labels=labels, node_size=900, font_weight='bold', node_color=node_colors, font_size=6, font_color='white', arrows=False)
         plt.savefig('tree.png')
 
-class MCTSSampler(TreeStateSampler):   
-    class Node():
-        def __init__(self, state, state_value, C):
-            self.state = state # State that the node represents
-            self.state_value = state_value # Value of the node state
-            self.S = np.inf # UCB value of node
-            self.v = 0 # Empirical mean of node
-            self.n = 0 # Number of times visited
-            self.depth = 0 # Default depth is 0 since root
-            self.children = [] # Children nodes for MCTS
-            self.parent = None # None represents root node
-            self.C = C # MCTS parameter
-
-        def is_root(self):
-            return self.parent is None
-
-        def is_leaf(self):
-            return len(self.children) == 0
-
-        def add_child(self, child):
-            child.depth = self.depth + 1
-            child.parent = self
-            self.children.append(child)
-
-        def backpropogate(self):
-            self.n += 1
-            if self.is_leaf():
-                self.v = self.state_value
-            self.v = sum([c.v * c.n / self.n for c in self.children]) + self.state_value / self.n
-            if self.parent:
-                self.parent.backpropogate()
-            self.update_value()
-
-        def update_value(self):
-            if self.parent is None:
-                self.S = np.inf # default UCB value
-            else:
-                self.S = self.v + self.C * np.sqrt(np.log(self.parent.n) / self.n) # Update UCB Value
-
-    def __init__(self, sampler_gen, initial_state, depth, child_n, C, max_iter=1000):
-        # Parameter validation
-        assert C > 0, "C must be value greater than 0"
-        assert isinstance(initial_state, AlignSamplerState), "Initial state must be instance of AlignSamplerState"
-        self.C = C
-        self.max_iter = max_iter
-        super().__init__(sampler_gen, initial_state, depth, child_n)
-
-    def select_best_ucb(self, node):
-        candidates = [self.select_best_ucb(c) for c in node.children]
-        if len(node.children) < self.child_n:
-            candidates.append(node) # Don't allow nodes to spawn more than child_n children
-        best_ucb = max(candidates, key=lambda c : c.S) # Select node with best UCB
-        return best_ucb
-
-    def sample_aligned(self):
-        # Initialize node to initial state
-        root = self.Node(state=self.initial_state, state_value=self.initial_state.calc_reward(), C=self.C)
-        # MCTS
-        for _ in range(self.max_iter):
-            # Selection
-            best_node = self.select_best_ucb(root)
-            if best_node.depth == self.depth:
-                return best_node.state # Return once the best node is at the final depth
-            # Expansion
-            sampler = self.sampler_gen(best_node.state)
-            state = sampler()
-            assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-            # Simulation
-            reward = state.calc_reward()
-            new_child = self.Node(state=state, state_value=reward, C=self.C) # TODO: construct the sampler only one time - the first time best_node is sampled from
-            # Backpropogation
-            best_node.add_child(new_child)
-            new_child.backpropogate()
-
-        # If unable to converge, return the best node so far
-        best_node = self.select_best_ucb(root)
-        best_state = best_node.state
-        return best_state
-
 class OptSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, opt_selector):
         self.opt_selector = opt_selector
@@ -203,14 +122,14 @@ class OptSampler(TreeStateSampler):
         state = self.initial_state
         for _ in tqdm(range(self.depth - 1)):
             assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-            sampler = self.sampler_gen(state)
+            sampler = self.sampler_gen(state, n=self.child_n)
             if state.return_early():
-                samples = [sampler()]
+                samples = sampler()
             else:
-                samples = [sampler() for _ in range(self.child_n)]
+                samples = sampler()#[sampler() for _ in range(self.child_n)]
             state = self.opt_selector(samples)
         return state
-            
+         
 class BeamSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
         # Parameter validation

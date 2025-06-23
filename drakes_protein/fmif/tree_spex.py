@@ -90,9 +90,10 @@ class ExactSolver:
             [0] * self.n) in self.mobius_dictionary else 0
 
         self.key = {
-            "WLSACCESSID": "38d41f1f-f181-4d1d-9d6b-63f1dfff392c",
-            "WLSSECRET": "8ed03468-18d7-4e2a-adef-a8d6703c8d2a",
-            "LICENSEID": 2403918,
+            #"WLSACCESSID": "38d41f1f-f181-4d1d-9d6b-63f1dfff392c",
+            #"WLSSECRET": "8ed03468-18d7-4e2a-adef-a8d6703c8d2a",
+            #"LICENSEID": 2403918,
+            "LICENSEID": 2680322,
         }
 
         self.initialize_model()
