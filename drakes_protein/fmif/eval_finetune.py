@@ -105,6 +105,7 @@ argparser.add_argument("--align_type", type=str, default='bon')
 argparser.add_argument("--n_align", type=int, default=1)
 argparser.add_argument("--align_oracle", type=str, default="ddg")
 argparser.add_argument("--gpu", type=int, default=0)
+argparser.add_argument("--balanced_alpha", type=float, default=0.01, help="alpha scales the protgpt reward added to the ddg reward")
 
 args = argparser.parse_args()
 pdb_path = os.path.join(args.base_path, 'proteindpo_data/AlphaFold_model_PDBs')
@@ -222,10 +223,27 @@ def protgpt_oracle(samples):
         rewards.append(log_likelihood)
     return torch.tensor(rewards, device=seq.device)
 
-def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg"):
+def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", n=1):
+    if n > 1:
+        X_n = X.repeat(n, 1, 1, 1)
+        mask_n = mask.repeat(n, 1)
+        chain_M_n = chain_M.repeat(n, 1)
+        residue_idx_n = residue_idx.repeat(n, 1)
+        chain_encoding_all_n = chain_encoding_all.repeat(n, 1)
+    else:
+        X_n = X
+        mask_n = mask
+        chain_M_n = chain_M
+        residue_idx_n = residue_idx
+        chain_encoding_all_n = chain_encoding_all
     def ddg_oracle(samples):
         with torch.no_grad():
-            return reward_model(X, samples, mask, chain_M, residue_idx, chain_encoding_all)
+            if (samples.shape[0] == n):
+                return reward_model(X_n, samples, mask_n, chain_M_n, residue_idx_n, chain_encoding_all_n)
+            elif (samples.shape[0] == 1):
+                return reward_model(X, samples, mask, chain_M, residue_idx, chain_encoding_all)
+            else:
+                raise ValueError(f"Samples must be batched as either size {n} or 1, invalid batch size: {samples.shape[0]}")
     valid_modes = ["ddg", "protgpt", "balanced"]
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
     def balanced_reward(samples):
@@ -241,13 +259,14 @@ def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chai
             return ddg_rewards + alpha * prot_gpt_rewards
     return balanced_reward
 
-reward_alpha = 0.025
 for n in [args.n_align]:
     for align_step_interval in [1]:
         for testing_model in model_to_test_list:
-            test_name = f"{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}"
+            balanced_alpha_suffix = f"_{args.balanced_alpha}" if args.align_oracle == "balanced" else ""
+            balanced_alpha_str = f" Balanced Alpha: {args.balanced_alpha}" if args.align_oracle == "balanced" else ""
+            test_name = f"TEST{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}" + balanced_alpha_suffix
+            print(f'Testing Model ({args.align_type}-{args.align_oracle}-N: {n}, Interval: {align_step_interval}{balanced_alpha_str})... Sampling {args.decoding} - {args.base_model}')
             testing_model.eval()
-            print(f'Testing Model ({args.align_type}-{args.align_oracle}-N: {n}, Interval: {align_step_interval})... Sampling {args.decoding} - {args.base_model}')
             repeat_num=1#6
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
@@ -268,7 +287,7 @@ for n in [args.n_align]:
                     print(f"    [{num}] {batch['protein_name'][0]}")
                     num += 1
                     X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
-                    balanced_oracle = build_reward_oracle(reward_alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode=args.align_oracle)
+                    balanced_oracle = build_reward_oracle(args.balanced_alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode=args.align_oracle, n=args.n_align)
                     X = X.repeat(repeat_num, 1, 1, 1)
                     mask = mask.repeat(repeat_num, 1)
                     chain_M = chain_M.repeat(repeat_num, 1)
@@ -325,7 +344,7 @@ for n in [args.n_align]:
             protgpt_average = [x / total_batch_count for x in protgpt_average]
             range_column = list(range(1, len(mask_proportion) + 1))
             data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
-            with open(f'diffusion_analysis_{test_name}.csv', mode='w', newline='') as file:
+            with open(f'trajectory_{test_name}.csv', mode='w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
                 writer.writerows(data)
@@ -333,4 +352,4 @@ for n in [args.n_align]:
             print(f"Recovery Accuracy: {round(valid_sp_accuracy, 3)} Reward Avg: {round(reward_average[-1], 3)}, DDG Train Avg: {round(ddg_train_average[-1], 3)} DDG Eval Avg: {round(ddg_eval_average[-1], 3)} ProtGPT Avg: {round(protgpt_average[-1], 3)}")
 
             results_merge = pd.concat(results_merge)
-            results_merge.to_csv(f'./eval_results/{args.decoding}_{args.base_model}_{args.dps_scale}_{args.tds_alpha}_{args.seed}_results_merge_{test_name}.csv', index=False)
+            results_merge.to_csv(f'./eval_results/sequence_{test_name}.csv', index=False)
