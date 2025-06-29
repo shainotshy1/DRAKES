@@ -231,7 +231,8 @@ class Interpolant:
                     else:
                         _x = _sample_categorical(sample_states.q_xs, n=1)
                         sample_states = self.mask_batch_to_state(_x, model, model_params, ts, reward_oracle, sample_states)
-                sample_states.parent_state = state # Override to make the parent state include the whole trajectory
+                if state != sample_states: # This condition is true if have we reach sample_states.step = num_timesteps - 1; i.e reached the end
+                    sample_states.parent_state = state # Override to make the parent state include the whole trajectory
                 return sample_states
             return sample
         return sampler_n_gen
