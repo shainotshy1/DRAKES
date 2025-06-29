@@ -181,9 +181,7 @@ class Interpolant:
         q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
         return q_xs, pred_aatypes_1
 
-    # TODO: FIX THE REWARD BATCHING AND STATE SETTING => WHY IS IT OVERRIDING MASK STATE?
-
-    def mask_to_state(self, _x, model, model_params, ts, reward_oracle, prev_state):
+    def mask_batch_to_state(self, _x, model, model_params, ts, reward_oracle, prev_state):
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
         demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
@@ -192,7 +190,7 @@ class Interpolant:
         sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
     
-    def mask_to_states(self, _x, model, model_params, ts, reward_oracle, prev_state):
+    def mask_to_state_batch(self, _x, model, model_params, ts, reward_oracle, prev_state):
         n = _x.shape[0]
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype).repeat(n, 1)
         demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
@@ -215,7 +213,7 @@ class Interpolant:
         sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
 
-    def build_sampler_gen(self, model, single_model_params, n_model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         def sampler_n_gen(state, n = 1):
@@ -223,16 +221,17 @@ class Interpolant:
                 sample_states = state
                 for i in range(steps_per_level):  
                     if sample_states.step >= num_timesteps - 1:
-                        return sample_states
+                        break
                     if sample_states.return_early():
                         sample_states = sample_states.copy_to_next_state()
                         continue
-                    if i < steps_per_level - 1:
-                        _x = _sample_categorical(sample_states.q_xs, n=1)
-                        sample_states = self.mask_to_states(_x, model, single_model_params, ts, reward_oracle, sample_states)
-                    else:
+                    if i == 0:
                         _x = _sample_categorical(sample_states.q_xs, n=n)
-                        sample_states = self.mask_to_states(_x, model, n_model_params, ts, reward_oracle, sample_states)
+                        sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
+                    else:
+                        _x = _sample_categorical(sample_states.q_xs, n=1)
+                        sample_states = self.mask_batch_to_state(_x, model, model_params, ts, reward_oracle, sample_states)
+                sample_states.parent_state = state # Override to make the parent state include the whole trajectory
                 return sample_states
             return sample
         return sampler_n_gen
@@ -259,7 +258,7 @@ class Interpolant:
                     pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
                     best_pred = torch.argmax(pred_wo_mask, dim=-1)
                     _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
-                    sample_states = self.mask_to_states(_x, model, model_params, ts, reward_oracle, sample_states)
+                    sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
                 return sample_states
             return sample
         return sampler_n_gen
@@ -362,7 +361,7 @@ class Interpolant:
             total_steps = num_timesteps // steps_per_level + 1
 
             sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
-            sampler_gen = sample_gen_builder(model, single_model_params, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
+            sampler_gen = sample_gen_builder(model, model_params, ts, reward_model_i, num_timesteps, steps_per_level=steps_per_level)
 
             if align_type == "spectral" or align_type == "linear":
                 opt_selector = self.build_opt_selector(model, single_model_params, ts, reward_model_i, opt=align_type)

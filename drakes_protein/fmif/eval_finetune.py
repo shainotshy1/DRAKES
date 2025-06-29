@@ -361,12 +361,12 @@ for n in [args.n_align]:
             ddg_eval_average = [x / total_batch_count for x in ddg_eval_average]
             protgpt_average = [x / total_batch_count for x in protgpt_average]
             range_column = list(range(1, len(mask_proportion) + 1))
-            # if save_trajectory:
-            data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
-            with open(f'trajectory_{test_name}.csv', mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
-                writer.writerows(data)
+            if save_trajectory:
+                data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
+                with open(f'trajectory_{test_name}.csv', mode='w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
+                    writer.writerows(data)
             valid_sp_accuracy = valid_sp_acc / valid_sp_weights
             print(f"Recovery Accuracy: {round(valid_sp_accuracy, 3)} Reward Avg: {round(reward_average[-1], 3)}, DDG Train Avg: {round(ddg_train_average[-1], 3)} DDG Eval Avg: {round(ddg_eval_average[-1], 3)} ProtGPT Avg: {round(protgpt_average[-1], 3)}")
 
