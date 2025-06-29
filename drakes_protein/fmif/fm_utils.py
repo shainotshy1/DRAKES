@@ -215,7 +215,6 @@ class Interpolant:
         sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
 
-    # PROBLEM: NEED TO GENERATE 1 SAMPLE AT A TIME AND THEN 
     def build_sampler_gen(self, model, single_model_params, n_model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
