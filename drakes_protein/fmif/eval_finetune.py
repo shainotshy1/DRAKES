@@ -223,29 +223,45 @@ def protgpt_oracle(samples):
         rewards.append(log_likelihood)
     return torch.tensor(rewards, device=seq.device)
 
-def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", n=1):
-    if n > 1:
-        X_n = X.repeat(n, 1, 1, 1)
-        mask_n = mask.repeat(n, 1)
-        chain_M_n = chain_M.repeat(n, 1)
-        residue_idx_n = residue_idx.repeat(n, 1)
-        chain_encoding_all_n = chain_encoding_all.repeat(n, 1)
-    else:
-        X_n = X
-        mask_n = mask
-        chain_M_n = chain_M
-        residue_idx_n = residue_idx
-        chain_encoding_all_n = chain_encoding_all
+def build_reward_oracle(reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", alpha=1):
+    cached_batches = {}
+    assert 0 <= alpha <= 1, "Alpha must be between 0 and 1 as it is the weight for the tradeoff between two oracles"
+
+    if mode == "balanced":
+        if alpha == 1:
+            mode = "ddg"
+        elif alpha == 0:
+            mode = "protgpt"
+
     def ddg_oracle(samples):
+        n = samples.shape[0]
+        if n not in cached_batches:
+            X_n = X.repeat(n, 1, 1, 1)
+            mask_n = mask.repeat(n, 1)
+            chain_M_n = chain_M.repeat(n, 1)
+            residue_idx_n = residue_idx.repeat(n, 1)
+            chain_encoding_all_n = chain_encoding_all.repeat(n, 1)
+            
+            cached_batches[n] = {}
+            cached_batches[n]["X"] = X_n
+            cached_batches[n]["mask"] = mask_n
+            cached_batches[n]["chain_M"] = chain_M_n
+            cached_batches[n]["residue_idx"] = residue_idx_n
+            cached_batches[n]["chain_encoding_all"] = chain_encoding_all_n
+        
+        cache = cached_batches[n]
+
         with torch.no_grad():
-            if (samples.shape[0] == n):
-                return reward_model(X_n, samples, mask_n, chain_M_n, residue_idx_n, chain_encoding_all_n)
-            elif (samples.shape[0] == 1):
-                return reward_model(X, samples, mask, chain_M, residue_idx, chain_encoding_all)
-            else:
-                raise ValueError(f"Samples must be batched as either size {n} or 1, invalid batch size: {samples.shape[0]}")
+            X_n = cache["X"]
+            mask_n = cache["mask"]
+            chain_M_n = cache["chain_M"]
+            residue_idx_n = cache["residue_idx"]
+            chain_encoding_all_n = cache["chain_encoding_all"]
+            return reward_model(X_n, samples, mask_n, chain_M_n, residue_idx_n, chain_encoding_all_n)
+        
     valid_modes = ["ddg", "protgpt", "balanced"]
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
+    protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
     def balanced_reward(samples):
         if mode == "ddg":
             ddg_rewards = ddg_oracle(samples)
@@ -256,18 +272,20 @@ def build_reward_oracle(alpha, reward_model, X, mask, chain_M, residue_idx, chai
         elif mode == "balanced":
             ddg_rewards = ddg_oracle(samples)
             prot_gpt_rewards = protgpt_oracle(samples)
-            return ddg_rewards + alpha * prot_gpt_rewards
+            return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
     return balanced_reward
+
+save_trajectory = False
 
 for n in [args.n_align]:
     for align_step_interval in [1]:
         for testing_model in model_to_test_list:
             balanced_alpha_suffix = f"_{args.balanced_alpha}" if args.align_oracle == "balanced" else ""
             balanced_alpha_str = f" Balanced Alpha: {args.balanced_alpha}" if args.align_oracle == "balanced" else ""
-            test_name = f"TEST{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}" + balanced_alpha_suffix
+            test_name = f"{args.base_model}_7JJK_{args.align_type}_{args.align_oracle}_{n}_{align_step_interval}" + balanced_alpha_suffix
             print(f'Testing Model ({args.align_type}-{args.align_oracle}-N: {n}, Interval: {align_step_interval}{balanced_alpha_str})... Sampling {args.decoding} - {args.base_model}')
             testing_model.eval()
-            repeat_num=1#6
+            repeat_num=16
             valid_sp_acc, valid_sp_weights = 0., 0.
             results_merge = []
             all_model_logl = []
@@ -287,7 +305,7 @@ for n in [args.n_align]:
                     print(f"    [{num}] {batch['protein_name'][0]}")
                     num += 1
                     X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
-                    balanced_oracle = build_reward_oracle(args.balanced_alpha, reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode=args.align_oracle, n=args.n_align)
+                    balanced_oracle = build_reward_oracle(reward_model, X, mask, chain_M, residue_idx, chain_encoding_all, mode=args.align_oracle, alpha=args.balanced_alpha)
                     X = X.repeat(repeat_num, 1, 1, 1)
                     mask = mask.repeat(repeat_num, 1)
                     chain_M = chain_M.repeat(repeat_num, 1)
@@ -343,11 +361,12 @@ for n in [args.n_align]:
             ddg_eval_average = [x / total_batch_count for x in ddg_eval_average]
             protgpt_average = [x / total_batch_count for x in protgpt_average]
             range_column = list(range(1, len(mask_proportion) + 1))
-            data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
-            with open(f'trajectory_{test_name}.csv', mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
-                writer.writerows(data)
+            if save_trajectory:
+                data = zip(range_column, mask_proportion, reward_average, ddg_train_average, ddg_eval_average, protgpt_average)
+                with open(f'trajectory_{test_name}.csv', mode='w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Iteration', 'Mask Proportion', 'Reward Average', 'DDG Train Average', 'DDG Eval Average', 'ProtGPT Average'])
+                    writer.writerows(data)
             valid_sp_accuracy = valid_sp_acc / valid_sp_weights
             print(f"Recovery Accuracy: {round(valid_sp_accuracy, 3)} Reward Avg: {round(reward_average[-1], 3)}, DDG Train Avg: {round(ddg_train_average[-1], 3)} DDG Eval Avg: {round(ddg_eval_average[-1], 3)} ProtGPT Avg: {round(protgpt_average[-1], 3)}")
 

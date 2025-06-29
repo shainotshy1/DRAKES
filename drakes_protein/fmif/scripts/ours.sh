@@ -1,5 +1,5 @@
 if [ "$#" -lt 5 ]; then
-  echo "Usage: $0 <BASE_MODEL=new/old> <ALIGN_TYPE=bon/beam/spectral> <ALIGN_ORACLE> <N_ALIGN> <GPU>"
+  echo "Usage: $0 <BASE_MODEL=new/old> <ALIGN_TYPE=bon/beam/spectral> <ALIGN_ORACLE=ddg/protgpt/balanced> <N_ALIGN> <GPU> <ALPHA(optional)>"
   exit 1
 fi
 
@@ -12,7 +12,7 @@ GPU=$5
 if [ "$#" -eq 6 ]; then
   ALPHA=$6
 else
-  ALPHA=0.01
+  ALPHA=1 # Default is DDG alignment for "balanced" oracle
 fi
 
 for seed in 0
