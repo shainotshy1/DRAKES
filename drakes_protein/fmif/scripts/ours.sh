@@ -17,6 +17,6 @@ fi
 
 for seed in 0
 do
-    echo "Running Ours... with seed=$seed"
-    python eval_finetune.py --decoding=original --base_model=$BASE_MODEL --seed=$seed --base_path=../../data/data_and_model --align_type $ALIGN_TYPE --align_oracle $ALIGN_ORACLE --n_align $N_ALIGN --gpu $GPU --balanced_alpha $ALPHA
+  echo "Running Ours... with seed=$seed"
+  python eval_finetune.py --decoding=original --base_model=$BASE_MODEL --seed=$seed --base_path=/home/shai/BLISS_Experiments/DRAKES/DRAKES/ --align_type $ALIGN_TYPE --align_oracle $ALIGN_ORACLE --n_align $N_ALIGN --gpu $GPU --balanced_alpha $ALPHA
 done

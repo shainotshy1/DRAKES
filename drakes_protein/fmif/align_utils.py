@@ -4,7 +4,6 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
-from tqdm import tqdm
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -36,15 +35,14 @@ class BONSampler():
         super().__init__()
 
     def sample_aligned(self):
-        samples = self.sampler()#[self.sampler() for _ in range(self.n)]
-        # for s in samples:
+        samples = self.sampler()
         assert isinstance(samples, AlignSamplerState), "Sample must be instance of AlignSamplerState"
-        rewards = samples.calc_reward()#[s.calc_reward() for s in samples]
+        rewards = samples.calc_reward()
         if self.soft:
-            sm_rewards = self.sm(torch.tensor(rewards))
+            sm_rewards = self.sm(rewards)
             top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
         else:
-            _, top_indices = torch.topk(torch.tensor(rewards), self.W, dim=0)
+            _, top_indices = torch.topk(rewards, self.W, dim=0)
         return samples, top_indices, rewards
     
 class TreeStateSampler():
@@ -120,7 +118,7 @@ class OptSampler(TreeStateSampler):
 
     def sample_aligned(self):
         state = self.initial_state
-        for _ in tqdm(range(self.depth - 1)):
+        for _ in range(self.depth - 1):
             assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
             sampler = self.sampler_gen(state, n=self.child_n)
             if state.return_early():
@@ -146,7 +144,7 @@ class BeamSampler(TreeStateSampler):
         num_states = []
         num_gens = []
         labels = []
-        for i in tqdm(range(self.depth - 1)):
+        for i in range(self.depth - 1):
             if self.save_visual:
                 gen_states.append([])
                 num_states.append([])
