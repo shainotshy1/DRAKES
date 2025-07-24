@@ -1,18 +1,33 @@
 import os
-import pickle
-import argparse
-from tqdm import tqdm
-import logging
 import torch
+import logging
+import pandas as pd
 
-from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
+from transformers import AutoTokenizer
+from transformers import GPT2LMHeadModel
+
+from protein_oracle.data_utils import featurize
 from protein_oracle.model_utils import ProteinMPNNOracle
-from torch.utils.data import DataLoader
+from protein_oracle.data_utils import ALPHABET
+
 from model_utils import ProteinMPNNFMIF
 from fm_utils import Interpolant
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
+def gen_results(S_sp, S, batch, mask_for_loss):
+    with torch.no_grad():
+        results_list = []
+        true_detok_seq = "".join([ALPHABET[x] for _ix, x in enumerate(S[0]) if mask_for_loss[0][_ix] == 1])
+        
+        for _it, ssp in enumerate(S_sp):
+            seq_revovery = (S_sp[_it] == S[0]).float().mean().item()
+            resultdf = pd.DataFrame(columns=['seq_recovery'])
+            resultdf.loc[0] = [seq_revovery]
+            resultdf['seq'] = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1])
+            resultdf['true_seq'] = true_detok_seq
+            resultdf['protein_name'] = batch['protein_name'][0]
+            results_list.append(resultdf)
+
+    return results_list
 
 class InterpolantConfig:
     def __init__(self, min_t=1e-2, interpolant_type='masking', temp=0.1, num_timesteps=50):
@@ -21,37 +36,41 @@ class InterpolantConfig:
         self.temp = temp
         self.num_timesteps = num_timesteps
 
-def execute_on_validation(func, base_path, batch_repeat=1, val_batch_size=1):
-    pdb_path = os.path.join(base_path, 'proteindpo_data/AlphaFold_model_PDBs')
-    logging.info(f"Reading protein set ({pdb_path})")
-
-    max_len = 75  # Define the maximum length of proteins
-    dataset = ProteinStructureDataset(pdb_path, max_len) # max_len set to 75 (sequences range from 31 to 74)
-    loader = DataLoader(dataset, batch_size=1000, shuffle=False)
-
-    # make a dict of pdb filename: index
-    pdb_idx_dict = {}
-    pdb_structures = None
-    for batch in loader:
-        pdb_structures = batch[0]
-        pdb_filenames = batch[1]
-        pdb_idx_dict = {pdb_filenames[i]: i for i in range(len(pdb_filenames))}
-        break
-
-    dpo_dict_path_v = os.path.join(base_path, 'proteindpo_data/processed_data')
-    logging.info(f"Reading validation set ({dpo_dict_path_v})")
-    dpo_valid_dict = pickle.load(open(os.path.join(dpo_dict_path_v, 'dpo_valid_dict_wt.pkl'), 'rb'))
-    dpo_valid_dataset = ProteinDPODataset(dpo_valid_dict, pdb_idx_dict, pdb_structures)
-    loader_valid = DataLoader(dpo_valid_dataset, batch_size=val_batch_size, shuffle=False)
-
-    logging.info(f"Executing on validation set (BATCH REPEATS: {batch_repeat}, PROTEINS PER BATCH: {val_batch_size})")
+def build_protgpt_oracle(device):
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    tokenizer = AutoTokenizer.from_pretrained('nferruz/ProtGPT2')
+    model = GPT2LMHeadModel.from_pretrained('nferruz/ProtGPT2').to(device)
     
-    for batch in tqdm(loader_valid):
-        for _ in range(batch_repeat):
-            func(batch)
+    def protgpt_oracle(samples):
+        rewards = []
+        assert len(samples) > 0, "Empty samples list passed to oracle"
 
-def build_reward_oracle(reward_model, X, mask, chain_M, residue_idx, chain_encoding_all):
+        for seq in samples:
+            seq_str = "".join([ALPHABET[x] for x in seq])
+            out = tokenizer(seq_str, return_tensors="pt")
+            input_ids = out.input_ids.cuda().to(seq.device)
+            with torch.no_grad():
+                outputs = model(input_ids, labels=input_ids)
+            log_likelihood = -1 * (outputs.loss * input_ids.shape[1]).item()
+        
+            rewards.append(log_likelihood)
+        return torch.tensor(rewards, device=seq.device) # type: ignore
+    
+    return protgpt_oracle
+
+def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", alpha=1.0):
     cached_batches = {}
+    assert type(alpha) is float and 0 <= alpha <= 1, "Alpha must be between 0 and 1 as it is the weight for the tradeoff between two oracles"
+
+    valid_modes = ["ddg", "protgpt", "balanced"]
+    assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
+
+    if mode == "balanced":
+        if alpha == 1.0:
+            mode = "ddg"
+        elif alpha == 0.0:
+            mode = "protgpt"
+
     def ddg_oracle(samples):
         n = samples.shape[0]
         if n not in cached_batches:
@@ -77,19 +96,41 @@ def build_reward_oracle(reward_model, X, mask, chain_M, residue_idx, chain_encod
             residue_idx_n = cache["residue_idx"]
             chain_encoding_all_n = cache["chain_encoding_all"]
             return reward_model(X_n, samples, mask_n, chain_M_n, residue_idx_n, chain_encoding_all_n)
-    return ddg_oracle
 
-def generate_validation_func(device, model, base_path, repeat_num=1, hidden_dim=128, num_encoder_layers=3, num_neighbors=30, dropout=0.1):
+    if mode == 'ddg':
+        return ddg_oracle
+    else:
+        protgpt_oracle = build_protgpt_oracle(device)
+
+    if mode == 'protgpt':
+        return protgpt_oracle
+    elif mode == 'balanced':
+        protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
+        def balanced_reward(samples):
+            ddg_rewards = ddg_oracle(samples)
+            prot_gpt_rewards = protgpt_oracle(samples)
+            return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
+        return balanced_reward
+    else:
+        raise ValueError()
+
+def generate_execution_func(out_lst, device, model, base_path, align_type='bon', oracle_mode='ddg', oracle_alpha=1.0, N=1, repeat_num=1, hidden_dim=128, num_encoder_layers=3, num_neighbors=30, dropout=0.1):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
+    assert align_type in ['bon', 'beam', 'spectral', 'linear'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam', 'spectral', 'linear']"
+    assert type(N) is int and N > 0
+    assert oracle_mode in ['ddg', 'protgpt', 'balanced']
+    assert type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
 
-    logging.info(f"Generating validation evaluator (REPEATS PER PROTEIN: {repeat_num})")
+    logging.info(f"Generating dataset evaluator (REPEATS PER PROTEIN: {repeat_num})")
 
     if model == 'pretrained':
         relative_ckpt_path = 'pmpnn/outputs/pretrained_if_model.pt'
     elif model == 'drakes':
         relative_ckpt_path = 'protein_rewardbp/finetuned_if_model.ckpt'
     else:
-        return ValueError()
+        raise ValueError()
+    
+    assert type(out_lst) is list and len(out_lst) == 0, "VALUE ERROR: out_lst MUST be an empty python 'list'"
 
     state_dict_path = os.path.join(base_path, relative_ckpt_path)
     logging.info(f"Loading {str.upper(model)} model state dict ({state_dict_path})")
@@ -141,14 +182,15 @@ def generate_validation_func(device, model, base_path, repeat_num=1, hidden_dim=
     reward_model_eval.finetune_init()
     reward_model_eval.eval()
 
-    # HARD CODING FUNCTION TESTING CHARACTERISTICS #
-    N = 1
-    align_type='bon'
-    ################################################
+    if oracle_mode == 'balanced':
+        func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, alpha={oracle_alpha}, N={N}"
+    else:
+        func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
 
+    logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
         X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
-        balanced_oracle = build_reward_oracle(reward_model, X, mask, chain_M, residue_idx, chain_encoding_all)
+        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mode=oracle_mode, alpha=oracle_alpha)
         X = X.repeat(repeat_num, 1, 1, 1)
         mask = mask.repeat(repeat_num, 1)
         chain_M = chain_M.repeat(repeat_num, 1)
@@ -160,35 +202,13 @@ def generate_validation_func(device, model, base_path, repeat_num=1, hidden_dim=
                                                                 chain_M, \
                                                                 residue_idx, \
                                                                 chain_encoding_all,\
-                                                                reward_model=reward_model, \
                                                                 batch_oracle=balanced_oracle, \
                                                                 n=N, \
                                                                 steps_per_level=1, \
                                                                 align_type=align_type)
+        
+        mask_for_loss = mask*chain_M
+        results_list = gen_results(S_sp, S, batch, mask_for_loss)
+        out_lst.extend(results_list)
 
     return validation_func
-
-# Can develop directly in eval validation, using it as a script, or just calling the validation function
-def main():
-    logging.basicConfig(format="%(levelname)s:%(name)s:%(message)s", level=logging.INFO)
-
-    argparser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    argparser.add_argument("--base_path", type=str, help="Base path for data and model") 
-    argparser.add_argument("--model", choices=['pretrained', 'drakes'], help="Model must be one of ['pretrained', 'drakes']")
-    argparser.add_argument("--batch_repeat", type=int, default=1, help="Number of times to repeat execution of each validation protein batch")
-    argparser.add_argument("--batch_size", type=int, default=1, help="Number of times to generate each protein in a batch")
-    argparser.add_argument("--gpu", type=int, default=0, help="GPU device to be used in validation script")
-
-    args = argparser.parse_args()
-
-    device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu", args.gpu)
-    logging.info(f"Seting device {device}")
-
-    validation_func = generate_validation_func(device, args.model, args.base_path, repeat_num=args.batch_size)
-    execute_on_validation(validation_func,          \
-                        args.base_path,             \
-                        batch_repeat=args.batch_repeat, \
-                        val_batch_size=1)
-
-if __name__ == "__main__":
-    main()

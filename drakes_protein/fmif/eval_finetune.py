@@ -323,7 +323,7 @@ for n in [args.n_align]:
                             reward_model=reward_model, alpha=args.tds_alpha, guidance_scale=args.dps_scale) 
                     elif args.decoding == 'original':
                         mask_for_loss = mask*chain_M
-                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all,reward_model=reward_model, batch_oracle=balanced_oracle, n=n, steps_per_level=align_step_interval, align_type=args.align_type)
+                        S_sp, prot_traj, clean_traj = noise_interpolant.sample(testing_model, X, mask, chain_M, residue_idx, chain_encoding_all, batch_oracle=balanced_oracle, n=n, steps_per_level=align_step_interval, align_type=args.align_type)
                         for i, S_sp_traj in enumerate(prot_traj):
                             if i < len(clean_traj):
                                 dg_pred_eval = reward_model_eval(X, clean_traj[i].to(device), mask, chain_M, residue_idx, chain_encoding_all)

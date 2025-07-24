@@ -1,0 +1,107 @@
+import os
+import pickle
+import argparse
+from tqdm import tqdm
+import logging
+import torch
+import pandas as pd
+
+from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
+from torch.utils.data import DataLoader
+
+from execute_align_utils import generate_execution_func
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
+def execute_on_dataset(func, base_path, dataset_name="validation", batch_repeat=1, val_batch_size=1):
+    assert dataset_name in ['validation', 'test', 'train'], f"Encountered dataset value '{dataset_name}' which is not in ['validation', or 'test']"
+
+    pdb_path = os.path.join(base_path, 'proteindpo_data/AlphaFold_model_PDBs')
+    logging.info(f"Reading protein set ({pdb_path})")
+
+    max_len = 75  # Define the maximum length of proteins
+    dataset = ProteinStructureDataset(pdb_path, max_len) # max_len set to 75 (sequences range from 31 to 74)
+    loader = DataLoader(dataset, batch_size=1000, shuffle=False)
+
+    # make a dict of pdb filename: index
+    pdb_idx_dict = {}
+    pdb_structures = None
+    for batch in loader:
+        pdb_structures = batch[0]
+        pdb_filenames = batch[1]
+        pdb_idx_dict = {pdb_filenames[i]: i for i in range(len(pdb_filenames))}
+        break
+
+    if dataset_name == "validation":
+        dpo_pkl_file = 'dpo_valid_dict_wt.pkl'
+    elif dataset_name == "test":
+        dpo_pkl_file = 'dpo_test_dict_wt.pkl'
+    elif dataset_name == "train":
+        dpo_pkl_file ='dpo_test_dict_wt.pkl'
+    else:
+        raise ValueError()
+    
+    dpo_dict_path_v = os.path.join(base_path, 'proteindpo_data/processed_data')
+    dpo_dict_full_path = os.path.join(dpo_dict_path_v, dpo_pkl_file)
+    logging.info(f"Reading validation set ({dpo_dict_full_path})")
+
+    dpo_dict = pickle.load(open(dpo_dict_full_path, 'rb'))
+    dpo_dataset = ProteinDPODataset(dpo_dict, pdb_idx_dict, pdb_structures)
+    loader_valid = DataLoader(dpo_dataset, batch_size=val_batch_size, shuffle=False)
+
+    logging.info(f"Executing on {dataset_name} set (Batch repeats: {batch_repeat}, Proteins per batch: {val_batch_size}, Total proteins: {len(dpo_dataset)})")
+    
+    for batch in tqdm(loader_valid):
+        for _ in range(batch_repeat):
+            func(batch)
+
+def main():
+    logging.basicConfig(format="%(levelname)s:%(name)s:%(message)s", level=logging.INFO)
+
+    argparser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    # Required arguments TODO: finish writing help commands
+    argparser.add_argument("--base_path", required=True, type=str, help="Base path for data and model") 
+    argparser.add_argument("--model", required=True, choices=['pretrained', 'drakes'], help="Model must be one of ['pretrained', 'drakes']")
+    argparser.add_argument("--dataset", required=True, choices=['validation', 'test', 'train'], help="Dataset must be on of ['validation', 'test', 'train']")
+    argparser.add_argument("--output_fn", type=str, required=True, help="Output file name must end in '.csv'")
+    argparser.add_argument("--align_type", choices=['bon', 'beam', 'spectral', 'linear'], required=True)
+    argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'balanced'], required=True)
+    argparser.add_argument("--align_n", type=int, required=True)
+
+    # Optional arguments
+    argparser.add_argument("--batch_repeat", type=int, default=1, help="Number of times to repeat execution of each protein batch")
+    argparser.add_argument("--batch_size", type=int, default=1, help="Number of times to generate each protein in a batch")
+    argparser.add_argument("--gpu", type=int, default=0, help="GPU device to be used in execution script")
+    argparser.add_argument("--oracle_alpha", type=float)
+
+    args = argparser.parse_args()
+
+    assert args.output_fn[-4:] == '.csv' and len(args.output_fn) > 4, "Output file name must end in '.csv' and be nonempty"
+
+    device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu", args.gpu)
+    logging.info(f"Seting device {device}")
+
+    results = []
+    execution_func = generate_execution_func(results,       \
+                                            device,         \
+                                            args.model,     \
+                                            args.base_path, \
+                                            repeat_num=args.batch_size,
+                                            align_type=args.align_type, 
+                                            oracle_mode=args.oracle_mode, 
+                                            oracle_alpha=args.oracle_alpha,
+                                            N=args.align_n)
+    
+    execute_on_dataset(execution_func,             \
+                    args.base_path,                \
+                    dataset_name=args.dataset,     \
+                    batch_repeat=args.batch_repeat,\
+                    val_batch_size=1)
+    
+    results_merge = pd.concat(results)
+    results_merge.to_csv(args.output_fn, index=False)
+
+if __name__ == "__main__":
+    main()
