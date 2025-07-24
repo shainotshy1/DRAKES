@@ -38,7 +38,7 @@ def execute_on_dataset(func, base_path, dataset_name="validation", batch_repeat=
     elif dataset_name == "test":
         dpo_pkl_file = 'dpo_test_dict_wt.pkl'
     elif dataset_name == "train":
-        dpo_pkl_file ='dpo_test_dict_wt.pkl'
+        dpo_pkl_file ='dpo_train_dict_wt.pkl'
     else:
         raise ValueError()
     
