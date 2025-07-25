@@ -56,6 +56,19 @@ def execute_on_dataset(func, base_path, dataset_name="validation", batch_repeat=
         for _ in range(batch_repeat):
             func(batch)
 
+def generate_output_fn(args):
+    out_name = f"{args.model}_{args.dataset}_{args.oracle_mode}"
+    
+    if args.oracle_mode == "balanced":
+        out_name += f"_alpha={args.oracle_alpha}"
+
+    out_name += f"_{args.align_type}_N={args.align_n}"
+    if args.align_type == "linear":
+        out_name += f"_lambda={args.lasso_lambda}"
+
+    full_out_path = f"{args.output_folder}/{out_name}.csv"
+    return full_out_path
+
 def main():
     logging.basicConfig(format="%(levelname)s:%(name)s:%(message)s", level=logging.INFO)
 
@@ -65,7 +78,7 @@ def main():
     argparser.add_argument("--base_path", required=True, type=str, help="Base path for data and model") 
     argparser.add_argument("--model", required=True, choices=['pretrained', 'drakes'], help="Model must be one of ['pretrained', 'drakes']")
     argparser.add_argument("--dataset", required=True, choices=['validation', 'test', 'train'], help="Dataset must be on of ['validation', 'test', 'train']")
-    argparser.add_argument("--output_fn", type=str, required=True, help="Output file name must end in '.csv'")
+    argparser.add_argument("--output_folder", type=str, required=True, help="Output folder for protein generations")
     argparser.add_argument("--align_type", choices=['bon', 'beam', 'spectral', 'linear'], required=True)
     argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'balanced'], required=True)
     argparser.add_argument("--align_n", type=int, required=True)
@@ -74,11 +87,10 @@ def main():
     argparser.add_argument("--batch_repeat", type=int, default=1, help="Number of times to repeat execution of each protein batch")
     argparser.add_argument("--batch_size", type=int, default=1, help="Number of times to generate each protein in a batch")
     argparser.add_argument("--gpu", type=int, default=0, help="GPU device to be used in execution script")
-    argparser.add_argument("--oracle_alpha", type=float)
+    argparser.add_argument("--oracle_alpha", default=1.0, type=float)
+    argparser.add_argument("--lasso_lambda", default=0.0, type=float)
 
     args = argparser.parse_args()
-
-    assert args.output_fn[-4:] == '.csv' and len(args.output_fn) > 4, "Output file name must end in '.csv' and be nonempty"
 
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu", args.gpu)
     logging.info(f"Seting device {device}")
@@ -88,11 +100,12 @@ def main():
                                             device,         \
                                             args.model,     \
                                             args.base_path, \
-                                            repeat_num=args.batch_size,
-                                            align_type=args.align_type, 
-                                            oracle_mode=args.oracle_mode, 
-                                            oracle_alpha=args.oracle_alpha,
-                                            N=args.align_n)
+                                            repeat_num=args.batch_size, \
+                                            align_type=args.align_type, \
+                                            oracle_mode=args.oracle_mode, \
+                                            oracle_alpha=args.oracle_alpha, \
+                                            lasso_lambda=args.lasso_lambda, \
+                                            N=args.align_n,)
     
     execute_on_dataset(execution_func,             \
                     args.base_path,                \
@@ -100,8 +113,11 @@ def main():
                     batch_repeat=args.batch_repeat,\
                     val_batch_size=1)
     
+    output_fn = generate_output_fn(args)
     results_merge = pd.concat(results)
-    results_merge.to_csv(args.output_fn, index=False)
+    
+    logging.info(f"Saving to file {output_fn}")
+    results_merge.to_csv(output_fn, index=False)
 
 if __name__ == "__main__":
     main()
