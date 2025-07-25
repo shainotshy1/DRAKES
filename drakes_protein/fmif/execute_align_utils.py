@@ -206,7 +206,8 @@ def generate_execution_func(out_lst, device, model, base_path, align_type='bon',
                                                                 batch_oracle=balanced_oracle, \
                                                                 n=N, \
                                                                 steps_per_level=1, \
-                                                                align_type=align_type)
+                                                                align_type=align_type,
+                                                                lasso_lambda=lasso_lambda)
         
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss)

@@ -264,7 +264,7 @@ class Interpolant:
             return sample
         return sampler_n_gen
 
-    def build_opt_selector(self, model, model_params, ts, reward_oracle, opt="linear", max_solution_order=4):
+    def build_opt_selector(self, model, model_params, ts, reward_oracle, opt="linear", max_solution_order=4, lasso_lambda=0.005):
         opt_options = ["linear", "spectral"]
         assert opt in opt_options, f"{opt} not in {opt_options}"
 
@@ -289,19 +289,18 @@ class Interpolant:
                         if X.shape[1] > max_solution_order:
                             # min ||Xa - r||_2^2 + lambda * ||a||_0
                             # return arg-top-k(a)
-                            clf = Lasso(alpha=0.005)
+                            clf = Lasso(alpha=lasso_lambda)
                             clf.fit(X, rewards)
                             a = np.array(clf.coef_.flatten().tolist())
                             b = clf.intercept_
                             indices = np.argpartition(-a, max_solution_order-1)[:max_solution_order]
                             demask_compact = np.zeros(a.shape, dtype=all_masks.dtype)
                             demask_compact[indices] = 1
+                            #pred_reward = a.T @ demask_compact + b
                         else:
-                            demask_compact = np.zeros(a.shape, dtype=all_masks.dtype)
-                        pred_reward = a.T @ demask_compact + b
+                            demask_compact = np.ones(X.shape[1], dtype=all_masks.dtype)
                         best_demask = np.zeros(target_tokens.shape, dtype=all_masks.dtype)
                         best_demask[target_tokens] = demask_compact
-                        print(f"Pred Reward: {pred_reward}")
                         best_demask = torch.tensor(best_demask, device=samples.demask.device)
                     elif opt == "spectral":    
                         best_model, cv_r2 = lgboost_fit(all_masks, rewards)
@@ -324,7 +323,8 @@ class Interpolant:
             n = 1,
             bon_step_inteval=1, # 1 bon step for each interval
             steps_per_level=1,
-            align_type="bon"
+            align_type="bon",
+            lasso_lambda=0.005
         ):
 
         if type(n) != int or n < 1:
@@ -360,7 +360,7 @@ class Interpolant:
             sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level)
 
             if align_type == "spectral" or align_type == "linear":
-                opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type)
+                opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
                 sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
             else: # BEAM / BON
                 sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1)            
