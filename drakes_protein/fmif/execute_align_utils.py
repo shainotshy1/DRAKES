@@ -183,10 +183,11 @@ def generate_execution_func(out_lst, device, model, base_path, align_type='bon',
     reward_model_eval.finetune_init()
     reward_model_eval.eval()
 
+    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
+    if align_type == 'linear':
+        func_descr += f", lasso_lambda={lasso_lambda}"
     if oracle_mode == 'balanced':
-        func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, alpha={oracle_alpha}, N={N}"
-    else:
-        func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
+        func_descr += f", balanced_alpha={oracle_alpha}"
 
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
