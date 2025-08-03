@@ -4,6 +4,22 @@ import numpy as np
 import lightgbm as lgb
 from sklearn.model_selection import GridSearchCV
 
+import os
+import sys
+from contextlib import contextmanager
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, 'w') as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+import logging
+
 def lgboost_fit(X, y):
     model = lgb.LGBMRegressor(verbose=-1, n_jobs=4)
 
@@ -78,17 +94,11 @@ def lgboost_to_fourier(model):
 
 
 class ExactSolver:
-    def __init__(self, fourier_dictionary, maximize=True, max_solution_order=None):
+    def __init__(self, maximize=True, max_solution_order=None):
+        logging.getLogger('gurobipy').setLevel(logging.WARNING)
         self.maximize = maximize
         self.max_solution_order = max_solution_order
-        self.fouier_dictionary = fourier_dictionary
-        assert len(self.fouier_dictionary) > 0, "Empty Dictionary"
-        self.n = len(list(self.fouier_dictionary.keys())[0])
-        self.mobius_dictionary = self.fourier_to_mobius(self.fouier_dictionary)
-
-        self.baseline_value = self.mobius_dictionary[tuple([0] * self.n)] if tuple(
-            [0] * self.n) in self.mobius_dictionary else 0
-
+        self.loaded = False
         self.key = {
             #"WLSACCESSID": "38d41f1f-f181-4d1d-9d6b-63f1dfff392c",
             #"WLSSECRET": "8ed03468-18d7-4e2a-adef-a8d6703c8d2a",
@@ -96,8 +106,8 @@ class ExactSolver:
             "LICENSEID": 2680322,
         }
 
-        self.initialize_model()
-
+        with suppress_stdout():
+            self.env = Env(params=self.key)
 
     def fourier_to_mobius(self, fourier_dict):
         """
@@ -125,6 +135,17 @@ class ExactSolver:
             # multiply each entry by (-2)^(cardinality)
             return {loc: val * np.power(-2.0, np.sum(loc)) for loc, val in unscaled_mobius_dict.items()}
 
+    def load_fourier_dictionary(self, fourier_dictionary):
+        self.loaded = True
+        self.fouier_dictionary = fourier_dictionary
+        assert len(self.fouier_dictionary) > 0, "Empty Dictionary"
+        self.n = len(list(self.fouier_dictionary.keys())[0])
+        self.mobius_dictionary = self.fourier_to_mobius(self.fouier_dictionary)
+        self.baseline_value = self.mobius_dictionary[tuple([0] * self.n)] if tuple(
+            [0] * self.n) in self.mobius_dictionary else 0
+        
+        self.initialize_model()
+
     def all_subsets(self, iterable, order=None):
         """
         Returns all subset tuples of the given iterable.
@@ -135,9 +156,7 @@ class ExactSolver:
             return list(chain.from_iterable(combinations(iterable, r) for r in range(order, order + 1)))
 
     def initialize_model(self):
-        self.env = Env(params=self.key)
         self.model = Model("Mobius Maximization Problem", env=self.env)
-
         vars = [(tuple(np.nonzero(key)[0]), val) for key, val in self.mobius_dictionary.items() if sum(key) > 0]
         self.locs, self.coefs = [i[0] for i in vars], [i[1] for i in vars]
         locs_set = set(self.locs)
@@ -180,6 +199,7 @@ class ExactSolver:
             self.model.addConstr(expr <= self.max_solution_order)
 
     def solve(self):
+        assert self.loaded, "ERORR: must load fourier dictionary first"
         self.model.setParam('OutputFlag', 0)
         self.model.optimize()
         # Print the optimal values
@@ -188,5 +208,5 @@ class ExactSolver:
             if len(self.locs[i]) == 1 and var.x > 0.5:
                 argmax[self.locs[i][0]] = 1
 
-        print(f"Est. {'argmax' if self.maximize else 'argmin'} {argmax} with est value {np.round(self.model.objVal + self.baseline_value, 3)}")
+        #print(f"Est. {'argmax' if self.maximize else 'argmin'} {argmax} with est value {np.round(self.model.objVal + self.baseline_value, 3)}")
         return argmax

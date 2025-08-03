@@ -268,6 +268,8 @@ class Interpolant:
         opt_options = ["linear", "spectral"]
         assert opt in opt_options, f"{opt} not in {opt_options}"
 
+        exact_solver = ExactSolver(maximize=True, max_solution_order=max_solution_order)
+
         def opt_selector(samples):
             parent_state = samples.parent_state
 
@@ -306,7 +308,8 @@ class Interpolant:
                         best_model, cv_r2 = lgboost_fit(all_masks, rewards)
                         fourier_dict = lgboost_to_fourier(best_model)
                         fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
-                        best_demask = ExactSolver(fourier_dict_trunc, maximize=True, max_solution_order=max_solution_order).solve()
+                        exact_solver.load_fourier_dictionary(fourier_dict_trunc)
+                        best_demask = exact_solver.solve()
                         best_demask = torch.tensor(best_demask, device=samples.demask.device)
                     else:
                         raise ValueError(f"{opt} is invalid Optimizer name")
