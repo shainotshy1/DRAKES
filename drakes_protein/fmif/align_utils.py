@@ -92,6 +92,7 @@ class TreeStateSampler():
 
             prev_layer_parents = new_prev_layer
 
+        i = 0
         for i, layer in enumerate(reversed(list(nx.topological_generations(G)))):
             for n in layer:
                 G.nodes[n]["layer"] = i
@@ -168,11 +169,10 @@ class BeamSampler(TreeStateSampler):
                     
             states = next_states
         
-        if self.save_visual:
-            self.gen_tree_visual(gen_states, num_states, labels)
-
         max_state = max(states, key=lambda s : s.calc_reward())
 
         if self.save_visual:
-            gen_states[-1].append([states.index(max_state)])
+            max_state_visual = len(num_states) - 2
+            self.gen_tree_visual(gen_states, num_states[:max_state_visual], labels)
+
         return max_state

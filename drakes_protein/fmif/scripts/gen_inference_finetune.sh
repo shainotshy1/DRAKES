@@ -1,13 +1,13 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=8
-BATCH_SIZE=16
+BATCH_REPEAT=1
+BATCH_SIZE=1
 DEVICE=3
 MODEL="pretrained"
-DATASET="validation"
-# TARGET_PROTEIN="7JJK"
-ALIGN_TYPE='bon'
+DATASET="single"
+TARGET_PROTEIN="7JJK"
+ALIGN_TYPE='beam' # TODO: test multi-child and scRMSD
 ALIGN_N=10
 ORACLE_MODE='ddg'
 ORACLE_ALPHA=1.0
@@ -30,6 +30,7 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
+        --target_protein=$TARGET_PROTEIN
         # --lasso_lambda=$LASSO_LAMBDA
         # --target_protein=$TARGET_PROTEIN
         # --oracle_alpha=$ORACLE_ALPHA \
