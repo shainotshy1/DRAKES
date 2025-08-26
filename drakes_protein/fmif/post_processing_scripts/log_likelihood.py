@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 from transformers import GPT2LMHeadModel
 import argparse
 from tqdm import tqdm
-from utils import process_seq_data_directory
+from utils import process_seq_data_directory # type: ignore
 
 def protgpt_wrapper(samples, model, tokenizer):
     res = []

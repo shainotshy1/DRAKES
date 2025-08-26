@@ -6,8 +6,9 @@ BATCH_SIZE=16
 DEVICE=3
 MODEL="pretrained"
 DATASET="validation"
-ALIGN_TYPE='beam'
-ALIGN_N=50
+# TARGET_PROTEIN="7JJK"
+ALIGN_TYPE='bon'
+ALIGN_N=10
 ORACLE_MODE='ddg'
 ORACLE_ALPHA=1.0
 LASSO_LAMBDA=0.0005
@@ -15,9 +16,9 @@ LASSO_LAMBDA=0.0005
 FN="bliss_align_"$DATASET"_"$MODEL"_"$ALIGN_TYPE"_"$ORACLE_MODE"_alpha="$ORACLE_ALPHA"_n="$ALIGN_N".csv"
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results"
 
-#LASSO_LAMBDA_PARAMETERS=(0.0001 0.0005 0.001 0.005)
-#for LASSO_LAMBDA in "${LASSO_LAMBDA_PARAMETERS[@]}"
-#do
+# LASSO_LAMBDA_PARAMETERS=(0.0 0.05)
+# for LASSO_LAMBDA in "${LASSO_LAMBDA_PARAMETERS[@]}"
+# do
 
 python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \
@@ -29,6 +30,7 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        --oracle_alpha=$ORACLE_ALPHA \
-        --lasso_lambda=$LASSO_LAMBDA
-#done 
+        # --lasso_lambda=$LASSO_LAMBDA
+        # --target_protein=$TARGET_PROTEIN
+        # --oracle_alpha=$ORACLE_ALPHA \
+# done 

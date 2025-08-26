@@ -60,10 +60,10 @@ def build_protgpt_oracle(device):
 
 def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", alpha=1.0):
     cached_batches = {}
-    assert type(alpha) is float and 0 <= alpha <= 1, "Alpha must be between 0 and 1 as it is the weight for the tradeoff between two oracles"
 
     valid_modes = ["ddg", "protgpt", "balanced"]
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
+    assert mode != "balanced" or (type(alpha) is float and 0 <= alpha <= 1), "If mode is 'balanced', alpha must be a float between 0 and 1"
 
     if mode == "balanced":
         if alpha == 1.0:
@@ -120,7 +120,7 @@ def generate_execution_func(out_lst, device, model, base_path, align_type='bon',
     assert type(N) is int and N > 0
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'balanced']
-    assert type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
+    assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 

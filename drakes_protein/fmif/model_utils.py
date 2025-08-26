@@ -448,8 +448,8 @@ class ProteinMPNNFMIF(nn.Module):
         mask_attend = mask.unsqueeze(-1) * mask_attend
         for i, layer in enumerate(self.encoder_layers):
             if cls is not None:
-                h_V = h_V + self.cls_layers_enc[i](cls_emb)[:, None, :]
-            h_V, h_E = torch.utils.checkpoint.checkpoint(layer, h_V, h_E, E_idx, mask, mask_attend)
+                h_V = h_V + self.cls_layers_enc[i](cls_emb)[:, None, :] # type: ignore
+            h_V, h_E = torch.utils.checkpoint.checkpoint(layer, h_V, h_E, E_idx, mask, mask_attend) # type: ignore
 
         if S.ndim > 2 and S.shape[-1] == 22:
             h_S = self.W_s_ft(S)
@@ -462,7 +462,7 @@ class ProteinMPNNFMIF(nn.Module):
 
         for layer in self.decoder_layers:
             if cls is not None:
-                h_V = h_V + self.cls_layers_dec[i](cls_emb)[:, None, :]
+                h_V = h_V + self.cls_layers_dec[i](cls_emb)[:, None, :] # type: ignore
             h_ESV = cat_neighbors_nodes(h_V, h_ES, E_idx)
             h_ESV = mask_1D * h_ESV
             h_V = torch.utils.checkpoint.checkpoint(layer, h_V, h_ESV, mask)

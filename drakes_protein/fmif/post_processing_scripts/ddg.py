@@ -1,13 +1,13 @@
 import os
 import torch
-import numpy as np
+import numpy as np 
 import pandas as pd
 import argparse
 from tqdm import tqdm
 from protein_oracle.model_utils import ProteinMPNNOracle
 from protein_oracle.data_utils import featurize
 from protein_oracle.data_utils import ALPHABET
-from utils import process_seq_data_directory, get_drakes_test_data
+from utils import process_seq_data_directory, get_drakes_test_data # type: ignore
 import warnings
 warnings.filterwarnings("ignore", message=".*use_reentrant.*")
 
@@ -59,8 +59,7 @@ def extract_ddg_directory(dir_name, seq_label, true_seq_label, protein_label, de
                         num_encoder_layers=num_encoder_layers,
                         num_decoder_layers=num_encoder_layers,
                         k_neighbors=num_neighbors,
-                        dropout=dropout,
-                        )
+                        dropout=dropout)
     reward_model.to(device)
     reward_model.load_state_dict(torch.load(os.path.join(base_path, 'protein_oracle/outputs/reward_oracle_ft.pt'))['model_state_dict'])
     reward_model.finetune_init()
@@ -72,8 +71,7 @@ def extract_ddg_directory(dir_name, seq_label, true_seq_label, protein_label, de
                         num_encoder_layers=num_encoder_layers,
                         num_decoder_layers=num_encoder_layers,
                         k_neighbors=num_neighbors,
-                        dropout=dropout,
-                        )
+                        dropout=dropout)
     reward_model_eval.to(device)
     reward_model_eval.load_state_dict(torch.load(os.path.join(base_path, 'protein_oracle/outputs/reward_oracle_eval.pt'))['model_state_dict'])
     reward_model_eval.finetune_init()
