@@ -95,6 +95,10 @@ def generate_output_fn(args):
     out_name += f"_{args.align_type}_N={args.align_n}"
     if args.align_type == "linear":
         out_name += f"_lambda={args.lasso_lambda}"
+    elif args.align_type == "beam":
+        out_name += f"_W={args.beam_w}"
+    if args.align_type != "bon":
+        out_name += f"_stepsperlevel={args.steps_per_level}"
 
     full_out_path = f"{args.output_folder}/{out_name}.csv"
     return full_out_path
@@ -119,6 +123,8 @@ def main():
     argparser.add_argument("--oracle_alpha", type=float, help="Alpha parameter for balanced oracle mode, 1.0 = only ddg, 0.0 = only protgpt")
     argparser.add_argument("--lasso_lambda", default=0.0, type=float, help="Lambda parameter for lasso regularization, only used if align_type is 'linear'")
     argparser.add_argument("--target_protein", type=str, help="Target protein structure name for inverse folding, mandatory if dataset is 'single'")
+    argparser.add_argument("--steps_per_level", type=int, default=1, help="Number of diffusion steps per alignment step (only applies for BEAM, LASSO, and SPECTRAL, but not BON)")
+    argparser.add_argument("--beam_w", type=int, default=1, help="Number of beams for BEAM sampling (only applies if align_type is 'beam')")
 
     args = argparser.parse_args()
 
@@ -138,7 +144,9 @@ def main():
                                             oracle_mode=args.oracle_mode, \
                                             oracle_alpha=args.oracle_alpha, \
                                             lasso_lambda=args.lasso_lambda, \
-                                            N=args.align_n,)
+                                            N=args.align_n, \
+                                            beam_w=args.beam_w, \
+                                            steps_per_level=args.steps_per_level)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

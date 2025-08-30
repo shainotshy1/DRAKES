@@ -19,15 +19,11 @@ class AlignSamplerState():
         return False
 
 class BONSampler():
-    def __init__(self, sampler, n, W, soft=False):
+    def __init__(self, sampler, W, soft=False):
         # Parameter validation
-        assert type(n) is int, "n must be type 'int'"
         assert type(W) is int, "W must be type 'int"
-        assert n > 0, "n must be a positive integer"
         assert W > 0, "W must be a positive integer"
-        assert W <= n, "W must be less than or equal to n"
         self.sampler = sampler
-        self.n = n # number of samples to generate
         self.W = W # top W results returned
         self.soft = soft # Soft max sampling used instead of argma
         if self.soft:
@@ -79,7 +75,7 @@ class TreeStateSampler():
                 new_nodes = []
                 new_parents = []
                 for k in range(n):
-                    new_node = G.size() + 1
+                    new_node = len(G.nodes) + 1
                     new_nodes.append(new_node)
                     G.add_node(new_node, label=labels[i][j][k])
                     G.add_edge(parent, new_node)
@@ -105,7 +101,7 @@ class TreeStateSampler():
         labels = {node: data["label"] for node, data in G.nodes(data=True)}
 
         fig_width = 6
-        fig_height = max_layer * 1.2
+        fig_height = max_layer * 1.1
         plt.figure(figsize=(fig_width, fig_height))
 
         pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
@@ -134,6 +130,7 @@ class BeamSampler(TreeStateSampler):
         # Parameter validation
         assert type(W) is int, "W must be type 'int"
         assert W > 0, "W must be a positive integer"
+        assert W <= child_n, "W must be less than or equal to child_n"
         self.W = W
         self.save_visual = save_visual
         self.soft = soft
@@ -155,24 +152,24 @@ class BeamSampler(TreeStateSampler):
             next_states = []
             for state in states:
                 assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-                sampler = self.sampler_gen(state, self.child_n)
 
                 w_ = self.W if i == 0 else 1
                 n_ = self.child_n if i == 0 else self.child_n // self.W
-                bon_sampler = BONSampler(sampler=sampler, n=n_, W=w_, soft=self.soft)
-                samples, top_indices, rewards = bon_sampler.sample_aligned()
-                next_states += [samples.get_state(i) for i in top_indices]
+                sampler = self.sampler_gen(state, n_)
+                bon_sampler = BONSampler(sampler=sampler, W=w_, soft=self.soft)
+                samples, top_indices, rewards = bon_sampler.sample_aligned() # type: ignore
+                next_states.extend([samples.get_state(i) for i in top_indices])
                 if self.save_visual:
                     gen_states[-1].append([int(k.item()) for k in top_indices])
                     num_states[-1].append(n_)
                     labels[-1].append([f"{r.item():.1e}" for r in rewards])
-                    
+                     
             states = next_states
         
         max_state = max(states, key=lambda s : s.calc_reward())
 
         if self.save_visual:
-            max_state_visual = len(num_states) - 2
+            max_state_visual = 4 #len(num_states) - 2
             self.gen_tree_visual(gen_states, num_states[:max_state_visual], labels)
 
         return max_state

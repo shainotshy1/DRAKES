@@ -1,35 +1,40 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=8
-BATCH_SIZE=16
-DEVICE=3
+BATCH_REPEAT=1
+BATCH_SIZE=1
+DEVICE=1
 MODEL="pretrained"
-DATASET="test"
-ALIGN_TYPE='spectral' # TODO: test multi-child and scRMSD
-ALIGN_N=50
+DATASET="single"
+ALIGN_TYPE='beam' # TODO: test multi-child and scRMSD
+ALIGN_N=10
 ORACLE_MODE='ddg'
+LASSO_LAMBDA=0.0005
+STEPS_PER_LEVEL=1
+BEAM_W=1
+TARGET_PROTEIN="7JJK"
 # ORACLE_ALPHA=1.0
-# LASSO_LAMBDA=0.005
-# TARGET_PROTEIN="7JJK"
+
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 
-# LASSO_LAMBDA_PARAMETERS=(0.0 0.05)
-# for LASSO_LAMBDA in "${LASSO_LAMBDA_PARAMETERS[@]}"
+# ALIGN_N_PARAMETERS=(10 50 100 150 200 250)
+# for ALIGN_N in "${ALIGN_N_PARAMETERS[@]}"
 # do
 
-python gen_inference_finetune.py --base_path=$BASE_PATH \
+CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \
         --batch_size=$BATCH_SIZE \
-        --gpu=$DEVICE \
+        --gpu=0 \
         --model=$MODEL \
         --dataset=$DATASET \
         --output_folder=$OUTPUT_FOLDER \
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        # --lasso_lambda=$LASSO_LAMBDA
-        # --target_protein=$TARGET_PROTEIN
+        --lasso_lambda=$LASSO_LAMBDA \
+        --beam_w=$BEAM_W \
+        --steps_per_level=$STEPS_PER_LEVEL \
+        --target_protein=$TARGET_PROTEIN \
         # --oracle_alpha=$ORACLE_ALPHA \
 # done 

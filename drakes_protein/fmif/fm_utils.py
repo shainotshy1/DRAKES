@@ -203,8 +203,8 @@ class Interpolant:
     def demask_to_pred_state(self, demask, model, model_params, ts, reward_oracle, prev_state):
         pred_wo_mask = prev_state.q_xs.clone()
         pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        best_pred = torch.argmax(pred_wo_mask, dim=-1)
-        _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
+        pred = _sample_categorical(pred_wo_mask) #torch.argmax(pred_wo_mask, dim=-1)
+        _x = (pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
 
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
@@ -213,7 +213,7 @@ class Interpolant:
         sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
 
-    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1, beam_model_params=None):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         def sampler_n_gen(state, n = 1):
@@ -227,17 +227,17 @@ class Interpolant:
                         continue
                     if i == 0:
                         _x = _sample_categorical(sample_states.q_xs, n=n)
-                        sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
                     else:
                         _x = _sample_categorical(sample_states.q_xs, n=1)
-                        sample_states = self.mask_batch_to_state(_x, model, model_params, ts, reward_oracle, sample_states)
+                    params = beam_model_params if (beam_model_params is not None and state.step != 1) else model_params # This model params is size n // W since each child generates this many samples instead of n, so the total is n/W * W = n
+                    sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states)
                 if state != sample_states: # This condition is true if have we reach sample_states.step = num_timesteps - 1; i.e reached the end
                     sample_states.parent_state = state # Override to make the parent state include the whole trajectory
                 return sample_states
             return sample
         return sampler_n_gen
 
-    def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1):
+    def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1, beam_model_params=None):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         # Generate sampler
@@ -257,7 +257,7 @@ class Interpolant:
                     demask[:, unmasked] = demask_temp
                     pred_wo_mask = sample_states.q_xs.clone()
                     pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-                    best_pred = torch.argmax(pred_wo_mask, dim=-1)
+                    best_pred = _sample_categorical(pred_wo_mask, n=n) #torch.argmax(pred_wo_mask, dim=-1)
                     _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
                     sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
                 return sample_states
@@ -324,7 +324,7 @@ class Interpolant:
             cls=None, w=None,
             batch_oracle=None,
             n = 1,
-            bon_step_inteval=1, # 1 bon step for each interval
+            beam_w = 1,
             steps_per_level=1,
             align_type="bon",
             lasso_lambda=0.005
@@ -333,7 +333,6 @@ class Interpolant:
         if type(n) != int or n < 1:
             print("Invalid BON configuration (n must be positive integer - Using normal denoising")
             n = 1
-        assert type(bon_step_inteval) is int and bon_step_inteval > 0, "BON step interval must be positive integer"
 
         num_batch, num_res = mask.shape        
         num_timesteps = self._cfg.num_timesteps
@@ -352,21 +351,22 @@ class Interpolant:
             cls_i = cls[i].unsqueeze(0) if cls is not None else None
             w_i = w[i].unsqueeze(0) if w is not None else None
             single_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=1)
-            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n)
-            
+            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
+            beam_model_params = None if align_type != "beam" else self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
+
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             q_xs, pred_aatypes_1 = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
             initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, batch_oracle)
             total_steps = num_timesteps // steps_per_level + 1
 
             sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
-            sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level)
+            sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
 
             if align_type == "spectral" or align_type == "linear":
                 opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
                 sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
             else: # BEAM / BON
-                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, 1)            
+                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w, save_visual=True)            
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now

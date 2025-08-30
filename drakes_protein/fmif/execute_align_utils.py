@@ -91,7 +91,22 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
     else:
         raise ValueError()
 
-def generate_execution_func(out_lst, device, model, base_path, align_type='bon', oracle_mode='ddg', oracle_alpha=1.0, N=1, lasso_lambda=0.0, repeat_num=1, hidden_dim=128, num_encoder_layers=3, num_neighbors=30, dropout=0.1):
+def generate_execution_func(out_lst, 
+                            device, 
+                            model, 
+                            base_path, 
+                            align_type='bon', 
+                            oracle_mode='ddg', 
+                            oracle_alpha=1.0,
+                            N=1, 
+                            beam_w=1,
+                            steps_per_level=1,
+                            lasso_lambda=0.0, 
+                            repeat_num=1, 
+                            hidden_dim=128, 
+                            num_encoder_layers=3, 
+                            num_neighbors=30, 
+                            dropout=0.1):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
     assert align_type in ['bon', 'beam', 'spectral', 'linear'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam', 'spectral', 'linear']"
     assert type(N) is int and N > 0
@@ -163,6 +178,10 @@ def generate_execution_func(out_lst, device, model, base_path, align_type='bon',
     func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
     if align_type == 'linear':
         func_descr += f", lasso_lambda={lasso_lambda}"
+    elif align_type == 'beam':
+        func_descr += f", W={beam_w}"
+    if align_type in ['beam', 'linear', 'spectral']:
+        func_descr += f", steps_per_level={steps_per_level}"
     if oracle_mode == 'balanced':
         func_descr += f", balanced_alpha={oracle_alpha}"
 
@@ -183,7 +202,8 @@ def generate_execution_func(out_lst, device, model, base_path, align_type='bon',
                                                                 chain_encoding_all,\
                                                                 batch_oracle=balanced_oracle, \
                                                                 n=N, \
-                                                                steps_per_level=1, \
+                                                                beam_w=beam_w, \
+                                                                steps_per_level=steps_per_level, \
                                                                 align_type=align_type,
                                                                 lasso_lambda=lasso_lambda)
         
