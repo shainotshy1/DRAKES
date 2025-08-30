@@ -366,7 +366,7 @@ class Interpolant:
                 opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
                 sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
             else: # BEAM / BON
-                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w, save_visual=True)            
+                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)            
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
