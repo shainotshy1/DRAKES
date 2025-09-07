@@ -4,6 +4,9 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
+from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, ExactSolver
+from protein_oracle.data_utils import ALPHABET
+from sklearn.linear_model import Lasso
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -40,7 +43,7 @@ class BONSampler():
         else:
             _, top_indices = torch.topk(rewards, self.W, dim=0)
         return samples, top_indices, rewards
-    
+
 class TreeStateSampler():
     def __init__(self, sampler_gen, initial_state, depth, child_n):
         # Parameter validation
@@ -121,10 +124,97 @@ class OptSampler(TreeStateSampler):
             if state.return_early():
                 samples = sampler()
             else:
-                samples = sampler()#[sampler() for _ in range(self.child_n)]
+                samples = sampler()
             state = self.opt_selector(samples)
         return state
          
+class InteractionSampler():
+    def __init__(self, sampler_gen, initial_state, depth):
+        # Parameter validation
+        assert type(depth) is int, "depth must be type 'int'"
+        assert depth > 0, "depth must be a positive integer"
+        self.sampler_gen = sampler_gen
+        self.initial_state = initial_state
+        self.depth = depth
+        
+
+    #TODO: After having generated a sample, generate N masks on the sequence to train a ProxySPEX function 
+    #      and figure out where the interactions are by looking at the top-k coefficients
+    #TODO: Either make N a hyperparameter or repeatedly train the function till we achieve high faithfulness (like done in ProxySPEX)
+
+    def sample_aligned(self):
+        state = self.initial_state
+        # TODO: nest loop in multiple "Interaction" iterations
+        for i in range(self.depth - 1):
+            assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
+            sampler = self.sampler_gen(state, 1)
+            sample = sampler()
+            state = sample.get_state(0) # just generating 1 state so take the 0th index
+
+        curr_res = state.clean_seq[0]
+
+        seq_str = "".join([ALPHABET[x] for x in curr_res])
+        print(seq_str, state.calc_reward().item())
+        print()
+
+        num_masks = 500
+        p = 0.15
+
+        all_masks = np.random.choice(2, size=(num_masks, curr_res.shape[0]), p = np.array([1-p, p]))
+        rewards = np.array([state.calc_reward_masked(m[np.newaxis, :]).cpu() for m in all_masks]) 
+        for i in range(3):
+            tokens = list(seq_str)
+            for j in range(curr_res.shape[0]):
+                if all_masks[i,j]:
+                    tokens[j] = '[M]'
+            print("".join(tokens), rewards[i])                
+
+        # Spectral Method
+
+        best_model, cv_r2 = lgboost_fit(all_masks, rewards)
+        print(f'CV r2: {cv_r2}')
+
+        # Algorithm: select top parent and its children\
+        top_interactions = 25
+        fourier_dict = lgboost_to_fourier(best_model)
+        fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=True)[:top_interactions])
+
+        target_features = set()
+        fourier_iter = iter(fourier_dict_trunc)
+        top_coefficient = next(fourier_iter)
+        top_features = set()
+        if sum(top_coefficient) == 0:
+            top_coefficient = next(fourier_iter)
+        nonzero_pos, = np.where(np.array(top_coefficient) == 1)
+        top_features.update(nonzero_pos)
+        target_features.update(nonzero_pos)
+
+        for k in fourier_dict_trunc:
+            if fourier_dict_trunc[k] <= 0: break # no more contributing coefficients left
+            descr = "("
+            nonzero_pos, = np.where(np.array(k) == 1)
+            for i in range(len(nonzero_pos) - 1):
+                descr += f"{nonzero_pos[i]}, "
+            if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
+            descr += ")"
+            if len(target_features & set(nonzero_pos)) > 0:
+                target_features.update(nonzero_pos)
+
+            print(descr, fourier_dict_trunc[k])
+        print(f"SPECTRAL targets: {sorted(list(target_features))}")
+
+        # LASSO Baseline
+        # max_solution_order = len(target_features)
+        # clf = Lasso(alpha=0.005)
+        # clf.fit(all_masks, rewards)
+        # a = np.array(clf.coef_.flatten().tolist())
+        # b = clf.intercept_
+        # lasso_res = np.argpartition(a, -max_solution_order)[-max_solution_order:]
+        # print(f"LASSO targets: {sorted(lasso_res)}")
+
+        return state
+
+
 class BeamSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
         # Parameter validation

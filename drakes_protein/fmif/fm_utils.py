@@ -6,7 +6,7 @@ import model_utils as mu
 #from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from align_utils import BeamSampler, BONSampler, AlignSamplerState, OptSampler
+from align_utils import BeamSampler, BONSampler, AlignSamplerState, OptSampler, InteractionSampler
 from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, ExactSolver
 import time
 from sklearn.linear_model import LinearRegression
@@ -98,6 +98,11 @@ class Interpolant:
             self.parent_state = parent_state
             self.reward_oracle = reward_oracle
             self.done = (self.masked_seq != mu.MASK_TOKEN_INDEX).all()
+
+        def calc_reward_masked(self, mask):
+            masked_seq = self.clean_seq.clone()
+            masked_seq[torch.tensor(mask, dtype=torch.bool, device=masked_seq.device)] = mu.MASK_TOKEN_INDEX
+            return self.reward_oracle(masked_seq)
 
         def calc_reward(self):
             # reward_dirty = self.reward_oracle(self.masked_seq)
@@ -203,7 +208,7 @@ class Interpolant:
     def demask_to_pred_state(self, demask, model, model_params, ts, reward_oracle, prev_state):
         pred_wo_mask = prev_state.q_xs.clone()
         pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        pred = _sample_categorical(pred_wo_mask) #torch.argmax(pred_wo_mask, dim=-1)
+        pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
         _x = (pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
 
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
@@ -257,7 +262,7 @@ class Interpolant:
                     demask[:, unmasked] = demask_temp
                     pred_wo_mask = sample_states.q_xs.clone()
                     pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-                    best_pred = _sample_categorical(pred_wo_mask, n=n) #torch.argmax(pred_wo_mask, dim=-1)
+                    best_pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
                     _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
                     sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
                 return sample_states
@@ -362,11 +367,12 @@ class Interpolant:
             sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
             sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
 
-            if align_type == "spectral" or align_type == "linear":
-                opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
-                sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
-            else: # BEAM / BON
-                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)            
+            # if align_type == "spectral" or align_type == "linear":
+            #     opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
+            #     sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
+            # else: # BEAM / BON
+            #     sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
+            sampler = InteractionSampler(sampler_gen, initial_state, total_steps)         
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now

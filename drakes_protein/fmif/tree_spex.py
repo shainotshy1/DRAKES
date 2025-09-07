@@ -208,5 +208,5 @@ class ExactSolver:
             if len(self.locs[i]) == 1 and var.x > 0.5:
                 argmax[self.locs[i][0]] = 1
 
-        #print(f"Est. {'argmax' if self.maximize else 'argmin'} {argmax} with est value {np.round(self.model.objVal + self.baseline_value, 3)}")
+        # print(f"Est. {'argmax' if self.maximize else 'argmin'} {argmax} with est value {np.round(self.model.objVal + self.baseline_value, 3)}")
         return argmax
