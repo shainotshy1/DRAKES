@@ -322,6 +322,14 @@ class Interpolant:
             return best_state
         return opt_selector
 
+    def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle):
+        def masked_state_builder(masked_seq, step, parent_state):
+            assert type(step) and 0 <= step < len(ts)
+            q_xs, pred_aatypes_1 = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
+            state = self.ProteinDiffusionState(masked_seq, pred_aatypes_1, q_xs, (masked_seq != mu.MASK_TOKEN_INDEX).type(torch.int8), 1, parent_state, reward_oracle)
+            return state
+        return masked_state_builder
+
     def sample(
             self,
             model,
@@ -372,7 +380,7 @@ class Interpolant:
             #     sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
             # else: # BEAM / BON
             #     sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
-            sampler = InteractionSampler(sampler_gen, initial_state, total_steps)         
+            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle))         
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
@@ -393,12 +401,13 @@ class Interpolant:
         concat_prot_traj = []
         concat_clean_traj = []
         concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype)
-        for i in range(len(prot_traj[0])):
-            concat_prot_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
-            concat_clean_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
-            for j, best_sample in enumerate(best_samples):
-                concat_prot_traj[i][j] = prot_traj[j][i]
-                concat_clean_traj[i][j] = clean_traj[j][i]
+        # Not using, will currently comment this out
+        # for i in range(len(prot_traj[0])):
+        #     concat_prot_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
+        #     concat_clean_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
+        #     for j, best_sample in enumerate(best_samples):
+        #         concat_prot_traj[i][j] = prot_traj[j][i]
+        #         concat_clean_traj[i][j] = clean_traj[j][i]
         for i, best_sample in enumerate(best_samples):
             concat_best_samples[i] = best_sample.clean_seq
         return concat_best_samples, concat_prot_traj, concat_clean_traj

@@ -125,6 +125,7 @@ def main():
     argparser.add_argument("--target_protein", type=str, help="Target protein structure name for inverse folding, mandatory if dataset is 'single'")
     argparser.add_argument("--steps_per_level", type=int, default=1, help="Number of diffusion steps per alignment step (only applies for BEAM, LASSO, and SPECTRAL, but not BON)")
     argparser.add_argument("--beam_w", type=int, default=1, help="Number of beams for BEAM sampling (only applies if align_type is 'beam')")
+    argparser.add_argument("--spec_feedback", type=bool, required=False, default=False)
 
     args = argparser.parse_args()
 
