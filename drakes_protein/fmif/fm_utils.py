@@ -376,7 +376,8 @@ class Interpolant:
             cls_i = cls[i].unsqueeze(0) if cls is not None else None
             w_i = w[i].unsqueeze(0) if w is not None else None
             single_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=1)
-            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
+            align_n = n if align_type in ["bon", "beam"] else 1
+            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=align_n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
             beam_model_params = None if align_type != "beam" else self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
 
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
@@ -384,15 +385,21 @@ class Interpolant:
             initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, batch_oracle)
             total_steps = num_timesteps // steps_per_level + 1
 
-            sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
+            sample_gen_builder = self.build_sampler_gen # self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else 
             sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
 
-            # if align_type == "spectral" or align_type == "linear":
-            #     opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
-            #     sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
-            # else: # BEAM / BON
-            #     sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
-            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle))         
+            if align_type == "linear": raise NotImplementedError()
+            elif align_type == "spectral":
+                # opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
+                # sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
+                beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
+                beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n= n // beam_w) # n is n // beam_W per child (W children so total n per level)
+                beam_sampler_gen = sample_gen_builder(model, beam_init_model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
+                resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
+
+                sampler = InteractionSampler(sampler_gen, initial_state, total_steps, 1, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
+            else: # BEAM / BON
+                sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now

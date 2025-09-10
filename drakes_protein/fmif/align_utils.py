@@ -101,7 +101,7 @@ class TreeStateSampler():
         
         pad = (global_max - global_min) / 4
         min_val, max_val = global_min - pad, global_max + pad
-        norm = plt.Normalize(min_val, max_val)
+        norm = plt.Normalize(min_val, max_val) # type: ignore
         node_colors = [color_grad(1 - norm(float(data["label"]))) for _, data in G.nodes(data=True)]
         labels = {node: data["label"] for node, data in G.nodes(data=True)}
 
@@ -131,14 +131,16 @@ class OptSampler(TreeStateSampler):
         return state
          
 class InteractionSampler():
-    def __init__(self, sampler_gen, initial_state, depth, state_builder):
+    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, state_builder, resampler):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
         self.sampler_gen = sampler_gen
         self.initial_state = initial_state
         self.depth = depth
+        self.feedback_steps = feedback_steps
         self.state_builder = state_builder
+        self.resampler = resampler
         
 
     #TODO: After having generated a sample, generate N masks on the sequence to train a ProxySPEX function 
@@ -165,31 +167,35 @@ class InteractionSampler():
 # Address MCTS in the paper to predict review
 # Can consider decreasing sampling as we repeat iterations
 # Make calc reward as expected value instead of argmax
-        spectral_its = 10
         state = self.initial_state
         depth = self.depth - 1
         num_tokens = state.masked_seq.shape[1]
-        mask = np.ones(num_tokens)
         curr_depth = 0
         reward_traj = []
         curr_iter = 0
-        while curr_iter < (spectral_its + 1): # Run a total of (spectral_its + 1) iterations so that the last iteration is not a spectral iter
-            while curr_depth < depth:
-                assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-                sampler = self.sampler_gen(state, 1)
-                sample = sampler()
-                state = sample.get_state(0) # just generating 1 state so take the 0th index
-                curr_depth += 1
+        while curr_iter < (self.feedback_steps + 1): # Run a total of (self.feedback_steps + 1) iterations so that the last iteration is not a spectral iter
+            if curr_iter == 0:
+                while curr_depth < depth:
+                    assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
+                    sampler = self.sampler_gen(state, 1)
+                    sample = sampler()
+                    state = sample.get_state(0) # just generating 1 state so take the 0th index
+                    curr_depth += 1
+            else:
+                print("Executing realign")
+                self.resampler.initial_state = state
+                state = self.resampler.sample_aligned()
             curr_res = state.gen_clean_seq()
             curr_res = curr_res[0]
             
-            if curr_iter == spectral_its:
+            if curr_iter == self.feedback_steps:
                 seq_str = "".join([ALPHABET[x] for x in curr_res])
                 print(seq_str)
                 reward_traj.append(state.calc_reward().item())
                 print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
                 return state
             else:
+                mask = np.zeros(num_tokens)
                 seq_str = "".join([ALPHABET[x] for x in curr_res])
                 reward_traj.append(state.calc_reward().item())
                 print(f"Previous true reward: {reward_traj[-1]}")
@@ -199,11 +205,11 @@ class InteractionSampler():
                 # mask_samples = torch.bernoulli(torch.full((num_masks, num_untargeted), p, device=device)).int() # type: ignore
                 # all_masks = torch.zeros(size=(num_masks, num_tokens), device=device, dtype=mask_samples.dtype).repeat(num_masks, 1)
 
-                untargeted = (mask == 1)
-                num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
-                if num_untargeted == 0:
-                    curr_iter = spectral_its
-                    continue
+                # untargeted = (mask == 1)
+                # num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
+                # if num_untargeted == 0:
+                #     curr_iter = self.feedback_steps
+                #     continue
 
                 # TODO: switch to reward as predicted reward rather than reward of masked sequence
                 # TODO: try instead of locking the best ones, run sampling on the coefficients with the highest interactions, regardless of positive or negative coefficient
@@ -215,7 +221,7 @@ class InteractionSampler():
                 p = 0.25
 
                 mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([1-p, p]))
-                all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
+                all_masks = mask_samples #* untargeted.astype(mask_samples.dtype) # zero out currently targeted
 
                 rewards_lst = []
                 for m in all_masks:
@@ -236,43 +242,54 @@ class InteractionSampler():
                 # Algorithm: select top parent and its children
                 top_interactions = 10
                 fourier_dict = lgboost_to_fourier(best_model)
-                fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=True)[:(top_interactions + 1)])
-
+                fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=False)[:(top_interactions + 1)])
+                
+                # tmp = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:(top_interactions * 2 + 1)])
+                # for k in tmp:
+                #     nonzero_pos, = np.where(np.array(k) == 1)
+                #     if len(nonzero_pos) == 0: continue
+                #     descr = "("
+                #     for i in range(len(nonzero_pos) - 1):
+                #         descr += f"{nonzero_pos[i]}, "
+                #     if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
+                #     descr += ")"                    
+                #     print(descr, tmp[k])
+                # print("-----")
                 target_features = set()
                 # fourier_iter = iter(fourier_dict_trunc)
 
                 # top_coefficient = next(fourier_iter, None)
                 # if top_coefficient is None: # Catch no iteractions => exit early
-                #     curr_iter = spectral_its
+                #     curr_iter = self.feedback_steps
                 #     continue
 
                 # if sum(top_coefficient) == 0:
                 #     top_coefficient = next(fourier_iter, None)
                 #     if top_coefficient is None: # Catch no iteractions => exit early
-                #         curr_iter = spectral_its
+                #         curr_iter = self.feedback_steps
                 #         continue
 
                 total_found = 0
                 for k in fourier_dict_trunc:
-                    if fourier_dict_trunc[k] <= 0: break # no more contributing coefficients left
+                    if fourier_dict_trunc[k] > 0: break # no more negative coefficients left
                     nonzero_pos, = np.where(np.array(k) == 1)
                     if len(nonzero_pos) == 0: continue
                     else: total_found += 1
                     target_features.update(nonzero_pos)
-                    descr = "("
-                    for i in range(len(nonzero_pos) - 1):
-                        descr += f"{nonzero_pos[i]}, "
-                    if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
-                    descr += ")"                    
-                    print(descr, fourier_dict_trunc[k])
+                    # descr = "("
+                    # for i in range(len(nonzero_pos) - 1):
+                    #     descr += f"{nonzero_pos[i]}, "
+                    # if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
+                    # descr += ")"
+                    # print(descr, fourier_dict_trunc[k])
                     if total_found == top_interactions: break
-                print(f"SPECTRAL targets: {sorted(list(target_features))}")
+                # print(f"SPECTRAL targets: {sorted(list(target_features))}")
 
-                mask[list(target_features)] = 0
-                num_untargeted = int(np.sum(mask))
-                if num_untargeted == 0: # just in case handling
-                    curr_iter = spectral_its
-                    continue
+                mask[list(target_features)] = 1
+                # num_untargeted = num_tokens - int(np.sum(mask))
+                # if num_untargeted == 0: # just in case handling
+                #     curr_iter = self.feedback_steps
+                #     continue
 
                 tokens = list(seq_str)
                 for j in range(num_tokens):

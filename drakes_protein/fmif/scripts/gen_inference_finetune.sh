@@ -1,13 +1,13 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=2
-BATCH_SIZE=16
+BATCH_REPEAT=1
+BATCH_SIZE=4
 DEVICE=0
 MODEL="pretrained"
 DATASET="single"
-ALIGN_TYPE='beam' # TODO: test multi-child and scRMSD
-ALIGN_N=1
+ALIGN_TYPE='spectral' # TODO: test multi-child and scRMSD
+ALIGN_N=10
 ORACLE_MODE='ddg'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
