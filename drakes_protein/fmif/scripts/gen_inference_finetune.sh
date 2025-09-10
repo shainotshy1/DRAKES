@@ -2,17 +2,17 @@
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=2
-BATCH_SIZE=2
+BATCH_SIZE=16
 DEVICE=0
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='beam' # TODO: test multi-child and scRMSD
 ALIGN_N=1
-ORACLE_MODE='protgpt'
+ORACLE_MODE='ddg'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0005
-TARGET_PROTEIN="2MA4"
+TARGET_PROTEIN="7JJK"
 # ORACLE_ALPHA=1.0
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"

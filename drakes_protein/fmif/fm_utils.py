@@ -89,25 +89,42 @@ class Interpolant:
         return noisy_batch
 
     class ProteinDiffusionState(AlignSamplerState):
-        def __init__(self, masked_seq, clean_seq, q_xs, demask, step, parent_state, reward_oracle):
+        def __init__(self, masked_seq, q_xs, demask, step, parent_state, reward_oracle):
             self.masked_seq = masked_seq
+            self.pred_seq = None
             self.demask = demask
             self.q_xs = q_xs
             self.step = step
-            self.clean_seq = clean_seq
             self.parent_state = parent_state
             self.reward_oracle = reward_oracle
             self.done = (self.masked_seq != mu.MASK_TOKEN_INDEX).all()
 
-        def calc_reward_masked(self, mask):
-            masked_seq = self.clean_seq.clone()
-            masked_seq[torch.tensor(mask, dtype=torch.bool, device=masked_seq.device)] = mu.MASK_TOKEN_INDEX
-            return self.reward_oracle(masked_seq)
+            self.q_xs_no_mask = self.q_xs.clone()
+            self.q_xs_no_mask[:, :, mu.MASK_TOKEN_INDEX] = 0
 
-        def calc_reward(self):
-            # reward_dirty = self.reward_oracle(self.masked_seq)
-            reward_clean = self.reward_oracle(self.clean_seq)
-            return reward_clean
+        def gen_clean_seq(self, select_argmax=False):
+            if self.pred_seq is not None: return self.pred_seq.clone()
+            
+            if self.done:
+                self.pred_seq = self.masked_seq.clone() # if masked seq is already unmasked then just return that
+            else:
+                copy_flag = (self.masked_seq == mu.MASK_TOKEN_INDEX).to(self.masked_seq.dtype)
+                if select_argmax:
+                    clean_pred = torch.argmax(self.q_xs_no_mask, dim=-1)
+                else:  
+                    clean_pred = _sample_categorical(self.q_xs_no_mask)
+                clean_pred = clean_pred * copy_flag + self.masked_seq * (1 - copy_flag)
+                self.pred_seq = clean_pred
+            return self.pred_seq
+
+        def calc_reward(self, n=1, select_argmax=False):
+            if select_argmax: return self.reward_oracle(self.gen_clean_seq(select_argmax=True))
+
+            avg_reward = 0
+            for _ in range(n):
+                avg_reward += (1.0 / n) * self.reward_oracle(self.gen_clean_seq())
+
+            return avg_reward
         
         def get_num_states(self):
             return self.masked_seq.shape[0]
@@ -115,7 +132,6 @@ class Interpolant:
         def get_state(self, i):
             res = copy.copy(self)
             res.masked_seq = self.masked_seq[i, :].unsqueeze(0)
-            res.clean_seq = self.clean_seq[i, :].unsqueeze(0)
             res.q_xs = self.q_xs[i, :].unsqueeze(0)
             return res
 
@@ -145,10 +161,6 @@ class Interpolant:
             self.cls = cls
             self.w = w
 
-    class ProteinBatchTreeSearch():
-        def __init__(self):
-            return
-
     def generate_state_values(self, model, model_params, masked_seq, t_1, t_2):
         # Extract parameters
         X = model_params.X
@@ -173,7 +185,7 @@ class Interpolant:
         
         pred_logits_wo_mask = pred_logits_1.clone()
         pred_logits_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
+        # pred_aatypes_1 = torch.argmax(pred_logits_wo_mask, dim=-1)
 
         pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.neg_infinity
         pred_logits_1 = pred_logits_1 / self._cfg.temp - torch.logsumexp(pred_logits_1 / self._cfg.temp, dim=-1, keepdim=True)
@@ -184,15 +196,15 @@ class Interpolant:
         move_chance_s = 1.0 - t_2
         q_xs = pred_logits_1.exp() * d_t
         q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
-        return q_xs, pred_aatypes_1
+        return q_xs#, pred_aatypes_1
 
     def mask_batch_to_state(self, _x, model, model_params, ts, reward_oracle, prev_state):
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
         demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
-        q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
+        q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
     
     def mask_to_state_batch(self, _x, model, model_params, ts, reward_oracle, prev_state):
@@ -201,8 +213,8 @@ class Interpolant:
         demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
-        q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_states = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
+        q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+        sample_states = self.ProteinDiffusionState(aatypes_t, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
         return sample_states
 
     def demask_to_pred_state(self, demask, model, model_params, ts, reward_oracle, prev_state):
@@ -214,8 +226,8 @@ class Interpolant:
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
-        q_xs, pred_aatypes_1 = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, pred_aatypes_1, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
+        q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
+        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
         return sample_state
 
     def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1, beam_model_params=None):
@@ -257,7 +269,7 @@ class Interpolant:
                         continue
                     unmasked = (sample_states.masked_seq == mu.MASK_TOKEN_INDEX).squeeze()
                     num_masked = torch.sum(unmasked).cpu()
-                    demask_temp = torch.bernoulli(torch.full((n, num_masked), 0.5, device=state.q_xs.device)).int()
+                    demask_temp = torch.bernoulli(torch.full((n, num_masked), 0.5, device=state.q_xs.device)).int() # type: ignore
                     demask = torch.zeros(size=(sample_states.masked_seq.shape[0], sample_states.q_xs.shape[1], ), device=demask_temp.device, dtype=demask_temp.dtype).repeat(n, 1)
                     demask[:, unmasked] = demask_temp
                     pred_wo_mask = sample_states.q_xs.clone()
@@ -325,8 +337,8 @@ class Interpolant:
     def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle):
         def masked_state_builder(masked_seq, step, parent_state):
             assert type(step) and 0 <= step < len(ts)
-            q_xs, pred_aatypes_1 = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
-            state = self.ProteinDiffusionState(masked_seq, pred_aatypes_1, q_xs, (masked_seq != mu.MASK_TOKEN_INDEX).type(torch.int8), 1, parent_state, reward_oracle)
+            q_xs = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
+            state = self.ProteinDiffusionState(masked_seq, q_xs, (masked_seq != mu.MASK_TOKEN_INDEX).type(torch.int8), 1, parent_state, reward_oracle)
             return state
         return masked_state_builder
 
@@ -368,8 +380,8 @@ class Interpolant:
             beam_model_params = None if align_type != "beam" else self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
 
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
-            q_xs, pred_aatypes_1 = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
-            initial_state = self.ProteinDiffusionState(aatypes_0, pred_aatypes_1, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, batch_oracle)
+            q_xs = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
+            initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, batch_oracle)
             total_steps = num_timesteps // steps_per_level + 1
 
             sample_gen_builder = self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else self.build_sampler_gen
@@ -384,19 +396,15 @@ class Interpolant:
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
-        clean_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
         for i, sampler in enumerate(samplers):
             best_sample = sampler.sample_aligned()
             prot_traj.append([])
-            clean_traj.append([])
             best_samples.append(best_sample)
             curr = best_sample
             while curr is not None:
                 prot_traj[-1].append(curr.masked_seq)
-                clean_traj[-1].append(curr.clean_seq)
                 curr = curr.parent_state
             prot_traj[-1] = prot_traj[-1][::-1]
-            clean_traj[-1] = clean_traj[-1][::-1]
         seq_dtype = prot_traj[0][0].dtype
         concat_prot_traj = []
         concat_clean_traj = []
@@ -409,7 +417,7 @@ class Interpolant:
         #         concat_prot_traj[i][j] = prot_traj[j][i]
         #         concat_clean_traj[i][j] = clean_traj[j][i]
         for i, best_sample in enumerate(best_samples):
-            concat_best_samples[i] = best_sample.clean_seq
+            concat_best_samples[i] = best_sample.gen_clean_seq()
         return concat_best_samples, concat_prot_traj, concat_clean_traj
 
     def sample_gradient(
