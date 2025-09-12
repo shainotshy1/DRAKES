@@ -63,7 +63,7 @@ class TreeStateSampler():
 
         color_grad = colormaps['inferno']
 
-        G.add_node(G.size(), label=labels[0][0][0])
+        G.add_node(len(G.nodes), label=labels[0][0][0])
 
         prev_layer_parents = [0]
         global_min = float(labels[0][0][0])
@@ -162,6 +162,7 @@ class InteractionSampler():
         return state
 
     def sample_aligned(self):
+        print("----------------------------------")
         # TODO: nest loop in multiple "Interaction" iterations
 # For more liited number of samples, tlak about influence scores
 # Address MCTS in the paper to predict review
@@ -170,11 +171,11 @@ class InteractionSampler():
         state = self.initial_state
         depth = self.depth - 1
         num_tokens = state.masked_seq.shape[1]
-        curr_depth = 0
         reward_traj = []
         curr_iter = 0
         while curr_iter < (self.feedback_steps + 1): # Run a total of (self.feedback_steps + 1) iterations so that the last iteration is not a spectral iter
             if curr_iter == 0:
+                curr_depth = 0
                 while curr_depth < depth:
                     assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
                     sampler = self.sampler_gen(state, 1)
@@ -190,7 +191,6 @@ class InteractionSampler():
             
             if curr_iter == self.feedback_steps:
                 seq_str = "".join([ALPHABET[x] for x in curr_res])
-                print(seq_str)
                 reward_traj.append(state.calc_reward().item())
                 print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
                 return state
@@ -338,13 +338,16 @@ class BeamSampler(TreeStateSampler):
             next_states = []
             for state in states:
                 assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-
+                # if state.return_early(): 
+                #     next_states.append(state)
+                #     continue
+                # else:
                 w_ = self.W if i == 0 else 1
                 n_ = self.child_n if i == 0 else self.child_n // self.W
                 sampler = self.sampler_gen(state, n_)
                 bon_sampler = BONSampler(sampler=sampler, W=w_, soft=self.soft)
                 samples, top_indices, rewards = bon_sampler.sample_aligned() # type: ignore
-                next_states.extend([samples.get_state(i) for i in top_indices])
+                next_states.extend([samples.get_state(i.item()) for i in top_indices])
                 if self.save_visual:
                     gen_states[-1].append([int(k.item()) for k in top_indices])
                     num_states[-1].append(n_)
@@ -352,10 +355,12 @@ class BeamSampler(TreeStateSampler):
                      
             states = next_states
         
-        max_state = max(states, key=lambda s : s.calc_reward())
+        max_state = max(states, key=lambda s : s.calc_reward().item())
 
         if self.save_visual:
-            max_state_visual = 4 #len(num_states) - 2
+            max_state_visual = 4 # len(num_states) - 2
             self.gen_tree_visual(gen_states, num_states[:max_state_visual], labels)
+
+        max_state.pred_seq = None
 
         return max_state

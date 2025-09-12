@@ -131,8 +131,10 @@ class Interpolant:
         
         def get_state(self, i):
             res = copy.copy(self)
-            res.masked_seq = self.masked_seq[i, :].unsqueeze(0)
-            res.q_xs = self.q_xs[i, :].unsqueeze(0)
+            res.masked_seq = res.masked_seq[i, :].unsqueeze(0)
+            if res.pred_seq is not None: res.pred_seq = res.pred_seq[i, :].unsqueeze(0)
+            res.q_xs = res.q_xs[i, :].unsqueeze(0)
+            res.q_xs_no_mask = res.q_xs_no_mask[i, :].unsqueeze(0)
             return res
 
         def return_early(self):
@@ -393,11 +395,11 @@ class Interpolant:
                 # opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
                 # sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
                 beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
-                beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n= n // beam_w) # n is n // beam_W per child (W children so total n per level)
+                beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
                 beam_sampler_gen = sample_gen_builder(model, beam_init_model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
                 resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
-                sampler = InteractionSampler(sampler_gen, initial_state, total_steps, 1, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
+                sampler = InteractionSampler(sampler_gen, initial_state, total_steps, 4, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
             else: # BEAM / BON
                 sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
             samplers.append(sampler)
@@ -541,7 +543,7 @@ class Interpolant:
             t_1 = t_2
 
         t_1 = ts[-1]
-        return pred_aatypes_1, prot_traj, clean_traj
+        return pred_aatypes_1, prot_traj, clean_traj # type: ignore
 
     def compute_gradient_CG(self, model, x_onehot, reward_model,
                              X, mask, chain_M, residue_idx, chain_encoding_all):
