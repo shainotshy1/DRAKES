@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, ExactSolver # type:ignore
-from protein_oracle.data_utils import ALPHABET
+from protein_oracle.data_utils import ALPHABET, ALPHABET_WITH_MASK
 from sklearn.linear_model import Lasso
 import model_utils as mu # type:ignore
 from math import floor
@@ -38,7 +38,7 @@ class BONSampler():
     def sample_aligned(self):
         samples = self.sampler()
         assert isinstance(samples, AlignSamplerState), "Sample must be instance of AlignSamplerState"
-        rewards = samples.calc_reward()
+        rewards = samples.calc_reward(n=2) # type: ignore
         if self.soft:
             sm_rewards = self.sm(rewards)
             top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
@@ -169,148 +169,152 @@ class InteractionSampler():
 # Can consider decreasing sampling as we repeat iterations
 # Make calc reward as expected value instead of argmax
         state = self.initial_state
-        depth = self.depth - 1
         num_tokens = state.masked_seq.shape[1]
         reward_traj = []
         curr_iter = 0
+        mask = np.ones(num_tokens)
         while curr_iter < (self.feedback_steps + 1): # Run a total of (self.feedback_steps + 1) iterations so that the last iteration is not a spectral iter
-            if curr_iter == 0:
-                curr_depth = 0
-                while curr_depth < depth:
-                    assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
-                    sampler = self.sampler_gen(state, 1)
-                    sample = sampler()
-                    state = sample.get_state(0) # just generating 1 state so take the 0th index
-                    curr_depth += 1
-            else:
-                print("Executing realign")
-                self.resampler.initial_state = state
-                state = self.resampler.sample_aligned()
+            print("Executing realign")
+            self.resampler.initial_state = state
+            state = self.resampler.sample_aligned()
             curr_res = state.gen_clean_seq()
             curr_res = curr_res[0]
-            
-            if curr_iter == self.feedback_steps:
-                seq_str = "".join([ALPHABET[x] for x in curr_res])
+            seq_str = "".join([ALPHABET[x] for x in curr_res])
+            untargeted = (mask == 1)
+            num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
+            if curr_iter == self.feedback_steps or num_untargeted == 0: 
+                print(seq_str)
                 reward_traj.append(state.calc_reward().item())
                 print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
-                return state
-            else:
-                mask = np.zeros(num_tokens)
-                seq_str = "".join([ALPHABET[x] for x in curr_res])
-                reward_traj.append(state.calc_reward().item())
-                print(f"Previous true reward: {reward_traj[-1]}")
-                # print(seq_str, state.calc_reward().item())
-                # print()
+                break
 
-                # mask_samples = torch.bernoulli(torch.full((num_masks, num_untargeted), p, device=device)).int() # type: ignore
-                # all_masks = torch.zeros(size=(num_masks, num_tokens), device=device, dtype=mask_samples.dtype).repeat(num_masks, 1)
+            # if curr_iter == self.feedback_steps:
+            #     seq_str = "".join([ALPHABET[x] for x in curr_res])
+            #     reward_traj.append(state.calc_reward().item())
+            #     print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
+            #     return state
+            # else:
+            reward_traj.append(state.calc_reward().item())
+            print(f"Previous true reward: {reward_traj[-1]}")
+            # print(seq_str, state.calc_reward().item())
+            # print()
 
-                # untargeted = (mask == 1)
-                # num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
-                # if num_untargeted == 0:
-                #     curr_iter = self.feedback_steps
-                #     continue
+            # mask_samples = torch.bernoulli(torch.full((num_masks, num_untargeted), p, device=device)).int() # type: ignore
+            # all_masks = torch.zeros(size=(num_masks, num_tokens), device=device, dtype=mask_samples.dtype).repeat(num_masks, 1)
 
-                # TODO: switch to reward as predicted reward rather than reward of masked sequence
-                # TODO: try instead of locking the best ones, run sampling on the coefficients with the highest interactions, regardless of positive or negative coefficient
-                num_masks = 500
-                # p1 = 0.3
-                # p2 = 0.4
-                # alpha = num_untargeted / num_tokens
-                # p = p1 * alpha + (1 - alpha) * p2
-                p = 0.25
+            # TODO: switch to reward as predicted reward rather than reward of masked sequence
+            # TODO: try instead of locking the best ones, run sampling on the coefficients with the highest interactions, regardless of positive or negative coefficient
+            num_masks = 500
+            # p1 = 0.3
+            # p2 = 0.4
+            # alpha = num_untargeted / num_tokens
+            # p = p1 * alpha + (1 - alpha) * p2
+            p = 0.25
+            
+            target_features = np.random.choice(2, size=(num_tokens), p = np.array([1-p, p]))
+            mask[target_features == 1] = 0
 
-                mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([1-p, p]))
-                all_masks = mask_samples #* untargeted.astype(mask_samples.dtype) # zero out currently targeted
-
-                rewards_lst = []
-                for m in all_masks:
-                    rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=2).item())
-                rewards = np.array(rewards_lst)
-                # for i in range(3):
-                #     tokens = list(seq_str)
-                #     for j in range(num_tokens):
-                #         if all_masks[i,j]:
-                #             tokens[j] = ' '
-                #     print("".join(tokens), rewards[i])                
-
-                # Spectral Method
-
-                best_model, cv_r2 = lgboost_fit(all_masks, rewards)
-                # print(f'CV r2: {cv_r2}')
-
-                # Algorithm: select top parent and its children
-                top_interactions = 10
-                fourier_dict = lgboost_to_fourier(best_model)
-                fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=False)[:(top_interactions + 1)])
-                
-                # tmp = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:(top_interactions * 2 + 1)])
-                # for k in tmp:
-                #     nonzero_pos, = np.where(np.array(k) == 1)
-                #     if len(nonzero_pos) == 0: continue
-                #     descr = "("
-                #     for i in range(len(nonzero_pos) - 1):
-                #         descr += f"{nonzero_pos[i]}, "
-                #     if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
-                #     descr += ")"                    
-                #     print(descr, tmp[k])
-                # print("-----")
-                target_features = set()
-                # fourier_iter = iter(fourier_dict_trunc)
-
-                # top_coefficient = next(fourier_iter, None)
-                # if top_coefficient is None: # Catch no iteractions => exit early
-                #     curr_iter = self.feedback_steps
-                #     continue
-
-                # if sum(top_coefficient) == 0:
-                #     top_coefficient = next(fourier_iter, None)
-                #     if top_coefficient is None: # Catch no iteractions => exit early
-                #         curr_iter = self.feedback_steps
-                #         continue
-
-                total_found = 0
-                for k in fourier_dict_trunc:
-                    if fourier_dict_trunc[k] > 0: break # no more negative coefficients left
-                    nonzero_pos, = np.where(np.array(k) == 1)
-                    if len(nonzero_pos) == 0: continue
-                    else: total_found += 1
-                    target_features.update(nonzero_pos)
-                    # descr = "("
-                    # for i in range(len(nonzero_pos) - 1):
-                    #     descr += f"{nonzero_pos[i]}, "
-                    # if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
-                    # descr += ")"
-                    # print(descr, fourier_dict_trunc[k])
-                    if total_found == top_interactions: break
-                # print(f"SPECTRAL targets: {sorted(list(target_features))}")
-
-                mask[list(target_features)] = 1
-                # num_untargeted = num_tokens - int(np.sum(mask))
-                # if num_untargeted == 0: # just in case handling
-                #     curr_iter = self.feedback_steps
-                #     continue
-
-                tokens = list(seq_str)
-                for j in range(num_tokens):
-                    if mask[j] == 1:
-                        tokens[j] = ' '
-
-                state = self.generate_remasked_state(state, mask)
-                curr_depth = state.step + 1
-
-                print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
-
-                # LASSO Baseline
-                # max_solution_order = len(target_features)
-                # clf = Lasso(alpha=0.005)
-                # clf.fit(all_masks, rewards)
-                # a = np.array(clf.coef_.flatten().tolist())
-                # b = clf.intercept_
-                # lasso_res = np.argpartition(a, -max_solution_order)[-max_solution_order:]
-                # print(f"LASSO targets: {sorted(lasso_res)}")
+            state = self.generate_remasked_state(state, mask)
             curr_iter += 1
+            tokens = list(seq_str)
+            for j in range(num_tokens):
+                if mask[j] == 1:
+                    tokens[j] = '-'
+            print("".join(tokens))                
+            continue
 
+
+            mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([1-p, p]))
+            all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
+
+            rewards_lst = []
+            for m in all_masks:
+                rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=2).item())
+            rewards = np.array(rewards_lst)
+            # for i in range(3):
+            #     tokens = list(seq_str)
+            #     for j in range(num_tokens):
+            #         if all_masks[i,j]:
+            #             tokens[j] = ' '
+            #     print("".join(tokens), rewards[i])                
+
+            # Spectral Method
+
+            best_model, cv_r2 = lgboost_fit(all_masks, rewards)
+            # print(f'CV r2: {cv_r2}')
+
+            # Algorithm: select top parent and its children
+            top_interactions = 10
+            fourier_dict = lgboost_to_fourier(best_model)
+            fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=True)[:(top_interactions + 1)])
+            
+            # tmp = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:(top_interactions * 2 + 1)])
+            # for k in tmp:
+            #     nonzero_pos, = np.where(np.array(k) == 1)
+            #     if len(nonzero_pos) == 0: continue
+            #     descr = "("
+            #     for i in range(len(nonzero_pos) - 1):
+            #         descr += f"{nonzero_pos[i]}, "
+            #     if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
+            #     descr += ")"                    
+            #     print(descr, tmp[k])
+            # print("-----")
+            # fourier_iter = iter(fourier_dict_trunc)
+
+            # top_coefficient = next(fourier_iter, None)
+            # if top_coefficient is None: # Catch no iteractions => exit early
+            #     curr_iter = self.feedback_steps
+            #     continue
+
+            # if sum(top_coefficient) == 0:
+            #     top_coefficient = next(fourier_iter, None)
+            #     if top_coefficient is None: # Catch no iteractions => exit early
+            #         curr_iter = self.feedback_steps
+            #         continue
+
+            target_features = set()
+            total_found = 0
+            for k in fourier_dict_trunc:
+                if fourier_dict_trunc[k] < 0: break # no more positive coefficients left
+                nonzero_pos, = np.where(np.array(k) == 1)
+                if len(nonzero_pos) == 0: continue
+                else: total_found += 1
+                target_features.update(nonzero_pos)
+                # descr = "("
+                # for i in range(len(nonzero_pos) - 1):
+                #     descr += f"{nonzero_pos[i]}, "
+                # if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
+                # descr += ")"
+                # print(descr, fourier_dict_trunc[k])
+                if total_found == top_interactions: break
+            # print(f"SPECTRAL targets: {sorted(list(target_features))}")
+
+            mask[list(target_features)] = 0
+            # num_untargeted = num_tokens - int(np.sum(mask))
+            # if num_untargeted == 0: # just in case handling
+            #     curr_iter = self.feedback_steps
+            #     continue
+
+            tokens = list(seq_str)
+            for j in range(num_tokens):
+                if mask[j] == 1:
+                    tokens[j] = '-'
+
+            state = self.generate_remasked_state(state, mask)
+
+            print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
+
+            # LASSO Baseline
+            # max_solution_order = len(target_features)
+            # clf = Lasso(alpha=0.005)
+            # clf.fit(all_masks, rewards)
+            # a = np.array(clf.coef_.flatten().tolist())
+            # b = clf.intercept_
+            # lasso_res = np.argpartition(a, -max_solution_order)[-max_solution_order:]
+            # print(f"LASSO targets: {sorted(lasso_res)}")
+            curr_iter += 1
+        return state
+    
 class BeamSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
         # Parameter validation

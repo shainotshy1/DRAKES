@@ -100,7 +100,7 @@ def generate_output_fn(args):
     if args.align_type != "bon":
         out_name += f"_stepsperlevel={args.steps_per_level}"
 
-    full_out_path = f"{args.output_folder}/{out_name}.csv"
+    full_out_path = "test.csv"#f"{args.output_folder}/{out_name}.csv"
     return full_out_path
 
 def main():
