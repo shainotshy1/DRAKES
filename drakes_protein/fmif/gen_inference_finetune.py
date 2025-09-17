@@ -74,9 +74,12 @@ def execute_on_dataset(func, base_path, dataset_name="validation", target_protei
 
     loader_valid = get_drakes_data(base_path, dataset_name, val_batch_size, batch_repeat, target_protein=target_protein)
     
+    count = 0
     for batch in loader_valid:
         for _ in tqdm(range(batch_repeat)):
             func(batch)
+            count += 1
+            print(f"Progress: {count} / {len(loader_valid) * batch_repeat}")
 
 def generate_output_fn(args):
 
@@ -93,14 +96,14 @@ def generate_output_fn(args):
         out_name += f"_alpha={args.oracle_alpha}"
 
     out_name += f"_{args.align_type}_N={args.align_n}"
-    if args.align_type == "linear":
-        out_name += f"_lambda={args.lasso_lambda}"
-    elif args.align_type == "beam":
+    out_name += f"_specfeedback={args.spec_feedback_its}"
+
+    if args.align_type == "beam":
         out_name += f"_W={args.beam_w}"
     if args.align_type != "bon":
         out_name += f"_stepsperlevel={args.steps_per_level}"
 
-    full_out_path = "test.csv"#f"{args.output_folder}/{out_name}.csv"
+    full_out_path = f"{args.output_folder}/{out_name}.csv"
     return full_out_path
 
 def main():
@@ -112,7 +115,7 @@ def main():
     argparser.add_argument("--model", required=True, choices=['pretrained', 'drakes'], help="Model must be one of ['pretrained', 'drakes']")
     argparser.add_argument("--dataset", required=True, choices=['validation', 'test', 'train', 'single'], help="Dataset must be on of ['validation', 'test', 'train']")
     argparser.add_argument("--output_folder", type=str, required=True, help="Output folder for protein generations")
-    argparser.add_argument("--align_type", choices=['bon', 'beam', 'spectral', 'linear'], required=True)
+    argparser.add_argument("--align_type", choices=['bon', 'beam'], required=True)
     argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'balanced'], required=True)
     argparser.add_argument("--align_n", type=int, required=True, help="Number of samples parameter for alignment techniques")
 
@@ -123,9 +126,9 @@ def main():
     argparser.add_argument("--oracle_alpha", type=float, help="Alpha parameter for balanced oracle mode, 1.0 = only ddg, 0.0 = only protgpt")
     argparser.add_argument("--lasso_lambda", default=0.0, type=float, help="Lambda parameter for lasso regularization, only used if align_type is 'linear'")
     argparser.add_argument("--target_protein", type=str, help="Target protein structure name for inverse folding, mandatory if dataset is 'single'")
-    argparser.add_argument("--steps_per_level", type=int, default=1, help="Number of diffusion steps per alignment step (only applies for BEAM, LASSO, and SPECTRAL, but not BON)")
+    argparser.add_argument("--steps_per_level", type=int, default=1, help="Number of diffusion steps per alignment step (only applies for BEAM)")
     argparser.add_argument("--beam_w", type=int, default=1, help="Number of beams for BEAM sampling (only applies if align_type is 'beam')")
-    argparser.add_argument("--spec_feedback", type=bool, required=False, default=False)
+    argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
 
     args = argparser.parse_args()
 
@@ -147,7 +150,8 @@ def main():
                                             lasso_lambda=args.lasso_lambda, \
                                             N=args.align_n, \
                                             beam_w=args.beam_w, \
-                                            steps_per_level=args.steps_per_level)
+                                            steps_per_level=args.steps_per_level, \
+                                            spec_feedback_its=args.spec_feedback_its)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

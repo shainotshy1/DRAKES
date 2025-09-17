@@ -101,6 +101,7 @@ def generate_execution_func(out_lst,
                             N=1, 
                             beam_w=1,
                             steps_per_level=1,
+                            spec_feedback_its=0,
                             lasso_lambda=0.0, 
                             repeat_num=1, 
                             hidden_dim=128, 
@@ -108,7 +109,7 @@ def generate_execution_func(out_lst,
                             num_neighbors=30, 
                             dropout=0.1):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
-    assert align_type in ['bon', 'beam', 'spectral', 'linear'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam', 'spectral', 'linear']"
+    assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'balanced']
@@ -136,7 +137,8 @@ def generate_execution_func(out_lst,
                 k_neighbors=num_neighbors,
                 dropout=dropout)
     fmif_model.to(device)
-    fmif_model.load_state_dict(torch.load(state_dict_path)['model_state_dict'])
+    if model == 'pretrained': fmif_model.load_state_dict(torch.load(state_dict_path)['model_state_dict'])
+    else: fmif_model.load_state_dict(torch.load(state_dict_path))
     fmif_model.finetune_init() # TODO: Check order of this line and the above for pretrained vs drakes
     fmif_model.eval()
 
@@ -175,12 +177,10 @@ def generate_execution_func(out_lst,
     reward_model_eval.finetune_init()
     reward_model_eval.eval()
 
-    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
-    if align_type == 'linear':
-        func_descr += f", lasso_lambda={lasso_lambda}"
-    elif align_type == 'beam':
+    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}, spec_feedback={spec_feedback_its}"
+    if align_type == 'beam':
         func_descr += f", W={beam_w}"
-    if align_type in ['beam', 'linear', 'spectral']:
+    if align_type in ['beam']:
         func_descr += f", steps_per_level={steps_per_level}"
     if oracle_mode == 'balanced':
         func_descr += f", balanced_alpha={oracle_alpha}"
@@ -205,7 +205,8 @@ def generate_execution_func(out_lst,
                                                                 beam_w=beam_w, \
                                                                 steps_per_level=steps_per_level, \
                                                                 align_type=align_type,
-                                                                lasso_lambda=lasso_lambda)
+                                                                lasso_lambda=lasso_lambda,
+                                                                spec_feedback_its=spec_feedback_its)
         
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss)

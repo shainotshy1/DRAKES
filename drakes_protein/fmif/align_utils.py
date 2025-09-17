@@ -23,6 +23,8 @@ class AlignSamplerState():
     def return_early(self):
         return False
 
+reward_avg_n = 2 # parameter use in all sampling algorithms, so it is fair
+
 class BONSampler():
     def __init__(self, sampler, W, soft=False):
         # Parameter validation
@@ -38,7 +40,7 @@ class BONSampler():
     def sample_aligned(self):
         samples = self.sampler()
         assert isinstance(samples, AlignSamplerState), "Sample must be instance of AlignSamplerState"
-        rewards = samples.calc_reward(n=2) # type: ignore
+        rewards = samples.calc_reward(n=reward_avg_n) # type: ignore
         if self.soft:
             sm_rewards = self.sm(rewards)
             top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
@@ -106,7 +108,7 @@ class TreeStateSampler():
         labels = {node: data["label"] for node, data in G.nodes(data=True)}
 
         fig_width = 6
-        fig_height = max_layer * 1.1
+        fig_height = max_layer * 1.3
         plt.figure(figsize=(fig_width, fig_height))
 
         pos = nx.multipartite_layout(G, subset_key="layer", align="horizontal")
@@ -210,26 +212,13 @@ class InteractionSampler():
             # alpha = num_untargeted / num_tokens
             # p = p1 * alpha + (1 - alpha) * p2
             p = 0.25
-            
-            target_features = np.random.choice(2, size=(num_tokens), p = np.array([1-p, p]))
-            mask[target_features == 1] = 0
-
-            state = self.generate_remasked_state(state, mask)
-            curr_iter += 1
-            tokens = list(seq_str)
-            for j in range(num_tokens):
-                if mask[j] == 1:
-                    tokens[j] = '-'
-            print("".join(tokens))                
-            continue
-
 
             mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([1-p, p]))
             all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
 
             rewards_lst = []
             for m in all_masks:
-                rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=2).item())
+                rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n).item())
             rewards = np.array(rewards_lst)
             # for i in range(3):
             #     tokens = list(seq_str)
@@ -359,7 +348,7 @@ class BeamSampler(TreeStateSampler):
                      
             states = next_states
         
-        max_state = max(states, key=lambda s : s.calc_reward().item())
+        max_state = max(states, key=lambda s : s.calc_reward(n=reward_avg_n).item())
 
         if self.save_visual:
             max_state_visual = 4 # len(num_states) - 2
