@@ -116,7 +116,7 @@ def main():
     argparser.add_argument("--dataset", required=True, choices=['validation', 'test', 'train', 'single'], help="Dataset must be on of ['validation', 'test', 'train']")
     argparser.add_argument("--output_folder", type=str, required=True, help="Output folder for protein generations")
     argparser.add_argument("--align_type", choices=['bon', 'beam'], required=True)
-    argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'balanced'], required=True)
+    argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'scrmsd'], required=True)
     argparser.add_argument("--align_n", type=int, required=True, help="Number of samples parameter for alignment techniques")
 
     # Optional arguments
@@ -137,6 +137,10 @@ def main():
 
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu", args.gpu)
     logging.info(f"Seting device {device}")
+
+    if args.oracle_mode == 'scrmsd':
+        import pyrosetta
+        pyrosetta.init(extra_options="-out:level 100")
 
     results = []
     execution_func = generate_execution_func(results,       \

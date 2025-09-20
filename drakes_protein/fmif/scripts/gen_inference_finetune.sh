@@ -3,24 +3,36 @@
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=16
 BATCH_SIZE=1
-DEVICE=3
-MODEL="pretrained"
+DEVICE=0
+MODEL="drakes"
 DATASET="test"
 ALIGN_TYPE='bon' # TODO: test multi-child and scRMSD
-ALIGN_N=1
-ORACLE_MODE='ddg'
+ALIGN_N=10
+ORACLE_MODE='scrmsd'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0005
 # TARGET_PROTEIN="7JJK"
 # ORACLE_ALPHA=1.0
-SPEC_FEEDBACK_ITS=5
+SPEC_FEEDBACK_ITS=0
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 
 # ALIGN_N_PARAMETERS=(10 50 100 150 200 250)
 # for ALIGN_N in "${ALIGN_N_PARAMETERS[@]}"
 # do
+
+source /opt/miniconda/etc/profile.d/conda.sh
+
+if [ "$ORACLE_MODE" = 'scrmsd' ]; then
+        echo "Activating multiflow conda environment"
+        conda activate multiflow
+        echo "Set to:"$CONDA_PREFIX
+else
+        echo "Activating mf2 conda environment"
+        conda activate mf2
+        echo "Set to:"$CONDA_PREFIX
+fi
 
 CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \
@@ -32,7 +44,7 @@ CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        --spec_feedback_its=$SPEC_FEEDBACK_ITS
+        --spec_feedback_its=$SPEC_FEEDBACK_ITS \
         # --target_protein=$TARGET_PROTEIN
         # --lasso_lambda=$LASSO_LAMBDA
         # --beam_w=$BEAM_W

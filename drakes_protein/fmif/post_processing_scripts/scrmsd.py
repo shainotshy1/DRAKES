@@ -106,16 +106,16 @@ def extract_scrmsd_directory(dir_name, seq_label, true_seq_label, protein_label,
     for batch in loader_test:
         pdb_paths[batch['protein_name'][0]] = os.path.join(pdb_path, batch['WT_name'][0])
 
-        folding_cfg = {
-            'seq_per_sample': 1,
-            'folding_model': 'esmf',
-            'own_device': False,
-            'pmpnn_path': './ProteinMPNN/',
-            'pt_hub_dir': os.path.join(base_path, '.cache/torch/'),
-            'colabfold_path': os.path.join(base_path, 'colabfold-conda/bin/colabfold_batch') # for AF2
-        }
-        folding_cfg = SimpleNamespace(**folding_cfg)
-        model = folding_model.FoldingModel(folding_cfg, device_id=device_id)
+    folding_cfg = {
+        'seq_per_sample': 1,
+        'folding_model': 'esmf',
+        'own_device': False,
+        'pmpnn_path': './ProteinMPNN/',
+        'pt_hub_dir': os.path.join(base_path, '.cache/torch/'),
+        'colabfold_path': os.path.join(base_path, 'colabfold-conda/bin/colabfold_batch') # for AF2
+    }
+    folding_cfg = SimpleNamespace(**folding_cfg)
+    model = folding_model.FoldingModel(folding_cfg, device_id=device_id)
 
     process_seq_data_directory(dir_name, 'scrmsd', lambda df : extract_scrmsd_distr(df, seq_label, true_seq_label, protein_label, base_path, model, pdb_paths))
 

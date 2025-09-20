@@ -7,10 +7,8 @@ from protein_oracle.data_utils import featurize
 from protein_oracle.model_utils import ProteinMPNNOracle
 from protein_oracle.data_utils import ALPHABET
 
-from align_loglikelihood_oracle import build_protgpt_oracle
-
-from model_utils import ProteinMPNNFMIF
-from fm_utils import Interpolant
+from model_utils import ProteinMPNNFMIF # type: ignore
+from fm_utils import Interpolant # type: ignore
 
 def gen_results(S_sp, S, batch, mask_for_loss):
     with torch.no_grad():
@@ -35,18 +33,18 @@ class InterpolantConfig:
         self.temp = temp
         self.num_timesteps = num_timesteps
 
-def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mode="ddg", alpha=1.0):
+def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, protein_name, mode="ddg", alpha=1.0):
     cached_batches = {}
 
-    valid_modes = ["ddg", "protgpt", "balanced"]
+    valid_modes = ["ddg", "protgpt", "scrmsd"]
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
     assert mode != "balanced" or (type(alpha) is float and 0 <= alpha <= 1), "If mode is 'balanced', alpha must be a float between 0 and 1"
 
-    if mode == "balanced":
-        if alpha == 1.0:
-            mode = "ddg"
-        elif alpha == 0.0:
-            mode = "protgpt"
+    # if mode == "balanced":
+    #     if alpha == 1.0:
+    #         mode = "ddg"
+    #     elif alpha == 0.0:
+    #         mode = "protgpt"
 
     def ddg_oracle(samples):
         n = samples.shape[0]
@@ -74,22 +72,29 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
             chain_encoding_all_n = cache["chain_encoding_all"]
             return reward_model(X_n, samples, mask_n, chain_M_n, residue_idx_n, chain_encoding_all_n)
 
+    # Import conditionally due to issue with incompatible conda environments (mf2 vs multiflow)
     if mode == 'ddg':
         return ddg_oracle
-    else:
+    elif mode == 'protgpt':
+        from align_loglikelihood_oracle import build_protgpt_oracle # type: ignore
         protgpt_oracle = build_protgpt_oracle(device)
-
-    if mode == 'protgpt':
         return protgpt_oracle
-    elif mode == 'balanced':
-        protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
-        def balanced_reward(samples):
-            ddg_rewards = ddg_oracle(samples)
-            prot_gpt_rewards = protgpt_oracle(samples)
-            return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
-        return balanced_reward
+    elif mode == 'scrmsd':
+        from align_scrmsd_oracle import build_scRMSD_oracle # type: ignore
+        scrmsd_oracle = build_scRMSD_oracle(protein_name, mask_for_loss, device_id=device.index)
+        return scrmsd_oracle
     else:
         raise ValueError()
+    # if mode == 'protgpt':
+    #     return protgpt_oracle
+    # elif mode == 'balanced':
+    #     protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
+    #     def balanced_reward(samples):
+    #         ddg_rewards = ddg_oracle(samples)
+    #         prot_gpt_rewards = protgpt_oracle(samples)
+    #         return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
+    #     return balanced_reward
+
 
 def generate_execution_func(out_lst, 
                             device, 
@@ -112,7 +117,7 @@ def generate_execution_func(out_lst,
     assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
     assert type(lasso_lambda) is float
-    assert oracle_mode in ['ddg', 'protgpt', 'balanced']
+    assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
@@ -137,9 +142,12 @@ def generate_execution_func(out_lst,
                 k_neighbors=num_neighbors,
                 dropout=dropout)
     fmif_model.to(device)
-    if model == 'pretrained': fmif_model.load_state_dict(torch.load(state_dict_path)['model_state_dict'])
-    else: fmif_model.load_state_dict(torch.load(state_dict_path))
-    fmif_model.finetune_init() # TODO: Check order of this line and the above for pretrained vs drakes
+    if model == 'pretrained': 
+        fmif_model.load_state_dict(torch.load(state_dict_path)['model_state_dict'])
+        fmif_model.finetune_init()
+    else: 
+        fmif_model.finetune_init()
+        fmif_model.load_state_dict(torch.load(state_dict_path))
     fmif_model.eval()
 
     logging.info(f"Setting up interpolant")
@@ -188,13 +196,14 @@ def generate_execution_func(out_lst,
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
         X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
-        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mode=oracle_mode, alpha=oracle_alpha)
+        mask_for_loss = mask*chain_M
+        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, batch['protein_name'][0], mode=oracle_mode, alpha=oracle_alpha)
         X = X.repeat(repeat_num, 1, 1, 1)
         mask = mask.repeat(repeat_num, 1)
         chain_M = chain_M.repeat(repeat_num, 1)
         residue_idx = residue_idx.repeat(repeat_num, 1)
         chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
-        S_sp, prot_traj, clean_traj = noise_interpolant.sample(fmif_model, \
+        S_sp, _, _ = noise_interpolant.sample(fmif_model, \
                                                                 X, \
                                                                 mask, \
                                                                 chain_M, \
@@ -207,7 +216,6 @@ def generate_execution_func(out_lst,
                                                                 align_type=align_type,
                                                                 lasso_lambda=lasso_lambda,
                                                                 spec_feedback_its=spec_feedback_its)
-        
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss)
         out_lst.extend(results_list)
