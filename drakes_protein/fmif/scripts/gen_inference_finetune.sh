@@ -1,20 +1,20 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=16
+BATCH_REPEAT=1
 BATCH_SIZE=1
 DEVICE=0
 MODEL="drakes"
 DATASET="test"
 ALIGN_TYPE='bon' # TODO: test multi-child and scRMSD
-ALIGN_N=10
-ORACLE_MODE='scrmsd'
+ALIGN_N=1
+ORACLE_MODE='protgpt'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0005
 # TARGET_PROTEIN="7JJK"
 # ORACLE_ALPHA=1.0
-SPEC_FEEDBACK_ITS=0
+SPEC_FEEDBACK_ITS=1
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 

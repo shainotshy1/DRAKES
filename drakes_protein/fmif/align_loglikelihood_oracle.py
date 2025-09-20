@@ -14,7 +14,7 @@ def build_protgpt_oracle(device):
         rewards = []
         assert len(samples) > 0, "Empty samples list passed to oracle"
 
-        alph = list(ALPHABET) + ['X'] # added 'X' to represent a mask since X = any in FASTA
+        alph = list(ALPHABET) #+ ['X'] # added 'X' to represent a mask since X = any in FASTA
         for seq in samples:
             seq_str = "".join([alph[x] for x in seq])
             out = tokenizer(seq_str, return_tensors="pt")

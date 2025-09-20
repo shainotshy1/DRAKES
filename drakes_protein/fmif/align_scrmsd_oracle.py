@@ -34,8 +34,8 @@ def relax_pose(pose):
     relax.set_scorefxn(scorefxn)
     relax.apply(pose)
 
-def calc_new_pose(seq, model, base_path):
-    sc_output_dir_base = os.path.join(base_path, 'sc_align_eval')
+def calc_new_pose(seq, model, base_path, test_name):
+    sc_output_dir_base = os.path.join(base_path, f'sc_{test_name}')
     sc_output_dir = os.path.join(sc_output_dir_base, 'folded')
     os.makedirs(sc_output_dir, exist_ok=True)
     os.makedirs(os.path.join(sc_output_dir, 'fmif_seqs'), exist_ok=True)
@@ -89,7 +89,7 @@ def get_drakes_test_data():
     loader_test = DataLoader(combined_dataset, batch_size=1, shuffle=False)
     return base_path, pdb_path, loader_test
 
-def build_scRMSD_oracle(protein_name, mask_for_loss, device_id=0):
+def build_scRMSD_oracle(protein_name, mask_for_loss, test_name, device_id=0):
     base_path, pdb_path, loader_test = get_drakes_test_data()
     pdb_paths = {}
     for batch in loader_test:
@@ -114,7 +114,7 @@ def build_scRMSD_oracle(protein_name, mask_for_loss, device_id=0):
         res = torch.zeros((ssps.shape[0]), device=ssps.device)
         for i, ssp in enumerate(ssps):
             ssp_str = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[0][_ix] == 1])
-            pose = calc_new_pose(ssp_str, model, base_path)
+            pose = calc_new_pose(ssp_str, model, base_path, test_name)
             res[i] = -1 * calc_rcsmd(pose, true_pose) # Flip sign since we want to MINIMIZE scRMSD
         return res
         

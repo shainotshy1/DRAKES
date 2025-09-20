@@ -33,7 +33,7 @@ class InterpolantConfig:
         self.temp = temp
         self.num_timesteps = num_timesteps
 
-def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, protein_name, mode="ddg", alpha=1.0):
+def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, protein_name, test_name, mode="ddg", alpha=1.0):
     cached_batches = {}
 
     valid_modes = ["ddg", "protgpt", "scrmsd"]
@@ -81,7 +81,7 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
         return protgpt_oracle
     elif mode == 'scrmsd':
         from align_scrmsd_oracle import build_scRMSD_oracle # type: ignore
-        scrmsd_oracle = build_scRMSD_oracle(protein_name, mask_for_loss, device_id=device.index)
+        scrmsd_oracle = build_scRMSD_oracle(protein_name, mask_for_loss, test_name, device_id=device.index)
         return scrmsd_oracle
     else:
         raise ValueError()
@@ -197,7 +197,7 @@ def generate_execution_func(out_lst,
     def validation_func(batch):
         X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
         mask_for_loss = mask*chain_M
-        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, batch['protein_name'][0], mode=oracle_mode, alpha=oracle_alpha)
+        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, batch['protein_name'][0], test_name=func_descr.replace(', ',''), mode=oracle_mode, alpha=oracle_alpha)
         X = X.repeat(repeat_num, 1, 1, 1)
         mask = mask.repeat(repeat_num, 1)
         chain_M = chain_M.repeat(repeat_num, 1)

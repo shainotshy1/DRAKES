@@ -153,6 +153,7 @@ class InteractionSampler():
         # num_tokens = mask.shape[0]
         # num_untargeted = np.sum(mask)
         masked_seq = state.gen_clean_seq()
+        print(masked_seq)
         masked_seq[0][mask == 1] = mu.MASK_TOKEN_INDEX
         # print("MASK")
         # print(masked_seq)

@@ -88,6 +88,7 @@ class Interpolant:
         noisy_batch['S_t'] = aatypes_t
         return noisy_batch
 
+    # TODO: FIX bug where clean sequences ARE NOT CLEAN...
     class ProteinDiffusionState(AlignSamplerState):
         def __init__(self, masked_seq, q_xs, demask, step, parent_state, reward_oracle):
             self.masked_seq = masked_seq
@@ -111,8 +112,10 @@ class Interpolant:
                 copy_flag = (self.masked_seq == mu.MASK_TOKEN_INDEX).to(self.masked_seq.dtype)
                 if select_argmax:
                     clean_pred = torch.argmax(self.q_xs_no_mask, dim=-1)
-                else:  
-                    clean_pred = _sample_categorical(self.q_xs_no_mask)
+                else:
+                    clean_pred = _sample_categorical(self.q_xs_no_mask) # TODO: FIX!!!
+                    # print(self.q_xs_no_mask)
+                    # print(clean_pred)
                 clean_pred = clean_pred * copy_flag + self.masked_seq * (1 - copy_flag)
                 self.pred_seq = clean_pred
             return self.pred_seq
