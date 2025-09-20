@@ -113,9 +113,7 @@ class Interpolant:
                 if select_argmax:
                     clean_pred = torch.argmax(self.q_xs_no_mask, dim=-1)
                 else:
-                    clean_pred = _sample_categorical(self.q_xs_no_mask) # TODO: FIX!!!
-                    # print(self.q_xs_no_mask)
-                    # print(clean_pred)
+                    clean_pred = _sample_categorical(self.q_xs_no_mask)
                 clean_pred = clean_pred * copy_flag + self.masked_seq * (1 - copy_flag)
                 self.pred_seq = clean_pred
             return self.pred_seq
@@ -629,8 +627,6 @@ class Interpolant:
 
         t_1 = ts[-1]
         return pred_aatypes_1, prot_traj, clean_traj
-
-
 
     def sample_controlled_TDS(
             self,

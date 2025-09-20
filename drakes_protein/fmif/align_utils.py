@@ -153,11 +153,10 @@ class InteractionSampler():
         # num_tokens = mask.shape[0]
         # num_untargeted = np.sum(mask)
         masked_seq = state.gen_clean_seq()
-        print(masked_seq)
         masked_seq[0][mask == 1] = mu.MASK_TOKEN_INDEX
         # print("MASK")
         # print(masked_seq)
-        new_step = 0 #int(floor((1 - num_untargeted * 1.0 / num_tokens) * (depth - 1)))
+        new_step = 1 #int(floor((1 - num_untargeted * 1.0 / num_tokens) * (depth - 1)))
 
         state = self.state_builder(masked_seq, new_step, state) # back track in diffusion process to when mask would be masked like so
         # print("PROBS")
