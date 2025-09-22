@@ -1,14 +1,14 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=1
+BATCH_REPEAT=16
 BATCH_SIZE=1
-DEVICE=0
+DEVICE=2
 MODEL="pretrained"
 DATASET="test"
-ALIGN_TYPE='bon' # TODO: test multi-child and scRMSD
-ALIGN_N=10
-ORACLE_MODE='ddg'
+ALIGN_TYPE='bon'
+ALIGN_N=1
+ORACLE_MODE='scrmsd'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0005
@@ -44,7 +44,7 @@ CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        --spec_feedback_its=$SPEC_FEEDBACK_ITS \
+        --spec_feedback_its=$SPEC_FEEDBACK_ITS #\
         # --target_protein=$TARGET_PROTEIN
         # --lasso_lambda=$LASSO_LAMBDA
         # --beam_w=$BEAM_W

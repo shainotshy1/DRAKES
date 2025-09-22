@@ -95,7 +95,6 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
     #         return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
     #     return balanced_reward
 
-
 def generate_execution_func(out_lst, 
                             device, 
                             model, 
@@ -197,7 +196,7 @@ def generate_execution_func(out_lst,
     def validation_func(batch):
         X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
         mask_for_loss = mask*chain_M
-        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, batch['protein_name'][0], test_name=func_descr.replace(', ',''), mode=oracle_mode, alpha=oracle_alpha)
+        balanced_oracle = build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, batch['protein_name'][0], test_name=model+"_"+func_descr.replace(', ',''), mode=oracle_mode, alpha=oracle_alpha)
         X = X.repeat(repeat_num, 1, 1, 1)
         mask = mask.repeat(repeat_num, 1)
         chain_M = chain_M.repeat(repeat_num, 1)

@@ -143,6 +143,7 @@ class InteractionSampler():
         self.feedback_steps = feedback_steps
         self.state_builder = state_builder
         self.resampler = resampler
+        self.exact_solver = ExactSolver(maximize=True, max_solution_order=10)
         
 
     #TODO: After having generated a sample, generate N masks on the sequence to train a ProxySPEX function 
@@ -150,17 +151,11 @@ class InteractionSampler():
     #TODO: Either make N a hyperparameter or repeatedly train the function till we achieve high faithfulness (like done in ProxySPEX)
 
     def generate_remasked_state(self, state, mask):
-        # num_tokens = mask.shape[0]
-        # num_untargeted = np.sum(mask)
         masked_seq = state.gen_clean_seq()
-        masked_seq[0][mask == 1] = mu.MASK_TOKEN_INDEX
-        # print("MASK")
-        # print(masked_seq)
+        masked_seq[0][mask == 0] = mu.MASK_TOKEN_INDEX
         new_step = 1 #int(floor((1 - num_untargeted * 1.0 / num_tokens) * (depth - 1)))
 
         state = self.state_builder(masked_seq, new_step, state) # back track in diffusion process to when mask would be masked like so
-        # print("PROBS")
-        # print(state.q_xs)
         return state
 
     def sample_aligned(self):
@@ -174,7 +169,7 @@ class InteractionSampler():
         num_tokens = state.masked_seq.shape[1]
         reward_traj = []
         curr_iter = 0
-        mask = np.ones(num_tokens)
+        mask = np.zeros(num_tokens)
         while curr_iter < (self.feedback_steps + 1): # Run a total of (self.feedback_steps + 1) iterations so that the last iteration is not a spectral iter
             print("Executing realign")
             self.resampler.initial_state = state
@@ -182,7 +177,7 @@ class InteractionSampler():
             curr_res = state.gen_clean_seq()
             curr_res = curr_res[0]
             seq_str = "".join([ALPHABET[x] for x in curr_res])
-            untargeted = (mask == 1)
+            untargeted = (mask == 0)
             num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
             if curr_iter == self.feedback_steps or num_untargeted == 0: 
                 print(seq_str)
@@ -190,103 +185,36 @@ class InteractionSampler():
                 print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
                 break
 
-            # if curr_iter == self.feedback_steps:
-            #     seq_str = "".join([ALPHABET[x] for x in curr_res])
-            #     reward_traj.append(state.calc_reward().item())
-            #     print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
-            #     return state
-            # else:
             reward_traj.append(state.calc_reward().item())
             print(f"Previous true reward: {reward_traj[-1]}")
-            # print(seq_str, state.calc_reward().item())
-            # print()
 
-            # mask_samples = torch.bernoulli(torch.full((num_masks, num_untargeted), p, device=device)).int() # type: ignore
-            # all_masks = torch.zeros(size=(num_masks, num_tokens), device=device, dtype=mask_samples.dtype).repeat(num_masks, 1)
-
-            # TODO: switch to reward as predicted reward rather than reward of masked sequence
-            # TODO: try instead of locking the best ones, run sampling on the coefficients with the highest interactions, regardless of positive or negative coefficient
             num_masks = 500
-            # p1 = 0.3
-            # p2 = 0.4
-            # alpha = num_untargeted / num_tokens
-            # p = p1 * alpha + (1 - alpha) * p2
             p = 0.25
 
-            mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([1-p, p]))
+            mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.25 prob of being a 1 i.e being "kept"
             all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
 
             rewards_lst = []
             for m in all_masks:
                 rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n).item())
             rewards = np.array(rewards_lst)
-            # for i in range(3):
-            #     tokens = list(seq_str)
-            #     for j in range(num_tokens):
-            #         if all_masks[i,j]:
-            #             tokens[j] = ' '
-            #     print("".join(tokens), rewards[i])                
-
-            # Spectral Method
 
             best_model, cv_r2 = lgboost_fit(all_masks, rewards)
-            # print(f'CV r2: {cv_r2}')
-
-            # Algorithm: select top parent and its children
-            top_interactions = 10
             fourier_dict = lgboost_to_fourier(best_model)
-            fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: item[1], reverse=True)[:(top_interactions + 1)])
-            
-            # tmp = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:(top_interactions * 2 + 1)])
-            # for k in tmp:
-            #     nonzero_pos, = np.where(np.array(k) == 1)
-            #     if len(nonzero_pos) == 0: continue
-            #     descr = "("
-            #     for i in range(len(nonzero_pos) - 1):
-            #         descr += f"{nonzero_pos[i]}, "
-            #     if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
-            #     descr += ")"                    
-            #     print(descr, tmp[k])
-            # print("-----")
-            # fourier_iter = iter(fourier_dict_trunc)
-
-            # top_coefficient = next(fourier_iter, None)
-            # if top_coefficient is None: # Catch no iteractions => exit early
-            #     curr_iter = self.feedback_steps
-            #     continue
-
-            # if sum(top_coefficient) == 0:
-            #     top_coefficient = next(fourier_iter, None)
-            #     if top_coefficient is None: # Catch no iteractions => exit early
-            #         curr_iter = self.feedback_steps
-            #         continue
-
+            fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
+            self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
+            best_demask = self.exact_solver.solve()
             target_features = set()
-            total_found = 0
-            for k in fourier_dict_trunc:
-                if fourier_dict_trunc[k] < 0: break # no more positive coefficients left
-                nonzero_pos, = np.where(np.array(k) == 1)
-                if len(nonzero_pos) == 0: continue
-                else: total_found += 1
-                target_features.update(nonzero_pos)
-                # descr = "("
-                # for i in range(len(nonzero_pos) - 1):
-                #     descr += f"{nonzero_pos[i]}, "
-                # if len(nonzero_pos) > 0: descr += str(nonzero_pos[-1])
-                # descr += ")"
-                # print(descr, fourier_dict_trunc[k])
-                if total_found == top_interactions: break
-            # print(f"SPECTRAL targets: {sorted(list(target_features))}")
 
-            mask[list(target_features)] = 0
-            # num_untargeted = num_tokens - int(np.sum(mask))
-            # if num_untargeted == 0: # just in case handling
-            #     curr_iter = self.feedback_steps
-            #     continue
+            for i in range(len(best_demask)):
+                if best_demask[i] == 1 and mask[i] == 0: # if the demask is 1 then we want to KEEP that amino acid; mask[i] == 0 => currently it is not locked
+                    target_features.add(i)
+                    
+            mask[list(target_features)] = 1
 
             tokens = list(seq_str)
             for j in range(num_tokens):
-                if mask[j] == 1:
+                if mask[j] == 0:
                     tokens[j] = '-'
 
             state = self.generate_remasked_state(state, mask)
