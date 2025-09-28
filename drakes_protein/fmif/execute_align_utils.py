@@ -10,7 +10,7 @@ from protein_oracle.data_utils import ALPHABET
 from model_utils import ProteinMPNNFMIF # type: ignore
 from fm_utils import Interpolant # type: ignore
 
-def gen_results(S_sp, S, batch, mask_for_loss):
+def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_selections=None, spec_trajectories=None, r2_trajectories=None):
     with torch.no_grad():
         results_list = []
         true_detok_seq = "".join([ALPHABET[x] for _ix, x in enumerate(S[0]) if mask_for_loss[0][_ix] == 1])
@@ -22,6 +22,10 @@ def gen_results(S_sp, S, batch, mask_for_loss):
             resultdf['seq'] = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1])
             resultdf['true_seq'] = true_detok_seq
             resultdf['protein_name'] = batch['protein_name'][0]
+            if top_spec_interactions is not None: resultdf['top_spec_interactions'] = str(top_spec_interactions[_it])
+            if spec_selections is not None: resultdf['spec_selections'] = str(spec_selections[_it])
+            if spec_trajectories is not None: resultdf['spec_trajectory'] = str(spec_trajectories[_it])
+            if r2_trajectories is not None: resultdf['r2_trajectory'] = str(r2_trajectories[_it])
             results_list.append(resultdf)
 
     return results_list
@@ -106,6 +110,7 @@ def generate_execution_func(out_lst,
                             beam_w=1,
                             steps_per_level=1,
                             spec_feedback_its=0,
+                            max_spec_order=10,
                             lasso_lambda=0.0, 
                             repeat_num=1, 
                             hidden_dim=128, 
@@ -184,7 +189,7 @@ def generate_execution_func(out_lst,
     reward_model_eval.finetune_init()
     reward_model_eval.eval()
 
-    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}, spec_feedback={spec_feedback_its}"
+    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}, spec_feedback={spec_feedback_its}, max_spec_order={max_spec_order}"
     if align_type == 'beam':
         func_descr += f", W={beam_w}"
     if align_type in ['beam']:
@@ -202,7 +207,7 @@ def generate_execution_func(out_lst,
         chain_M = chain_M.repeat(repeat_num, 1)
         residue_idx = residue_idx.repeat(repeat_num, 1)
         chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
-        S_sp, _, _ = noise_interpolant.sample(fmif_model, \
+        S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = noise_interpolant.sample(fmif_model, \
                                                                 X, \
                                                                 mask, \
                                                                 chain_M, \
@@ -214,9 +219,10 @@ def generate_execution_func(out_lst,
                                                                 steps_per_level=steps_per_level, \
                                                                 align_type=align_type,
                                                                 lasso_lambda=lasso_lambda,
-                                                                spec_feedback_its=spec_feedback_its)
+                                                                spec_feedback_its=spec_feedback_its,
+                                                                max_spec_order=max_spec_order)
         mask_for_loss = mask*chain_M
-        results_list = gen_results(S_sp, S, batch, mask_for_loss)
+        results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)
         out_lst.extend(results_list)
 
     return validation_func

@@ -133,7 +133,7 @@ class OptSampler(TreeStateSampler):
         return state
          
 class InteractionSampler():
-    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, state_builder, resampler):
+    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, max_spec_order, state_builder, resampler):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -143,13 +143,8 @@ class InteractionSampler():
         self.feedback_steps = feedback_steps
         self.state_builder = state_builder
         self.resampler = resampler
-        self.exact_solver = ExactSolver(maximize=True, max_solution_order=10)
+        self.exact_solver = ExactSolver(maximize=True, max_solution_order=max_spec_order)
         
-
-    #TODO: After having generated a sample, generate N masks on the sequence to train a ProxySPEX function 
-    #      and figure out where the interactions are by looking at the top-k coefficients
-    #TODO: Either make N a hyperparameter or repeatedly train the function till we achieve high faithfulness (like done in ProxySPEX)
-
     def generate_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
         masked_seq[0][mask == 0] = mu.MASK_TOKEN_INDEX
@@ -160,16 +155,12 @@ class InteractionSampler():
 
     def sample_aligned(self):
         print("----------------------------------")
-        # TODO: nest loop in multiple "Interaction" iterations
-# For more liited number of samples, tlak about influence scores
-# Address MCTS in the paper to predict review
-# Can consider decreasing sampling as we repeat iterations
-# Make calc reward as expected value instead of argmax
         state = self.initial_state
         num_tokens = state.masked_seq.shape[1]
         reward_traj = []
         curr_iter = 0
         mask = np.zeros(num_tokens)
+        r2_traj = []
         while curr_iter < (self.feedback_steps + 1): # Run a total of (self.feedback_steps + 1) iterations so that the last iteration is not a spectral iter
             print("Executing realign")
             self.resampler.initial_state = state
@@ -182,6 +173,8 @@ class InteractionSampler():
             if curr_iter == self.feedback_steps or num_untargeted == 0: 
                 print(seq_str)
                 reward_traj.append(state.calc_reward().item())
+                state.spec_reward_traj = list(reward_traj)
+                state.r2_traj = list(r2_traj)
                 print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
                 break
 
@@ -209,7 +202,27 @@ class InteractionSampler():
             for i in range(len(best_demask)):
                 if best_demask[i] == 1 and mask[i] == 0: # if the demask is 1 then we want to KEEP that amino acid; mask[i] == 0 => currently it is not locked
                     target_features.add(i)
-                    
+
+            if state.spec_selections is None:
+                spec_selections = []
+                top_spec_interactions = []
+                spec_reward_traj = []
+            else:
+                spec_selections = list(state.spec_selections)
+                top_spec_interactions = list(state.top_spec_interactions)
+                spec_reward_traj = list(state.spec_reward_traj)
+
+            spec_selections.append(list(target_features))
+            spec_reward_traj.append(reward_traj[-1])
+            
+            top_spec_interactions.append([])
+            for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
+                top_interactions = []
+                for i in range(len(interactions)):
+                    if interactions[i] == 1 and mask[i] == 0:
+                        top_interactions.append(i)
+                top_spec_interactions[-1].append((top_interactions, round(coefficient, 3))) # extract the index of the interaction instead of the bit map
+
             mask[list(target_features)] = 1
 
             tokens = list(seq_str)
@@ -217,7 +230,13 @@ class InteractionSampler():
                 if mask[j] == 0:
                     tokens[j] = '-'
 
+            r2_traj.append(cv_r2)
+
             state = self.generate_remasked_state(state, mask)
+            state.spec_selections = spec_selections
+            state.top_spec_interactions = top_spec_interactions
+            state.spec_reward_traj = spec_reward_traj
+            state.r2_traj = list(r2_traj)
 
             print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
 

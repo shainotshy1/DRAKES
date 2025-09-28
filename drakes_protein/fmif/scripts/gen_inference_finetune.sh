@@ -1,20 +1,21 @@
 #!/usr/bin/bash
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
-BATCH_REPEAT=16
+BATCH_REPEAT=10
 BATCH_SIZE=1
-DEVICE=2
+DEVICE=0
 MODEL="pretrained"
-DATASET="test"
+DATASET="single"
 ALIGN_TYPE='bon'
 ALIGN_N=1
-ORACLE_MODE='scrmsd'
+ORACLE_MODE='ddg'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0005
-# TARGET_PROTEIN="7JJK"
+TARGET_PROTEIN="HEEH_KT_rd6_0746"
 # ORACLE_ALPHA=1.0
-SPEC_FEEDBACK_ITS=5
+SPEC_FEEDBACK_ITS=10
+MAX_SPEC_ORDER=10
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 
@@ -44,8 +45,9 @@ CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        --spec_feedback_its=$SPEC_FEEDBACK_ITS #\
-        # --target_protein=$TARGET_PROTEIN
+        --spec_feedback_its=$SPEC_FEEDBACK_ITS \
+        --max_spec_order=$MAX_SPEC_ORDER \
+        --target_protein=$TARGET_PROTEIN
         # --lasso_lambda=$LASSO_LAMBDA
         # --beam_w=$BEAM_W
         # --steps_per_level=$STEPS_PER_LEVEL \

@@ -99,6 +99,10 @@ class Interpolant:
             self.parent_state = parent_state
             self.reward_oracle = reward_oracle
             self.done = (self.masked_seq != mu.MASK_TOKEN_INDEX).all()
+            self.top_spec_interactions = None if parent_state is None else parent_state.top_spec_interactions
+            self.spec_selections = None if parent_state is None else parent_state.spec_selections
+            self.spec_reward_traj = None if parent_state is None else parent_state.spec_reward_traj
+            self.r2_traj = None if parent_state is None else parent_state.r2_traj
 
             self.q_xs_no_mask = self.q_xs.clone()
             self.q_xs_no_mask[:, :, mu.MASK_TOKEN_INDEX] = 0
@@ -356,7 +360,8 @@ class Interpolant:
             steps_per_level=1,
             align_type="bon",
             lasso_lambda=0.005,
-            spec_feedback_its=0
+            spec_feedback_its=0,
+            max_spec_order=10
         ):
 
         if type(n) != int or n < 1:
@@ -397,7 +402,7 @@ class Interpolant:
             beam_sampler_gen = sample_gen_builder(model, beam_init_model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
             resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
-            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, spec_feedback_its, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
+            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, spec_feedback_its, max_spec_order, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
 
             # if align_type == "linear": raise NotImplementedError()
             # elif align_type == "spectral":
@@ -408,8 +413,17 @@ class Interpolant:
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
+        if spec_feedback_its > 0:
+            top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = [], [], [], []
+        else:
+            top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
         for i, sampler in enumerate(samplers):
             best_sample = sampler.sample_aligned()
+            if spec_feedback_its > 0:
+                top_spec_interactions.append(best_sample.top_spec_interactions) # type: ignore
+                spec_selections.append(best_sample.spec_selections) # type: ignore
+                spec_trajectories.append(best_sample.spec_reward_traj) # type: ignore
+                r2_trajectories.append(best_sample.r2_traj) # type: ignore
             prot_traj.append([])
             best_samples.append(best_sample)
             curr = best_sample
@@ -418,8 +432,8 @@ class Interpolant:
                 curr = curr.parent_state
             prot_traj[-1] = prot_traj[-1][::-1]
         seq_dtype = prot_traj[0][0].dtype
-        concat_prot_traj = []
-        concat_clean_traj = []
+        # concat_prot_traj = []
+        # concat_clean_traj = []
         concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype)
         # Not using, will currently comment this out
         # for i in range(len(prot_traj[0])):
@@ -430,7 +444,7 @@ class Interpolant:
         #         concat_clean_traj[i][j] = clean_traj[j][i]
         for i, best_sample in enumerate(best_samples):
             concat_best_samples[i] = best_sample.gen_clean_seq()
-        return concat_best_samples, concat_prot_traj, concat_clean_traj
+        return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories
 
     def sample_gradient(
             self,

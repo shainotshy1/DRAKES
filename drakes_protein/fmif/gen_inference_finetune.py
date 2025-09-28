@@ -97,6 +97,7 @@ def generate_output_fn(args):
 
     out_name += f"_{args.align_type}_N={args.align_n}"
     out_name += f"_specfeedback={args.spec_feedback_its}"
+    out_name += f"_maxspecorder={args.max_spec_order}"
 
     if args.align_type == "beam":
         out_name += f"_W={args.beam_w}"
@@ -129,6 +130,7 @@ def main():
     argparser.add_argument("--steps_per_level", type=int, default=1, help="Number of diffusion steps per alignment step (only applies for BEAM)")
     argparser.add_argument("--beam_w", type=int, default=1, help="Number of beams for BEAM sampling (only applies if align_type is 'beam')")
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
+    argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
 
     args = argparser.parse_args()
 
@@ -155,7 +157,8 @@ def main():
                                             N=args.align_n, \
                                             beam_w=args.beam_w, \
                                             steps_per_level=args.steps_per_level, \
-                                            spec_feedback_its=args.spec_feedback_its)
+                                            spec_feedback_its=args.spec_feedback_its, \
+                                            max_spec_order=args.max_spec_order)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \
