@@ -1,11 +1,19 @@
 #!/bin/bash
 
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+#SBATCH --output=eval_all.out
+#SBATCH --job-name=EVAL
+
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 <DIR or File Name> <GPU - optional> "
   exit 1
 fi
+SCRIPT_DIR=/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/post_processing_scripts #"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Example: [sbatch] post_processing_scripts/eval_all.sh /home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test/
 
 DIR=$1
 GPU="0"

@@ -359,9 +359,10 @@ class Interpolant:
             beam_w = 1,
             steps_per_level=1,
             align_type="bon",
-            lasso_lambda=0.005,
+            lasso_lambda=0.0,
             spec_feedback_its=0,
-            max_spec_order=10
+            max_spec_order=10,
+            feedback_method="spectral"
         ):
 
         if type(n) != int or n < 1:
@@ -402,7 +403,7 @@ class Interpolant:
             beam_sampler_gen = sample_gen_builder(model, beam_init_model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
             resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
-            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, spec_feedback_its, max_spec_order, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler)         
+            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler, lasso_pen=lasso_lambda)         
 
             # if align_type == "linear": raise NotImplementedError()
             # elif align_type == "spectral":

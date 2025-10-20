@@ -1,27 +1,30 @@
-#!/usr/bin/bash
+#!/bin/bash
+
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+#SBATCH --output=ll_spectral_test.out
+#SBATCH --job-name=DRAKES
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=10
 BATCH_SIZE=1
-DEVICE=0
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='bon'
 ALIGN_N=1
-ORACLE_MODE='ddg'
+ORACLE_MODE='scrmsd'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
-# LASSO_LAMBDA=0.0005
-TARGET_PROTEIN="HEEH_KT_rd6_0746"
+# LASSO_LAMBDA=0.0
+TARGET_PROTEIN="5JRT"
 # ORACLE_ALPHA=1.0
-SPEC_FEEDBACK_ITS=10
+SPEC_FEEDBACK_ITS=5
+FEEDBACK_METHOD="spectral"
 MAX_SPEC_ORDER=10
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
-
-# ALIGN_N_PARAMETERS=(10 50 100 150 200 250)
-# for ALIGN_N in "${ALIGN_N_PARAMETERS[@]}"
-# do
 
 source /opt/miniconda/etc/profile.d/conda.sh
 
@@ -35,7 +38,7 @@ else
         echo "Set to:"$CONDA_PREFIX
 fi
 
-CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_PATH \
+python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \
         --batch_size=$BATCH_SIZE \
         --gpu=0 \
@@ -47,9 +50,9 @@ CUDA_VISIBLE_DEVICES=$DEVICE python gen_inference_finetune.py --base_path=$BASE_
         --oracle_mode=$ORACLE_MODE \
         --spec_feedback_its=$SPEC_FEEDBACK_ITS \
         --max_spec_order=$MAX_SPEC_ORDER \
+        --feedback_method=$FEEDBACK_METHOD \
         --target_protein=$TARGET_PROTEIN
         # --lasso_lambda=$LASSO_LAMBDA
         # --beam_w=$BEAM_W
         # --steps_per_level=$STEPS_PER_LEVEL \
         # --oracle_alpha=$ORACLE_ALPHA \
-# done 

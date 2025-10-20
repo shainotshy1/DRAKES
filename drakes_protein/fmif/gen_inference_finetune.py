@@ -96,8 +96,12 @@ def generate_output_fn(args):
         out_name += f"_alpha={args.oracle_alpha}"
 
     out_name += f"_{args.align_type}_N={args.align_n}"
-    out_name += f"_specfeedback={args.spec_feedback_its}"
-    out_name += f"_maxspecorder={args.max_spec_order}"
+    if args.spec_feedback_its > 0:
+        out_name += f"_feedbacksteps={args.spec_feedback_its}"
+        out_name += f"_feedbackmethod={args.feedback_method}"
+        out_name += f"_maxspecorder={args.max_spec_order}"
+        if args.feedback_method == "lasso":
+            out_name += f"_lassolambda={args.lasso_lambda}"
 
     if args.align_type == "beam":
         out_name += f"_W={args.beam_w}"
@@ -131,6 +135,7 @@ def main():
     argparser.add_argument("--beam_w", type=int, default=1, help="Number of beams for BEAM sampling (only applies if align_type is 'beam')")
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
+    argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
 
     args = argparser.parse_args()
 
@@ -158,7 +163,8 @@ def main():
                                             beam_w=args.beam_w, \
                                             steps_per_level=args.steps_per_level, \
                                             spec_feedback_its=args.spec_feedback_its, \
-                                            max_spec_order=args.max_spec_order)
+                                            max_spec_order=args.max_spec_order, \
+                                            feedback_method=args.feedback_method)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

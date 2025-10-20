@@ -111,6 +111,7 @@ def generate_execution_func(out_lst,
                             steps_per_level=1,
                             spec_feedback_its=0,
                             max_spec_order=10,
+                            feedback_method='spectral',
                             lasso_lambda=0.0, 
                             repeat_num=1, 
                             hidden_dim=128, 
@@ -123,6 +124,7 @@ def generate_execution_func(out_lst,
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
+    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion']
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 
@@ -189,13 +191,17 @@ def generate_execution_func(out_lst,
     reward_model_eval.finetune_init()
     reward_model_eval.eval()
 
-    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}, spec_feedback={spec_feedback_its}, max_spec_order={max_spec_order}"
+    func_descr = f"align_type={align_type}, oracle_mode={oracle_mode}, N={N}"
     if align_type == 'beam':
         func_descr += f", W={beam_w}"
     if align_type in ['beam']:
         func_descr += f", steps_per_level={steps_per_level}"
     if oracle_mode == 'balanced':
         func_descr += f", balanced_alpha={oracle_alpha}"
+    if spec_feedback_its > 0:
+        func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
+        if feedback_method == "lasso":
+            func_descr += f", lassolambda={lasso_lambda}"
 
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
@@ -220,7 +226,8 @@ def generate_execution_func(out_lst,
                                                                 align_type=align_type,
                                                                 lasso_lambda=lasso_lambda,
                                                                 spec_feedback_its=spec_feedback_its,
-                                                                max_spec_order=max_spec_order)
+                                                                max_spec_order=max_spec_order,
+                                                                feedback_method=feedback_method)
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)
         out_lst.extend(results_list)

@@ -133,7 +133,7 @@ class OptSampler(TreeStateSampler):
         return state
          
 class InteractionSampler():
-    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, max_spec_order, state_builder, resampler):
+    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -143,6 +143,9 @@ class InteractionSampler():
         self.feedback_steps = feedback_steps
         self.state_builder = state_builder
         self.resampler = resampler
+        self.max_spec_order = max_spec_order
+        self.feedback_method = feedback_method
+        self.lasso_pen = lasso_pen
         self.exact_solver = ExactSolver(maximize=True, max_solution_order=max_spec_order)
         
     def generate_remasked_state(self, state, mask):
@@ -184,24 +187,7 @@ class InteractionSampler():
             num_masks = 500
             p = 0.25
 
-            mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.25 prob of being a 1 i.e being "kept"
-            all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
-
-            rewards_lst = []
-            for m in all_masks:
-                rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n).item())
-            rewards = np.array(rewards_lst)
-
-            best_model, cv_r2 = lgboost_fit(all_masks, rewards)
-            fourier_dict = lgboost_to_fourier(best_model)
-            fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
-            self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
-            best_demask = self.exact_solver.solve()
-            target_features = set()
-
-            for i in range(len(best_demask)):
-                if best_demask[i] == 1 and mask[i] == 0: # if the demask is 1 then we want to KEEP that amino acid; mask[i] == 0 => currently it is not locked
-                    target_features.add(i)
+            cv_r2 = 0 # default
 
             if state.spec_selections is None:
                 spec_selections = []
@@ -212,16 +198,76 @@ class InteractionSampler():
                 top_spec_interactions = list(state.top_spec_interactions)
                 spec_reward_traj = list(state.spec_reward_traj)
 
-            spec_selections.append(list(target_features))
-            spec_reward_traj.append(reward_traj[-1])
+            if self.feedback_method in ['spectral', 'lasso']:
+
+                mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.25 prob of being a 1 i.e being "kept"
+                all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
+
+                rewards_lst = []
+                for m in all_masks:
+                    rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n).item())
+                rewards = np.array(rewards_lst)
+
+                if self.feedback_method == 'spectral':
+                    best_model, cv_r2 = lgboost_fit(all_masks, rewards)
+                    fourier_dict = lgboost_to_fourier(best_model)
+                    fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
+                    self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
+                    best_demask = self.exact_solver.solve()
+
+                    top_spec_interactions.append([])
+                    for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
+                        top_interactions = []
+                        for i in range(len(interactions)):
+                            if interactions[i] == 1 and mask[i] == 0:
+                                top_interactions.append(i)
+                        top_spec_interactions[-1].append((top_interactions, round(coefficient, 3))) # extract the index of the interaction instead of the bit map
+
+                elif self.feedback_method == 'lasso':
+                    clf = Lasso(alpha=self.lasso_pen)
+                    clf.fit(all_masks, rewards)
+                    a = np.array(clf.coef_.flatten().tolist())
+                    # b = clf.intercept_
+                    lasso_res = np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
+                    bad_indices = (a <= 0)
+                    best_demask = np.zeros_like(a)
+                    best_demask[lasso_res] = 1
+                    best_demask[bad_indices] = 0 # Don't include zeros or negatively contributing aminoa acids in the top-k
+                else:
+                    raise ValueError("Selection method is invalid")
+            elif self.feedback_method == 'exclusion':
+                # Mask out each token, and select the top-k tokens which value decreases upon removal
+                exclusion_rewards = np.full(mask.shape, np.inf)
+                for i in range(len(mask)):
+                    if mask[i] == 0: # Non-locked amino acids
+                        m = np.ones_like(mask)#.copy()
+                        m[i] = 0
+                        exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=5).item()
+                exclusion_res = np.argpartition(exclusion_rewards, self.max_spec_order)[:self.max_spec_order] # bottom k rewards
+                best_demask = np.zeros_like(mask)
+                best_demask[exclusion_res] = 1
+            elif self.feedback_method == 'inclusion':
+                # Mask out all but one token (keeping the currently locked amino acids locked), and select the top-k tokens which value increases upon removal
+                exclusion_rewards = np.full(mask.shape, -np.inf)
+                for i in range(len(mask)):
+                    if mask[i] == 0: # Non-locked amino acids
+                        m = mask.copy()
+                        m[i] = 1
+                        exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=5).item()
+                exclusion_res = np.argpartition(exclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top k rewards
+                best_demask = np.zeros_like(mask)
+                best_demask[exclusion_res] = 1
+            else:
+                raise ValueError("Selection method is invalid")
+
+            target_features = set()
+
+            for i in range(len(best_demask)):
+                if best_demask[i] == 1 and mask[i] == 0: # if the demask is 1 then we want to KEEP that amino acid; mask[i] == 0 => currently it is not locked
+                    target_features.add(i)
             
-            top_spec_interactions.append([])
-            for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
-                top_interactions = []
-                for i in range(len(interactions)):
-                    if interactions[i] == 1 and mask[i] == 0:
-                        top_interactions.append(i)
-                top_spec_interactions[-1].append((top_interactions, round(coefficient, 3))) # extract the index of the interaction instead of the bit map
+            spec_reward_traj.append(reward_traj[-1])
+            spec_selections.append(list(target_features))
 
             mask[list(target_features)] = 1
 
@@ -230,7 +276,7 @@ class InteractionSampler():
                 if mask[j] == 0:
                     tokens[j] = '-'
 
-            r2_traj.append(cv_r2)
+            if self.feedback_method == 'spectral': r2_traj.append(cv_r2)
 
             state = self.generate_remasked_state(state, mask)
             state.spec_selections = spec_selections
@@ -238,16 +284,9 @@ class InteractionSampler():
             state.spec_reward_traj = spec_reward_traj
             state.r2_traj = list(r2_traj)
 
-            print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
-
-            # LASSO Baseline
-            # max_solution_order = len(target_features)
-            # clf = Lasso(alpha=0.005)
-            # clf.fit(all_masks, rewards)
-            # a = np.array(clf.coef_.flatten().tolist())
-            # b = clf.intercept_
-            # lasso_res = np.argpartition(a, -max_solution_order)[-max_solution_order:]
-            # print(f"LASSO targets: {sorted(lasso_res)}")
+            if self.feedback_method == 'spectral': print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
+            else:  print("".join(tokens), f'Targets: {list(target_features)}')                
+                
             curr_iter += 1
         return state
     
