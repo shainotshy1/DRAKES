@@ -103,6 +103,9 @@ def generate_output_fn(args):
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
 
+    if args.MH_steps > 0:
+        out_name += f"_mhn={args.MH_steps}_p={args.MH_p}_beta={args.MH_b}"
+
     if args.align_type == "beam":
         out_name += f"_W={args.beam_w}"
     if args.align_type != "bon":
@@ -136,6 +139,10 @@ def main():
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
     argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
+    argparser.add_argument("--MH_steps", type=int, required=False, default=0)
+    argparser.add_argument("--MH_p",type=float, required=False, default=0.5)
+    argparser.add_argument("--MH_b", type=float, required=False, default=1.0)
+
 
     args = argparser.parse_args()
 
@@ -164,7 +171,10 @@ def main():
                                             steps_per_level=args.steps_per_level, \
                                             spec_feedback_its=args.spec_feedback_its, \
                                             max_spec_order=args.max_spec_order, \
-                                            feedback_method=args.feedback_method)
+                                            feedback_method=args.feedback_method, \
+                                            mh_n=args.MH_steps, \
+                                            mh_p=args.MH_p, \
+                                            mh_b=args.MH_b)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

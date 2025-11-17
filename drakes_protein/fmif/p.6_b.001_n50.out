@@ -1,0 +1,48 @@
+Activating mf2 conda environment
+Set to:/home/shai/.conda/envs/mf2
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 25)
+INFO:root:Loading PRETRAINED model state dict (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=ddg, N=1, MH_N=50, P=0.6, Beta=0.001)
+INFO:root:Reading protein set (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Executing on protein 7JJK (Batch repeats: 1, Proteins per batch: 1)
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [10:59<00:00, 659.17s/it]100%|██████████| 1/1 [10:59<00:00, 659.17s/it]
+INFO:root:Saving to file /home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test/pretrained_7JJK_ddg_bon_N=1_mhn=50_p=0.6_beta=0.001.csv
+Final Reward: 0.6573007106781006, Acceptance Rate: 0.1
+Final Reward: 0.683152437210083, Acceptance Rate: 0.08
+Final Reward: 0.7041052579879761, Acceptance Rate: 0.14
+Final Reward: 0.6916505694389343, Acceptance Rate: 0.08
+Final Reward: 0.7203373908996582, Acceptance Rate: 0.08
+Final Reward: 0.7014816999435425, Acceptance Rate: 0.22
+Final Reward: 0.6849468946456909, Acceptance Rate: 0.1
+Final Reward: 0.7078101634979248, Acceptance Rate: 0.16
+Final Reward: 0.6920111179351807, Acceptance Rate: 0.12
+Final Reward: 0.7004804015159607, Acceptance Rate: 0.04
+Final Reward: 0.7273271679878235, Acceptance Rate: 0.16
+Final Reward: 0.684119462966919, Acceptance Rate: 0.08
+Final Reward: 0.6938762068748474, Acceptance Rate: 0.2
+Final Reward: 0.6768552660942078, Acceptance Rate: 0.18
+Final Reward: 0.7061558961868286, Acceptance Rate: 0.14
+Final Reward: 0.6909983158111572, Acceptance Rate: 0.16
+Final Reward: 0.7127252817153931, Acceptance Rate: 0.14
+Final Reward: 0.6791821718215942, Acceptance Rate: 0.2
+Final Reward: 0.6780261993408203, Acceptance Rate: 0.04
+Final Reward: 0.7077466249465942, Acceptance Rate: 0.16
+Final Reward: 0.6445015668869019, Acceptance Rate: 0.08
+Final Reward: 0.686505913734436, Acceptance Rate: 0.12
+Final Reward: 0.699278712272644, Acceptance Rate: 0.1
+Final Reward: 0.6649535894393921, Acceptance Rate: 0.12
+Final Reward: 0.6976320147514343, Acceptance Rate: 0.1
+Average Reward Trajectory: [0.47229658 0.5148357  0.5416097  0.57404033 0.5851757  0.59790226
+ 0.60312695 0.61545716 0.62880098 0.63251077 0.63639899 0.65689881
+ 0.6578164  0.66489258 0.66963933 0.66963933 0.6699034  0.67190875
+ 0.67301547 0.67657455 0.67659009 0.67717958 0.67775556 0.67800181
+ 0.67914393 0.67914393 0.67935996 0.67999733 0.6800265  0.68077662
+ 0.68279729 0.68293632 0.68293632 0.68374529 0.68376401 0.68457984
+ 0.68540874 0.68684566 0.68698432 0.68698432 0.68718203 0.68771043
+ 0.68952108 0.6901435  0.6903472  0.6903472  0.6903472  0.6903472
+ 0.6903472  0.69172644 0.69172644]
+Progress: 1 / 1

@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.distributions.bernoulli import Bernoulli
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from protein_oracle.data_utils import ALPHABET, ALPHABET_WITH_MASK
 from sklearn.linear_model import Lasso
 import model_utils as mu # type:ignore
 from math import floor
+from tqdm import tqdm
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -131,13 +133,59 @@ class OptSampler(TreeStateSampler):
                 samples = sampler()
             state = self.opt_selector(samples)
         return state
-         
+
+class MHSampler():
+    def __init__(self, initial_state, denoise_steps, state_builder, sampler):
+        assert type(denoise_steps) is int, "denoise_steps must be type 'int'"
+        assert denoise_steps > 0, "denoise_steps must be a positive integer"
+        self.initial_state = initial_state
+        self.state_builder = state_builder
+        self.sampler = sampler
+        self.num_tokens = initial_state.masked_seq.shape[1]
+
+    def gen_remasked_state(self, state, mask):
+        masked_seq = state.gen_clean_seq()
+        masked_seq[0][mask == 1] = mu.MASK_TOKEN_INDEX # Here a 1 means we mask the token
+        new_step = 1
+        state = self.state_builder(masked_seq, new_step, state) # Re-run diffusion process from this partially masked state
+        return state
+
+    def sample_aligned(self, N=0, p=0.5, beta=1.0):
+        mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
+        self.sampler.initial_state = self.initial_state
+        state = self.sampler.sample_aligned()
+        prev_reward = state.calc_reward()
+        acceptances = 0
+        reward_traj = [prev_reward.item()]
+        for _ in range(N):
+            mask = mask_sampler.sample()
+            remasked_state = self.gen_remasked_state(state, mask)
+            self.sampler.initial_state = remasked_state
+            proposed_state = self.sampler.sample_aligned()
+            proposed_reward = proposed_state.calc_reward()
+            # print(f"Previous Reward: {prev_reward.item()} Proposed Reward: {proposed_reward.item()}")
+            proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
+            accept = torch.bernoulli(proposal_prob)
+
+            acceptances += accept.item()
+            if accept == 1:
+                state = proposed_state
+                prev_reward = proposed_reward
+                # print(f" Accepted (rate={rate}, prob={proposal_prob.item()})")
+            # else:
+                # print(f" Rejected (rate={rate}, prob={proposal_prob.item()}")
+            reward_traj.append(prev_reward.item())
+
+        rate = acceptances / N
+        print(f"Final Reward: {prev_reward.item()}, Acceptance Rate: {rate}")
+        state.reward_traj = reward_traj
+        return state
+
 class InteractionSampler():
-    def __init__(self, sampler_gen, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
-        self.sampler_gen = sampler_gen
         self.initial_state = initial_state
         self.depth = depth
         self.feedback_steps = feedback_steps
@@ -204,8 +252,9 @@ class InteractionSampler():
                 all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
 
                 rewards_lst = []
-                for m in all_masks:
-                    rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n).item())
+                print("Calculating reward estimates...")
+                for m in tqdm(all_masks):
+                    rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n, calc_true_seq=True).item())
                 rewards = np.array(rewards_lst)
 
                 if self.feedback_method == 'spectral':

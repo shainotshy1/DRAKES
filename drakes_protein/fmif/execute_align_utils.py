@@ -44,12 +44,6 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
     assert mode != "balanced" or (type(alpha) is float and 0 <= alpha <= 1), "If mode is 'balanced', alpha must be a float between 0 and 1"
 
-    # if mode == "balanced":
-    #     if alpha == 1.0:
-    #         mode = "ddg"
-    #     elif alpha == 0.0:
-    #         mode = "protgpt"
-
     def ddg_oracle(samples):
         n = samples.shape[0]
         if n not in cached_batches:
@@ -112,6 +106,9 @@ def generate_execution_func(out_lst,
                             spec_feedback_its=0,
                             max_spec_order=10,
                             feedback_method='spectral',
+                            mh_n=0,
+                            mh_p=0.5,
+                            mh_b=1.0,
                             lasso_lambda=0.0, 
                             repeat_num=1, 
                             hidden_dim=128, 
@@ -202,6 +199,8 @@ def generate_execution_func(out_lst,
         func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
+    if mh_n > 0:
+        func_descr += f", MH_N={mh_n}, P={mh_p}, Beta={mh_b}"
 
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
@@ -223,11 +222,14 @@ def generate_execution_func(out_lst,
                                                                 n=N, \
                                                                 beam_w=beam_w, \
                                                                 steps_per_level=steps_per_level, \
-                                                                align_type=align_type,
-                                                                lasso_lambda=lasso_lambda,
-                                                                spec_feedback_its=spec_feedback_its,
-                                                                max_spec_order=max_spec_order,
-                                                                feedback_method=feedback_method)
+                                                                align_type=align_type, \
+                                                                lasso_lambda=lasso_lambda, \
+                                                                spec_feedback_its=spec_feedback_its, \
+                                                                max_spec_order=max_spec_order, \
+                                                                feedback_method=feedback_method, \
+                                                                mh_n=mh_n, \
+                                                                mh_p=mh_p, \
+                                                                mh_b=mh_b)
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)
         out_lst.extend(results_list)

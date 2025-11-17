@@ -1,0 +1,63 @@
+Activating mf2 conda environment
+Set to:/home/shai/.conda/envs/mf2
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 1)
+INFO:root:Loading PRETRAINED model state dict (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=ddg, N=1, MH_N=50, P=0.7, Beta=0.01)
+INFO:root:Reading protein set (/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Executing on protein 7JJK (Batch repeats: 25, Proteins per batch: 1)
+  0%|          | 0/25 [00:00<?, ?it/s]  4%|▍         | 1/25 [00:27<11:05, 27.74s/it]  8%|▊         | 2/25 [00:54<10:26, 27.25s/it] 12%|█▏        | 3/25 [01:21<09:53, 27.00s/it] 16%|█▌        | 4/25 [01:48<09:25, 26.92s/it] 20%|██        | 5/25 [02:14<08:57, 26.90s/it] 24%|██▍       | 6/25 [02:41<08:30, 26.86s/it] 28%|██▊       | 7/25 [03:08<08:02, 26.80s/it] 32%|███▏      | 8/25 [03:35<07:35, 26.81s/it] 36%|███▌      | 9/25 [04:02<07:08, 26.80s/it] 40%|████      | 10/25 [04:29<06:42, 26.87s/it] 44%|████▍     | 11/25 [04:55<06:15, 26.86s/it] 48%|████▊     | 12/25 [05:22<05:48, 26.82s/it] 52%|█████▏    | 13/25 [05:49<05:22, 26.84s/it] 56%|█████▌    | 14/25 [06:16<04:55, 26.83s/it] 60%|██████    | 15/25 [06:43<04:27, 26.79s/it] 64%|██████▍   | 16/25 [07:09<04:01, 26.80s/it] 68%|██████▊   | 17/25 [07:36<03:34, 26.76s/it] 72%|███████▏  | 18/25 [08:03<03:06, 26.71s/it] 76%|███████▌  | 19/25 [08:29<02:40, 26.74s/it] 80%|████████  | 20/25 [08:56<02:13, 26.74s/it] 84%|████████▍ | 21/25 [09:23<01:46, 26.73s/it] 88%|████████▊ | 22/25 [09:50<01:20, 26.70s/it] 92%|█████████▏| 23/25 [10:16<00:53, 26.69s/it] 96%|█████████▌| 24/25 [10:43<00:26, 26.63s/it]100%|██████████| 25/25 [11:09<00:00, 26.65s/it]100%|██████████| 25/25 [11:09<00:00, 26.79s/it]
+INFO:root:Saving to file /home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test/pretrained_7JJK_ddg_bon_N=1_mhn=50_p=0.7_beta=0.01.csv
+Final Reward: 0.6490452289581299, Acceptance Rate: 0.1
+Progress: 1 / 25
+Final Reward: 0.7079463005065918, Acceptance Rate: 0.22
+Progress: 2 / 25
+Final Reward: 0.6586740612983704, Acceptance Rate: 0.18
+Progress: 3 / 25
+Final Reward: 0.7150305509567261, Acceptance Rate: 0.12
+Progress: 4 / 25
+Final Reward: 0.6748385429382324, Acceptance Rate: 0.3
+Progress: 5 / 25
+Final Reward: 0.6814091205596924, Acceptance Rate: 0.16
+Progress: 6 / 25
+Final Reward: 0.6952928304672241, Acceptance Rate: 0.2
+Progress: 7 / 25
+Final Reward: 0.6707603335380554, Acceptance Rate: 0.22
+Progress: 8 / 25
+Final Reward: 0.6650944948196411, Acceptance Rate: 0.22
+Progress: 9 / 25
+Final Reward: 0.64988112449646, Acceptance Rate: 0.3
+Progress: 10 / 25
+Final Reward: 0.6811431646347046, Acceptance Rate: 0.18
+Progress: 11 / 25
+Final Reward: 0.6845682263374329, Acceptance Rate: 0.2
+Progress: 12 / 25
+Final Reward: 0.6809333562850952, Acceptance Rate: 0.08
+Progress: 13 / 25
+Final Reward: 0.6571961641311646, Acceptance Rate: 0.2
+Progress: 14 / 25
+Final Reward: 0.7040361166000366, Acceptance Rate: 0.16
+Progress: 15 / 25
+Final Reward: 0.6817456483840942, Acceptance Rate: 0.28
+Progress: 16 / 25
+Final Reward: 0.6836821436882019, Acceptance Rate: 0.22
+Progress: 17 / 25
+Final Reward: 0.6858538389205933, Acceptance Rate: 0.22
+Progress: 18 / 25
+Final Reward: 0.6824989318847656, Acceptance Rate: 0.32
+Progress: 19 / 25
+Final Reward: 0.695227324962616, Acceptance Rate: 0.16
+Progress: 20 / 25
+Final Reward: 0.6566334962844849, Acceptance Rate: 0.2
+Progress: 21 / 25
+Final Reward: 0.6918469667434692, Acceptance Rate: 0.22
+Progress: 22 / 25
+Final Reward: 0.6773315072059631, Acceptance Rate: 0.24
+Progress: 23 / 25
+Final Reward: 0.6877718567848206, Acceptance Rate: 0.22
+Progress: 24 / 25
+Final Reward: 0.7050119638442993, Acceptance Rate: 0.32
+Progress: 25 / 25

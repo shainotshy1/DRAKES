@@ -6,7 +6,7 @@ import model_utils as mu
 #from fmif import model_utils as mu
 import numpy as np
 from torch.distributions.categorical import Categorical
-from align_utils import BeamSampler, BONSampler, AlignSamplerState, OptSampler, InteractionSampler
+from align_utils import BeamSampler, BONSampler, AlignSamplerState, OptSampler, InteractionSampler, MHSampler
 from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, ExactSolver
 import time
 from sklearn.linear_model import LinearRegression
@@ -88,12 +88,10 @@ class Interpolant:
         noisy_batch['S_t'] = aatypes_t
         return noisy_batch
 
-    # TODO: FIX bug where clean sequences ARE NOT CLEAN...
     class ProteinDiffusionState(AlignSamplerState):
-        def __init__(self, masked_seq, q_xs, demask, step, parent_state, reward_oracle):
+        def __init__(self, masked_seq, q_xs, step, parent_state, reward_oracle, full_demask_fn):
             self.masked_seq = masked_seq
             self.pred_seq = None
-            self.demask = demask
             self.q_xs = q_xs
             self.step = step
             self.parent_state = parent_state
@@ -103,6 +101,9 @@ class Interpolant:
             self.spec_selections = None if parent_state is None else parent_state.spec_selections
             self.spec_reward_traj = None if parent_state is None else parent_state.spec_reward_traj
             self.r2_traj = None if parent_state is None else parent_state.r2_traj
+            self.reward_traj = None
+
+            self.full_demask_fn = full_demask_fn
 
             self.q_xs_no_mask = self.q_xs.clone()
             self.q_xs_no_mask[:, :, mu.MASK_TOKEN_INDEX] = 0
@@ -122,8 +123,15 @@ class Interpolant:
                 self.pred_seq = clean_pred
             return self.pred_seq
 
-        def calc_reward(self, n=1, select_argmax=False):
-            if select_argmax: return self.reward_oracle(self.gen_clean_seq(select_argmax=True))
+        def calc_reward(self, n=1, select_argmax=False, calc_true_seq=False):
+            if calc_true_seq:
+                avg_reward = 0
+                for _ in range(n):
+                    pred_state = self.full_demask_fn(self.masked_seq, self.step, self.reward_oracle, self.q_xs)
+                    pred_reward = self.reward_oracle(pred_state.gen_clean_seq())
+                    avg_reward += (1.0 / n) * pred_reward
+                return avg_reward
+            elif select_argmax: return self.reward_oracle(self.gen_clean_seq(select_argmax=True))
 
             avg_reward = 0
             for _ in range(n):
@@ -205,39 +213,24 @@ class Interpolant:
         q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s #[:, :, 0]
         return q_xs#, pred_aatypes_1
 
-    def mask_batch_to_state(self, _x, model, model_params, ts, reward_oracle, prev_state):
+    def mask_batch_to_state(self, _x, model, model_params, ts, reward_oracle, prev_state, full_demask_fn):
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
-        demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
         q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
+        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn)
         return sample_state
     
-    def mask_to_state_batch(self, _x, model, model_params, ts, reward_oracle, prev_state):
+    def mask_to_state_batch(self, _x, model, model_params, ts, reward_oracle, prev_state, full_demask_fn):
         n = _x.shape[0]
         copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype).repeat(n, 1)
-        demask = (_x != mu.MASK_TOKEN_INDEX) * (1 - copy_flag)
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
         q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_states = self.ProteinDiffusionState(aatypes_t, q_xs, demask, prev_state.step + 1, prev_state, reward_oracle)
+        sample_states = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn)
         return sample_states
 
-    def demask_to_pred_state(self, demask, model, model_params, ts, reward_oracle, prev_state):
-        pred_wo_mask = prev_state.q_xs.clone()
-        pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-        pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
-        _x = (pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
-
-        copy_flag = (prev_state.masked_seq != mu.MASK_TOKEN_INDEX).to(prev_state.masked_seq.dtype)
-        aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
-        t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
-        q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, demask.unsqueeze(0), prev_state.step + 1, prev_state, reward_oracle)
-        return sample_state
-
-    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1, beam_model_params=None):
+    def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, full_demask_fn, steps_per_level=1, beam_model_params=None):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         def sampler_n_gen(state, n = 1):
@@ -254,14 +247,14 @@ class Interpolant:
                     else:
                         _x = _sample_categorical(sample_states.q_xs, n=1)
                     params = beam_model_params if (beam_model_params is not None and state.step != 1) else model_params # This model params is size n // W since each child generates this many samples instead of n, so the total is n/W * W = n
-                    sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states)
+                    sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states, full_demask_fn)
                 if state != sample_states: # This condition is true if have we reach sample_states.step = num_timesteps - 1; i.e reached the end
                     sample_states.parent_state = state # Override to make the parent state include the whole trajectory
                 return sample_states
             return sample
         return sampler_n_gen
 
-    def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, steps_per_level=1, beam_model_params=None):
+    def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, full_demask_fn, steps_per_level=1):
         assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
         assert steps_per_level > 0, "steps_per_level must be a positive integer"
         # Generate sampler
@@ -283,69 +276,16 @@ class Interpolant:
                     pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
                     best_pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
                     _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
-                    sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states)
+                    sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states, full_demask_fn)
                 return sample_states
             return sample
         return sampler_n_gen
 
-    def build_opt_selector(self, model, model_params, ts, reward_oracle, opt="linear", max_solution_order=4, lasso_lambda=0.005):
-        opt_options = ["linear", "spectral"]
-        assert opt in opt_options, f"{opt} not in {opt_options}"
-
-        exact_solver = ExactSolver(maximize=True, max_solution_order=max_solution_order)
-
-        def opt_selector(samples):
-            parent_state = samples.parent_state
-
-            if samples.return_early():
-               best_demask = samples.demask[0].clone()
-            else: 
-                seq_len = samples.masked_seq.shape[0]
-                # Assumes all samples have same parent state
-                rewards = np.zeros(seq_len) if seq_len <= 1 else samples.calc_reward().cpu().numpy()
-                target = rewards[0]
-                eps = 1e-8
-                if (np.abs(rewards - target) <= eps).all():
-                    best_demask = samples.demask[0].clone()
-                else:
-                    all_masks = samples.demask.cpu().numpy()
-                    if opt == "linear":
-                        target_tokens = (samples.parent_state.masked_seq == mu.MASK_TOKEN_INDEX).detach().cpu().numpy().squeeze()
-                        X = all_masks[:, target_tokens]
-                        if X.shape[1] > max_solution_order:
-                            # min ||Xa - r||_2^2 + lambda * ||a||_0
-                            # return arg-top-k(a)
-                            clf = Lasso(alpha=lasso_lambda)
-                            clf.fit(X, rewards)
-                            a = np.array(clf.coef_.flatten().tolist())
-                            b = clf.intercept_
-                            indices = np.argpartition(-a, max_solution_order-1)[:max_solution_order]
-                            demask_compact = np.zeros(a.shape, dtype=all_masks.dtype)
-                            demask_compact[indices] = 1
-                            #pred_reward = a.T @ demask_compact + b
-                        else:
-                            demask_compact = np.ones(X.shape[1], dtype=all_masks.dtype)
-                        best_demask = np.zeros(target_tokens.shape, dtype=all_masks.dtype)
-                        best_demask[target_tokens] = demask_compact
-                        best_demask = torch.tensor(best_demask, device=samples.demask.device)
-                    elif opt == "spectral":    
-                        best_model, cv_r2 = lgboost_fit(all_masks, rewards)
-                        fourier_dict = lgboost_to_fourier(best_model)
-                        fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
-                        exact_solver.load_fourier_dictionary(fourier_dict_trunc)
-                        best_demask = exact_solver.solve()
-                        best_demask = torch.tensor(best_demask, device=samples.demask.device)
-                    else:
-                        raise ValueError(f"{opt} is invalid Optimizer name")
-            best_state = self.demask_to_pred_state(best_demask, model, model_params, ts, reward_oracle, parent_state)
-            return best_state
-        return opt_selector
-
-    def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle):
+    def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle, full_demask_fn):
         def masked_state_builder(masked_seq, step, parent_state):
             assert type(step) and 0 <= step < len(ts)
             q_xs = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
-            state = self.ProteinDiffusionState(masked_seq, q_xs, (masked_seq != mu.MASK_TOKEN_INDEX).type(torch.int8), 1, parent_state, reward_oracle)
+            state = self.ProteinDiffusionState(masked_seq, q_xs, 1, parent_state, reward_oracle, full_demask_fn)
             return state
         return masked_state_builder
 
@@ -362,7 +302,10 @@ class Interpolant:
             lasso_lambda=0.0,
             spec_feedback_its=0,
             max_spec_order=10,
-            feedback_method="spectral"
+            feedback_method="spectral",
+            mh_n=0,
+            mh_p=0.5,
+            mh_b=1.0
         ):
 
         if type(n) != int or n < 1:
@@ -376,6 +319,8 @@ class Interpolant:
         if align_type == "bon":
             steps_per_level = num_timesteps
         
+        total_steps = num_timesteps // steps_per_level + 1
+
         samplers = [] # (num_batch, )
         for i in range(num_batch):
             X_i = X[i].unsqueeze(0)
@@ -386,31 +331,32 @@ class Interpolant:
             cls_i = cls[i].unsqueeze(0) if cls is not None else None
             w_i = w[i].unsqueeze(0) if w is not None else None
             single_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=1)
-            align_n = n if align_type in ["bon", "beam"] else 1
-            model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=align_n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
             beam_model_params = None if align_type != "beam" else self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
+
+            def full_demask_sample(masked_seq, step, reward_oracle, q_xs):
+                initial_state = self.ProteinDiffusionState(masked_seq, q_xs, step, None, reward_oracle, None)
+                steps_left = total_steps - step + 1
+                beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) 
+                beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
+                beam_sampler_gen = self.build_sampler_gen(model, beam_init_model_params, ts, batch_oracle, num_timesteps, full_demask_sample, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
+                resampler = BeamSampler(beam_sampler_gen, initial_state, steps_left, n, beam_w)
+                sample = resampler.sample_aligned()
+                return sample
 
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             q_xs = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
-            initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, torch.zeros(aatypes_0.shape, device=q_xs.device, dtype=torch.int8), 1, None, batch_oracle)
-            total_steps = num_timesteps // steps_per_level + 1
+            initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, 1, None, batch_oracle, full_demask_sample)
 
-            sample_gen_builder = self.build_sampler_gen # self.build_spectral_sampler_gen if align_type == "spectral" or align_type == "linear" else 
-            sampler_gen = sample_gen_builder(model, model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
-
-            beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) # TODO: Make this shape more dynamic setting instead of this very confusing code :(
+            beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n)
             beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
-            beam_sampler_gen = sample_gen_builder(model, beam_init_model_params, ts, batch_oracle, num_timesteps, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
+            beam_sampler_gen = self.build_sampler_gen(model, beam_init_model_params, ts, batch_oracle, num_timesteps, full_demask_sample, steps_per_level=steps_per_level, beam_model_params=beam_model_params)
             resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
-            sampler = InteractionSampler(sampler_gen, initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle), resampler, lasso_pen=lasso_lambda)         
+            state_builder = self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample)
+            sampler = MHSampler(initial_state, total_steps, state_builder, resampler)
 
-            # if align_type == "linear": raise NotImplementedError()
-            # elif align_type == "spectral":
-            #     # opt_selector = self.build_opt_selector(model, single_model_params, ts, batch_oracle, opt=align_type, lasso_lambda=lasso_lambda)
-            #     # sampler = OptSampler(sampler_gen, initial_state, total_steps, n, opt_selector)
-            # else: # BEAM / BON
-            #     sampler = BeamSampler(sampler_gen, initial_state, total_steps, n, beam_w)   
+            # sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, lasso_pen=lasso_lambda)         
+
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
         prot_traj = [] # (num_batch, num_timesteps - 1) since initial state not included now
@@ -418,8 +364,14 @@ class Interpolant:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = [], [], [], []
         else:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
+        total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
         for i, sampler in enumerate(samplers):
-            best_sample = sampler.sample_aligned()
+            if mh_n > 0:
+                best_sample = sampler.sample_aligned(N=mh_n, p=mh_p, beta=mh_b)
+                total_reward_traj += np.array(best_sample.reward_traj)
+            else:
+                best_sample = sampler.sample_aligned()
+
             if spec_feedback_its > 0:
                 top_spec_interactions.append(best_sample.top_spec_interactions) # type: ignore
                 spec_selections.append(best_sample.spec_selections) # type: ignore
@@ -432,6 +384,8 @@ class Interpolant:
                 prot_traj[-1].append(curr.masked_seq)
                 curr = curr.parent_state
             prot_traj[-1] = prot_traj[-1][::-1]
+        total_reward_traj /= len(samplers)
+        print(f"Average Reward Trajectory: {total_reward_traj}")
         seq_dtype = prot_traj[0][0].dtype
         # concat_prot_traj = []
         # concat_clean_traj = []
