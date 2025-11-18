@@ -174,7 +174,8 @@ def main():
                                             feedback_method=args.feedback_method, \
                                             mh_n=args.MH_steps, \
                                             mh_p=args.MH_p, \
-                                            mh_b=args.MH_b)
+                                            mh_b=args.MH_b,
+                                            target_protein=args.target_protein)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

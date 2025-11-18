@@ -384,7 +384,9 @@ class Interpolant:
                 prot_traj[-1].append(curr.masked_seq)
                 curr = curr.parent_state
             prot_traj[-1] = prot_traj[-1][::-1]
+
         total_reward_traj /= len(samplers)
+
         print(f"Average Reward Trajectory: {total_reward_traj}")
         seq_dtype = prot_traj[0][0].dtype
         # concat_prot_traj = []
@@ -399,7 +401,7 @@ class Interpolant:
         #         concat_clean_traj[i][j] = clean_traj[j][i]
         for i, best_sample in enumerate(best_samples):
             concat_best_samples[i] = best_sample.gen_clean_seq()
-        return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories
+        return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj
 
     def sample_gradient(
             self,

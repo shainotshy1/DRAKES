@@ -2,6 +2,7 @@ import os
 import torch
 import logging
 import pandas as pd
+import h5py
 
 from protein_oracle.data_utils import featurize
 from protein_oracle.model_utils import ProteinMPNNOracle
@@ -106,6 +107,7 @@ def generate_execution_func(out_lst,
                             spec_feedback_its=0,
                             max_spec_order=10,
                             feedback_method='spectral',
+                            target_protein=None,
                             mh_n=0,
                             mh_p=0.5,
                             mh_b=1.0,
@@ -212,7 +214,7 @@ def generate_execution_func(out_lst,
         chain_M = chain_M.repeat(repeat_num, 1)
         residue_idx = residue_idx.repeat(repeat_num, 1)
         chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
-        S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = noise_interpolant.sample(fmif_model, \
+        S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj = noise_interpolant.sample(fmif_model, \
                                                                 X, \
                                                                 mask, \
                                                                 chain_M, \
@@ -230,6 +232,15 @@ def generate_execution_func(out_lst,
                                                                 mh_n=mh_n, \
                                                                 mh_p=mh_p, \
                                                                 mh_b=mh_b)
+        hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
+        if mh_n > 0:
+            protein_name = "_" + target_protein if target_protein is not None else ""
+            with h5py.File(hdf5_output, 'r+') as f:
+                name = f"p{mh_p}_b{mh_b}_n{mh_n}{protein_name}"
+                if name in f:
+                    del f[name]
+                f.create_dataset(name, data = total_reward_traj)
+
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)
         out_lst.extend(results_list)
