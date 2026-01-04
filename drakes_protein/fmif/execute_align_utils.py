@@ -107,7 +107,6 @@ def generate_execution_func(out_lst,
                             spec_feedback_its=0,
                             max_spec_order=10,
                             feedback_method='spectral',
-                            target_protein=None,
                             mh_n=0,
                             mh_p=0.5,
                             mh_b=1.0,
@@ -232,9 +231,9 @@ def generate_execution_func(out_lst,
                                                                 mh_n=mh_n, \
                                                                 mh_p=mh_p, \
                                                                 mh_b=mh_b)
+        protein_name = "_" + batch['protein_name'][0][:-4]
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
-            protein_name = "_" + target_protein if target_protein is not None else ""
             with h5py.File(hdf5_output, 'r+') as f:
                 name = f"p{mh_p}_b{mh_b}_n{mh_n}{protein_name}"
                 if name in f:

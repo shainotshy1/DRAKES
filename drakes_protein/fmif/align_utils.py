@@ -135,9 +135,13 @@ class OptSampler(TreeStateSampler):
         return state
 
 class MHSampler():
-    def __init__(self, initial_state, denoise_steps, state_builder, sampler):
+    def __init__(self, initial_state, denoise_steps, state_builder, sampler, method='random'):
         assert type(denoise_steps) is int, "denoise_steps must be type 'int'"
         assert denoise_steps > 0, "denoise_steps must be a positive integer"
+        method_opts = ['random', 'spectral']
+        assert method in method_opts, f"method must be in {method_opts}"
+        self.method = method
+        
         self.initial_state = initial_state
         self.state_builder = state_builder
         self.sampler = sampler
@@ -151,6 +155,14 @@ class MHSampler():
         return state
 
     def sample_aligned(self, N=0, p=0.5, beta=1.0):
+        if self.method == 'random':
+            return self.sample_aligned_random(N, p, beta)
+        elif self.method == 'spectral':
+            return self.sample_aligned_spectral(N, p, beta)
+        else:
+            raise NotImplementedError(f"Unsupported MH sampler method: '{self.method}'")
+
+    def sample_aligned_spectral(self, N, p, beta):
         mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
         self.sampler.initial_state = self.initial_state
         state = self.sampler.sample_aligned()
@@ -163,7 +175,6 @@ class MHSampler():
             self.sampler.initial_state = remasked_state
             proposed_state = self.sampler.sample_aligned()
             proposed_reward = proposed_state.calc_reward()
-            # print(f"Previous Reward: {prev_reward.item()} Proposed Reward: {proposed_reward.item()}")
             proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
             accept = torch.bernoulli(proposal_prob)
 
@@ -171,9 +182,33 @@ class MHSampler():
             if accept == 1:
                 state = proposed_state
                 prev_reward = proposed_reward
-                # print(f" Accepted (rate={rate}, prob={proposal_prob.item()})")
-            # else:
-                # print(f" Rejected (rate={rate}, prob={proposal_prob.item()}")
+            reward_traj.append(prev_reward.item())
+
+        rate = acceptances / N
+        print(f"Final Reward: {prev_reward.item()}, Acceptance Rate: {rate}")
+        state.reward_traj = reward_traj
+        return state
+
+    def sample_aligned_random(self, N, p, beta):
+        mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
+        self.sampler.initial_state = self.initial_state
+        state = self.sampler.sample_aligned()
+        prev_reward = state.calc_reward()
+        acceptances = 0
+        reward_traj = [prev_reward.item()]
+        for _ in range(N):
+            mask = mask_sampler.sample()
+            remasked_state = self.gen_remasked_state(state, mask)
+            self.sampler.initial_state = remasked_state
+            proposed_state = self.sampler.sample_aligned()
+            proposed_reward = proposed_state.calc_reward()
+            proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
+            accept = torch.bernoulli(proposal_prob)
+
+            acceptances += accept.item()
+            if accept == 1:
+                state = proposed_state
+                prev_reward = proposed_reward
             reward_traj.append(prev_reward.item())
 
         rate = acceptances / N

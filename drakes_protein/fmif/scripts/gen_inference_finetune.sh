@@ -4,12 +4,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --output=p.7_b.001_n50.out
+#SBATCH --output=p.5_b.001_n1000.out
 #SBATCH --job-name=DRAKES
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=20
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='bon'
@@ -18,13 +18,13 @@ ORACLE_MODE='ddg'
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
 # LASSO_LAMBDA=0.0
-TARGET_PROTEIN="2KRU"
+TARGET_PROTEIN="7JJK"
 # ORACLE_ALPHA=1.0
 # SPEC_FEEDBACK_ITS=5
 # FEEDBACK_METHOD="spectral"
 # MAX_SPEC_ORDER=10
-MH_N=50
-MH_P=0.7
+MH_N=1000
+MH_P=0.5
 MH_B=0.001
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
