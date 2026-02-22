@@ -305,7 +305,8 @@ class Interpolant:
             feedback_method="spectral",
             mh_n=0,
             mh_p=0.5,
-            mh_b=1.0
+            mh_b=1.0,
+            mh_type='uniform'
         ):
 
         if type(n) != int or n < 1:
@@ -353,7 +354,7 @@ class Interpolant:
             resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
             state_builder = self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample)
-            sampler = MHSampler(initial_state, total_steps, state_builder, resampler)
+            sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
 
             # sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, lasso_pen=lasso_lambda)         
 

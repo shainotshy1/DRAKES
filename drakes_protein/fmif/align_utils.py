@@ -135,17 +135,19 @@ class OptSampler(TreeStateSampler):
         return state
 
 class MHSampler():
-    def __init__(self, initial_state, denoise_steps, state_builder, sampler, method='random'):
+    def __init__(self, initial_state, denoise_steps, state_builder, sampler, mh_type='uniform'):
         assert type(denoise_steps) is int, "denoise_steps must be type 'int'"
         assert denoise_steps > 0, "denoise_steps must be a positive integer"
-        method_opts = ['random', 'spectral']
-        assert method in method_opts, f"method must be in {method_opts}"
-        self.method = method
+        method_opts = ['uniform', 'split-gibbs']
+        assert mh_type in method_opts, f"mh_type must be in {method_opts}"
+        self.mh_type = mh_type
         
         self.initial_state = initial_state
         self.state_builder = state_builder
         self.sampler = sampler
         self.num_tokens = initial_state.masked_seq.shape[1]
+
+    # Split-Gibbs does a annealed noising + symmetric pertubation of x to get z, sampling via Metropolis-within-Gibbs
 
     def gen_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
@@ -155,14 +157,12 @@ class MHSampler():
         return state
 
     def sample_aligned(self, N=0, p=0.5, beta=1.0):
-        if self.method == 'random':
-            return self.sample_aligned_random(N, p, beta)
-        elif self.method == 'spectral':
-            return self.sample_aligned_spectral(N, p, beta)
+        if self.mh_type == 'uniform':
+            return self.sample_aligned_uniform(N, p, beta)
         else:
-            raise NotImplementedError(f"Unsupported MH sampler method: '{self.method}'")
+            raise NotImplementedError(f"Unsupported MH sampler method: '{self.mh_type}'")
 
-    def sample_aligned_spectral(self, N, p, beta):
+    def sample_aligned_uniform(self, N, p, beta):
         mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
         self.sampler.initial_state = self.initial_state
         state = self.sampler.sample_aligned()
@@ -189,32 +189,32 @@ class MHSampler():
         state.reward_traj = reward_traj
         return state
 
-    def sample_aligned_random(self, N, p, beta):
-        mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
-        self.sampler.initial_state = self.initial_state
-        state = self.sampler.sample_aligned()
-        prev_reward = state.calc_reward()
-        acceptances = 0
-        reward_traj = [prev_reward.item()]
-        for _ in range(N):
-            mask = mask_sampler.sample()
-            remasked_state = self.gen_remasked_state(state, mask)
-            self.sampler.initial_state = remasked_state
-            proposed_state = self.sampler.sample_aligned()
-            proposed_reward = proposed_state.calc_reward()
-            proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
-            accept = torch.bernoulli(proposal_prob)
+    # def sample_aligned_spectral(self, N, p, beta):
+    #     mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
+    #     self.sampler.initial_state = self.initial_state
+    #     state = self.sampler.sample_aligned()
+    #     prev_reward = state.calc_reward()
+    #     acceptances = 0
+    #     reward_traj = [prev_reward.item()]
+    #     for _ in range(N):
+    #         mask = mask_sampler.sample()
+    #         remasked_state = self.gen_remasked_state(state, mask)
+    #         self.sampler.initial_state = remasked_state
+    #         proposed_state = self.sampler.sample_aligned()
+    #         proposed_reward = proposed_state.calc_reward()
+    #         proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
+    #         accept = torch.bernoulli(proposal_prob)
 
-            acceptances += accept.item()
-            if accept == 1:
-                state = proposed_state
-                prev_reward = proposed_reward
-            reward_traj.append(prev_reward.item())
+    #         acceptances += accept.item()
+    #         if accept == 1:
+    #             state = proposed_state
+    #             prev_reward = proposed_reward
+    #         reward_traj.append(prev_reward.item())
 
-        rate = acceptances / N
-        print(f"Final Reward: {prev_reward.item()}, Acceptance Rate: {rate}")
-        state.reward_traj = reward_traj
-        return state
+    #     rate = acceptances / N
+    #     print(f"Final Reward: {prev_reward.item()}, Acceptance Rate: {rate}")
+    #     state.reward_traj = reward_traj
+    #     return state
 
 class InteractionSampler():
     def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):

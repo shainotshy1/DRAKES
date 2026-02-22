@@ -110,6 +110,7 @@ def generate_execution_func(out_lst,
                             mh_n=0,
                             mh_p=0.5,
                             mh_b=1.0,
+                            mh_type='uniform',
                             lasso_lambda=0.0, 
                             repeat_num=1, 
                             hidden_dim=128, 
@@ -201,7 +202,7 @@ def generate_execution_func(out_lst,
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
     if mh_n > 0:
-        func_descr += f", MH_N={mh_n}, P={mh_p}, Beta={mh_b}"
+        func_descr += f", MH_TYPE={mh_type}, MH_N={mh_n}, P={mh_p}, Beta={mh_b}"
 
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
@@ -230,15 +231,20 @@ def generate_execution_func(out_lst,
                                                                 feedback_method=feedback_method, \
                                                                 mh_n=mh_n, \
                                                                 mh_p=mh_p, \
-                                                                mh_b=mh_b)
+                                                                mh_b=mh_b,
+                                                                mh_type=mh_type)
         protein_name = "_" + batch['protein_name'][0][:-4]
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
             with h5py.File(hdf5_output, 'r+') as f:
-                name = f"p{mh_p}_b{mh_b}_n{mh_n}{protein_name}"
+                if mh_type == 'uniform':
+                    name = f"{mh_type}_p{mh_p}_b{mh_b}_n{mh_n}{protein_name}"
+                else:
+                    name = f"{mh_type}_b{mh_b}_n{mh_n}{protein_name}"
                 if name in f:
                     del f[name]
                 f.create_dataset(name, data = total_reward_traj)
+                print("Saved trajectory to hdf5:", name)
 
         mask_for_loss = mask*chain_M
         results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)

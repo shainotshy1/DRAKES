@@ -9,7 +9,7 @@
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=20
+BATCH_SIZE=1
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='bon'
@@ -23,8 +23,9 @@ TARGET_PROTEIN="7JJK"
 # SPEC_FEEDBACK_ITS=5
 # FEEDBACK_METHOD="spectral"
 # MAX_SPEC_ORDER=10
-MH_N=1000
-MH_P=0.5
+MH_TYPE="uniform"
+MH_N=10
+MH_P=0.55
 MH_B=0.001
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
@@ -55,6 +56,7 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --MH_steps=$MH_N \
         --MH_p=$MH_P \
         --MH_b=$MH_B \
+        --MH_type=$MH_TYPE \
         # --spec_feedback_its=$SPEC_FEEDBACK_ITS \
         # --max_spec_order=$MAX_SPEC_ORDER \
         # --feedback_method=$FEEDBACK_METHOD \

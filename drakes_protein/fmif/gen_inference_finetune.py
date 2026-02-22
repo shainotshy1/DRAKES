@@ -142,7 +142,7 @@ def main():
     argparser.add_argument("--MH_steps", type=int, required=False, default=0)
     argparser.add_argument("--MH_p",type=float, required=False, default=0.5)
     argparser.add_argument("--MH_b", type=float, required=False, default=1.0)
-
+    argparser.add_argument("--MH_type", type=str, required=False, default="uniform")
 
     args = argparser.parse_args()
 
@@ -174,7 +174,8 @@ def main():
                                             feedback_method=args.feedback_method, \
                                             mh_n=args.MH_steps, \
                                             mh_p=args.MH_p, \
-                                            mh_b=args.MH_b)
+                                            mh_b=args.MH_b,
+                                            mh_type=args.MH_type)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \
