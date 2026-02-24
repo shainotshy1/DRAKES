@@ -108,6 +108,12 @@ class Interpolant:
             self.q_xs_no_mask = self.q_xs.clone()
             self.q_xs_no_mask[:, :, mu.MASK_TOKEN_INDEX] = 0
 
+        def get_token(self, idx):
+            return self.masked_seq[:, idx]
+
+        def set_token(self, idx, token):
+            self.masked_seq[:, idx] = token
+
         def gen_clean_seq(self, select_argmax=False):
             if self.pred_seq is not None: return self.pred_seq.clone()
             

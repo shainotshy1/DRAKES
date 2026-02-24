@@ -11,6 +11,7 @@ from sklearn.linear_model import Lasso
 import model_utils as mu # type:ignore
 from math import floor
 from tqdm import tqdm
+import copy
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -159,6 +160,8 @@ class MHSampler():
     def sample_aligned(self, N=0, p=0.5, beta=1.0):
         if self.mh_type == 'uniform':
             return self.sample_aligned_uniform(N, p, beta)
+        elif self.mh_type == 'split-gibbs':
+            return self.sample_aligned_split_gibbs(N, beta)
         else:
             raise NotImplementedError(f"Unsupported MH sampler method: '{self.mh_type}'")
 
@@ -189,32 +192,52 @@ class MHSampler():
         state.reward_traj = reward_traj
         return state
 
-    # def sample_aligned_spectral(self, N, p, beta):
-    #     mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), p))
-    #     self.sampler.initial_state = self.initial_state
-    #     state = self.sampler.sample_aligned()
-    #     prev_reward = state.calc_reward()
-    #     acceptances = 0
-    #     reward_traj = [prev_reward.item()]
-    #     for _ in range(N):
-    #         mask = mask_sampler.sample()
-    #         remasked_state = self.gen_remasked_state(state, mask)
-    #         self.sampler.initial_state = remasked_state
-    #         proposed_state = self.sampler.sample_aligned()
-    #         proposed_reward = proposed_state.calc_reward()
-    #         proposal_prob = min(torch.tensor(1.0), torch.exp((proposed_reward - prev_reward) / beta))
-    #         accept = torch.bernoulli(proposal_prob)
+    def sample_aligned_split_gibbs(self, N, beta, mh_steps=100):
+        self.sampler.initial_state = self.initial_state
+        state = self.sampler.sample_aligned()
+        prev_reward = state.calc_reward()
+        reward_traj = [prev_reward.item()]
+        clean_seq = state.gen_clean_seq()
+        L = clean_seq.shape[-1]
+        nu_min = 1e-4
+        nu_max = 20.0
+        for n in range(N):
+            # pi(z | x)
+            d_prev = 0
+            z_prev_reward = prev_reward
+            # nu = (nu_min ** ((n + 1) / (N+1))) * (nu_max ** (1 - (n + 1) / (N+1)))
+            # m_prob = (N - 1) / N * (1 - np.exp(-nu))
+            m_prob = (N - n) / (N + 1)
+            for mh_it in range(mh_steps):
+                idx = torch.randint(L, (1,), device=clean_seq.device)
+                token = torch.randint(len(ALPHABET), (1,), device=clean_seq.device)
+                old_token = state.get_token(idx)
+                state.set_token(idx, token)
+                prop_reward = state.calc_reward()
+                prop_seq = state.gen_clean_seq()
+                d = int(torch.sum(prop_seq != clean_seq))
+                proposal_prob = min(torch.tensor(1.0), torch.exp((prop_reward - z_prev_reward) / beta + (d_prev - d) * np.log(m_prob / (1 - m_prob))))
+                accept = torch.bernoulli(proposal_prob)
+                
+                if accept == 1:
+                    z_prev_reward = prop_reward
+                    d_prev = d
+                else:
+                    state.set_token(idx, old_token)
+            
+            # pi(x | z)
+            mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), m_prob))
+            mask = mask_sampler.sample()
+            remasked_state = self.gen_remasked_state(state, mask)
+            self.sampler.initial_state = remasked_state
+            state = self.sampler.sample_aligned()
+            prev_reward = state.calc_reward()
+            reward_traj.append(prev_reward.item())
+            clean_seq = state.gen_clean_seq()
 
-    #         acceptances += accept.item()
-    #         if accept == 1:
-    #             state = proposed_state
-    #             prev_reward = proposed_reward
-    #         reward_traj.append(prev_reward.item())
-
-    #     rate = acceptances / N
-    #     print(f"Final Reward: {prev_reward.item()}, Acceptance Rate: {rate}")
-    #     state.reward_traj = reward_traj
-    #     return state
+        print(f"Final Reward: {prev_reward.item()}")
+        state.reward_traj = reward_traj
+        return state
 
 class InteractionSampler():
     def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):

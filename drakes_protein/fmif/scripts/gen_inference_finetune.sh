@@ -4,12 +4,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --output=p.5_b.001_n1000.out
-#SBATCH --job-name=DRAKES
+#SBATCH --output=split-gibbs.out
+#SBATCH --job-name=SGDD
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=10
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='bon'
@@ -23,9 +23,9 @@ TARGET_PROTEIN="7JJK"
 # SPEC_FEEDBACK_ITS=5
 # FEEDBACK_METHOD="spectral"
 # MAX_SPEC_ORDER=10
-MH_TYPE="uniform"
+MH_TYPE="split-gibbs"
 MH_N=10
-MH_P=0.55
+MH_P=0.5
 MH_B=0.001
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
