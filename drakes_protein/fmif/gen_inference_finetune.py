@@ -104,7 +104,10 @@ def generate_output_fn(args):
             out_name += f"_lassolambda={args.lasso_lambda}"
 
     if args.MH_steps > 0:
-        out_name += f"_mhn={args.MH_steps}_p={args.MH_p}_beta={args.MH_b}"
+        if args.MH_type == 'uniform':
+            out_name += f"_{args.MH_type}_mhn={args.MH_steps}_p={args.MH_p}_beta={args.MH_b}"
+        else:
+            out_name += f"_{args.MH_type}_mhn={args.MH_steps}_beta={args.MH_b}"
 
     if args.align_type == "beam":
         out_name += f"_W={args.beam_w}"

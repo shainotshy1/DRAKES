@@ -113,10 +113,10 @@ class Interpolant:
 
         def set_token(self, idx, token):
             self.masked_seq[:, idx] = token
+            self.done = (self.masked_seq != mu.MASK_TOKEN_INDEX).all()
 
-        def gen_clean_seq(self, select_argmax=False):
-            if self.pred_seq is not None: return self.pred_seq.clone()
-            
+        def gen_clean_seq(self, select_argmax=False, inplace=False):
+            # if self.pred_seq is not None: return self.pred_seq.clone()            
             if self.done:
                 self.pred_seq = self.masked_seq.clone() # if masked seq is already unmasked then just return that
             else:
@@ -127,6 +127,9 @@ class Interpolant:
                     clean_pred = _sample_categorical(self.q_xs_no_mask)
                 clean_pred = clean_pred * copy_flag + self.masked_seq * (1 - copy_flag)
                 self.pred_seq = clean_pred
+            if inplace:
+                self.masked_seq[:, :] = self.pred_seq[:, :]
+                self.done = True
             return self.pred_seq
 
         def calc_reward(self, n=1, select_argmax=False, calc_true_seq=False):

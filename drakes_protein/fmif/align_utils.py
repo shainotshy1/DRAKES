@@ -150,8 +150,8 @@ class MHSampler():
 
     # Split-Gibbs does a annealed noising + symmetric pertubation of x to get z, sampling via Metropolis-within-Gibbs
 
-    def gen_remasked_state(self, state, mask):
-        masked_seq = state.gen_clean_seq()
+    def gen_remasked_state(self, state, mask, inplace=False):
+        masked_seq = state.gen_clean_seq(inplace)
         masked_seq[0][mask == 1] = mu.MASK_TOKEN_INDEX # Here a 1 means we mask the token
         new_step = 1
         state = self.state_builder(masked_seq, new_step, state) # Re-run diffusion process from this partially masked state
@@ -200,9 +200,9 @@ class MHSampler():
     def sample_aligned_split_gibbs(self, N, beta, mh_steps=100):
         self.sampler.initial_state = self.initial_state
         state = self.sampler.sample_aligned()
+        clean_seq = state.gen_clean_seq(inplace=True).clone()
         prev_reward = state.calc_reward()
         reward_traj = [prev_reward.item()]
-        clean_seq = state.gen_clean_seq()
         L = clean_seq.shape[-1]
 
         vocab_size = len(ALPHABET)
@@ -211,22 +211,27 @@ class MHSampler():
             d_prev = 0
             z_prev_reward = prev_reward
             m_prob = (N - n) / (N + 1)
+            acceptances = 0
+            prop_probs = 0
             for mh_it in range(mh_steps):
                 idx = torch.randint(L, (1,), device=clean_seq.device)
                 token = torch.randint(vocab_size, (1,), device=clean_seq.device)
                 old_token = state.get_token(idx)
                 state.set_token(idx, token)
+                prop_seq = state.gen_clean_seq(inplace=True)
                 prop_reward = state.calc_reward()
-                prop_seq = state.gen_clean_seq()
                 d = int(torch.sum(prop_seq != clean_seq))
-                proposal_prob = min(torch.tensor(1.0), torch.exp((prop_reward - z_prev_reward) / beta + (d - d_prev) * np.log(m_prob / (1 - m_prob)))) # This coefficient is probably wrong
+                proposal_prob = torch.exp((prop_reward - z_prev_reward) / beta + (d - d_prev) * np.log(m_prob / (1 - m_prob))).clamp(min=0.0, max=1.0) # This coefficient is probably wrong
                 accept = torch.bernoulli(proposal_prob)
                 
                 if accept == 1:
                     z_prev_reward = prop_reward
                     d_prev = d
+                    acceptances += 1
                 else:
                     state.set_token(idx, old_token)
+                prop_probs += proposal_prob
+            print("Acceptance Rate:", acceptances / mh_steps, prop_probs / mh_steps)
             
             # pi(x | z)
             mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), m_prob))
@@ -236,7 +241,7 @@ class MHSampler():
             state = self.sampler.sample_aligned()
             prev_reward = state.calc_reward()
             reward_traj.append(prev_reward.item())
-            clean_seq = state.gen_clean_seq()
+            clean_seq = state.gen_clean_seq().clone()
 
         print(f"Final Reward: {prev_reward.item()}")
         state.reward_traj = reward_traj
