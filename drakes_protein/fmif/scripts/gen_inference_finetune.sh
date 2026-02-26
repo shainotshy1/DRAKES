@@ -9,7 +9,7 @@
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=10
+BATCH_SIZE=20
 MODEL="pretrained"
 DATASET="single"
 ALIGN_TYPE='bon'
@@ -24,7 +24,7 @@ TARGET_PROTEIN="7JJK"
 # FEEDBACK_METHOD="spectral"
 # MAX_SPEC_ORDER=10
 MH_TYPE="split-gibbs"
-MH_N=10
+MH_N=25
 MH_P=0.5
 MH_B=0.001
 

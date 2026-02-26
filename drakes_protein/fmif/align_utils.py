@@ -192,6 +192,11 @@ class MHSampler():
         state.reward_traj = reward_traj
         return state
 
+    nu_min = 1e-4
+    nu_max = 20.0
+    # nu = (nu_min ** ((n + 1) / (N+1))) * (nu_max ** (1 - (n + 1) / (N+1)))
+    # m_prob = (N - 1) / N * (1 - np.exp(-nu))
+
     def sample_aligned_split_gibbs(self, N, beta, mh_steps=100):
         self.sampler.initial_state = self.initial_state
         state = self.sampler.sample_aligned()
@@ -199,24 +204,22 @@ class MHSampler():
         reward_traj = [prev_reward.item()]
         clean_seq = state.gen_clean_seq()
         L = clean_seq.shape[-1]
-        nu_min = 1e-4
-        nu_max = 20.0
+
+        vocab_size = len(ALPHABET)
         for n in range(N):
             # pi(z | x)
             d_prev = 0
             z_prev_reward = prev_reward
-            # nu = (nu_min ** ((n + 1) / (N+1))) * (nu_max ** (1 - (n + 1) / (N+1)))
-            # m_prob = (N - 1) / N * (1 - np.exp(-nu))
             m_prob = (N - n) / (N + 1)
             for mh_it in range(mh_steps):
                 idx = torch.randint(L, (1,), device=clean_seq.device)
-                token = torch.randint(len(ALPHABET), (1,), device=clean_seq.device)
+                token = torch.randint(vocab_size, (1,), device=clean_seq.device)
                 old_token = state.get_token(idx)
                 state.set_token(idx, token)
                 prop_reward = state.calc_reward()
                 prop_seq = state.gen_clean_seq()
                 d = int(torch.sum(prop_seq != clean_seq))
-                proposal_prob = min(torch.tensor(1.0), torch.exp((prop_reward - z_prev_reward) / beta + (d_prev - d) * np.log(m_prob / (1 - m_prob))))
+                proposal_prob = min(torch.tensor(1.0), torch.exp((prop_reward - z_prev_reward) / beta + (d - d_prev) * np.log(m_prob / (1 - m_prob)))) # This coefficient is probably wrong
                 accept = torch.bernoulli(proposal_prob)
                 
                 if accept == 1:
