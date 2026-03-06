@@ -192,11 +192,6 @@ class MHSampler():
         state.reward_traj = reward_traj
         return state
 
-    nu_min = 1e-4
-    nu_max = 20.0
-    # nu = (nu_min ** ((n + 1) / (N+1))) * (nu_max ** (1 - (n + 1) / (N+1)))
-    # m_prob = (N - 1) / N * (1 - np.exp(-nu))
-
     def sample_aligned_split_gibbs(self, N, beta, mh_steps=100):
         self.sampler.initial_state = self.initial_state
         state = self.sampler.sample_aligned()
@@ -210,9 +205,13 @@ class MHSampler():
             # pi(z | x)
             d_prev = 0
             z_prev_reward = prev_reward
-            m_prob = (N - n) / (N + 1)
+            # m_prob = (N - n) / (N + 1)
             acceptances = 0
             prop_probs = 0
+            nu_min = 1e-4
+            nu_max = 20.0
+            nu = (nu_min ** ((n + 1) / (N+1))) * (nu_max ** (1 - (n + 1) / (N+1)))
+            m_prob = (N - 1) / N * (1 - np.exp(-nu))
             for mh_it in range(mh_steps):
                 idx = torch.randint(L, (1,), device=clean_seq.device)
                 token = torch.randint(vocab_size, (1,), device=clean_seq.device)
@@ -231,7 +230,7 @@ class MHSampler():
                 else:
                     state.set_token(idx, old_token)
                 prop_probs += proposal_prob
-            print("Acceptance Rate:", acceptances / mh_steps, prop_probs / mh_steps)
+            # print("Acceptance Rate:", acceptances / mh_steps, prop_probs / mh_steps)
             
             # pi(x | z)
             mask_sampler = Bernoulli(probs=torch.full((self.num_tokens,), m_prob))
@@ -257,10 +256,10 @@ class InteractionSampler():
         self.feedback_steps = feedback_steps
         self.state_builder = state_builder
         self.resampler = resampler
-        self.max_spec_order = max_spec_order
+        self.max_spec_order = max_spec_order if max_spec_order > 0 else None
         self.feedback_method = feedback_method
         self.lasso_pen = lasso_pen
-        self.exact_solver = ExactSolver(maximize=True, max_solution_order=max_spec_order)
+        self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
         
     def generate_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
@@ -285,9 +284,9 @@ class InteractionSampler():
             curr_res = state.gen_clean_seq()
             curr_res = curr_res[0]
             seq_str = "".join([ALPHABET[x] for x in curr_res])
-            untargeted = (mask == 0)
-            num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
-            if curr_iter == self.feedback_steps or num_untargeted == 0: 
+            # untargeted = (mask == 0)
+            # num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
+            if curr_iter == self.feedback_steps: # or num_untargeted == 0: 
                 print(seq_str)
                 reward_traj.append(state.calc_reward().item())
                 state.spec_reward_traj = list(reward_traj)
@@ -299,7 +298,7 @@ class InteractionSampler():
             print(f"Previous true reward: {reward_traj[-1]}")
 
             num_masks = 500
-            p = 0.25
+            p = 0.75
 
             cv_r2 = 0 # default
 
@@ -314,13 +313,13 @@ class InteractionSampler():
 
             if self.feedback_method in ['spectral', 'lasso']:
 
-                mask_samples = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.25 prob of being a 1 i.e being "kept"
-                all_masks = mask_samples * untargeted.astype(mask_samples.dtype) # zero out currently targeted
+                all_masks = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.75 prob of being a 0 i.e being "kept"
+                # all_masks = mask_samples #* untargeted.astype(mask_samples.dtype) # zero out currently targeted
 
                 rewards_lst = []
                 print("Calculating reward estimates...")
                 for m in tqdm(all_masks):
-                    rewards_lst.append(self.generate_remasked_state(state, m).calc_reward(n=reward_avg_n, calc_true_seq=True).item())
+                    rewards_lst.append(self.generate_remasked_state(state, 1-m).calc_reward(n=reward_avg_n, select_argmax=True).item()) #1-m so the 1 becomes a mask
                 rewards = np.array(rewards_lst)
 
                 if self.feedback_method == 'spectral':
@@ -328,22 +327,21 @@ class InteractionSampler():
                     fourier_dict = lgboost_to_fourier(best_model)
                     fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
-                    best_demask = self.exact_solver.solve()
+                    best_demask = 1 - np.array(self.exact_solver.solve())# 1 - m so that not a 1 goes back to meaning being "kept"
 
                     top_spec_interactions.append([])
                     for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
                         top_interactions = []
                         for i in range(len(interactions)):
-                            if interactions[i] == 1 and mask[i] == 0:
+                            if interactions[i] == 1: #  and mask[i] == 0
                                 top_interactions.append(i)
                         top_spec_interactions[-1].append((top_interactions, round(coefficient, 3))) # extract the index of the interaction instead of the bit map
-
                 elif self.feedback_method == 'lasso':
                     clf = Lasso(alpha=self.lasso_pen)
                     clf.fit(all_masks, rewards)
                     a = np.array(clf.coef_.flatten().tolist())
                     # b = clf.intercept_
-                    lasso_res = np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
+                    lasso_res = a if self.max_spec_order is None else np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
                     bad_indices = (a <= 0)
                     best_demask = np.zeros_like(a)
                     best_demask[lasso_res] = 1
@@ -378,13 +376,15 @@ class InteractionSampler():
             target_features = set()
 
             for i in range(len(best_demask)):
-                if best_demask[i] == 1 and mask[i] == 0: # if the demask is 1 then we want to KEEP that amino acid; mask[i] == 0 => currently it is not locked
-                    target_features.add(i)
+               if best_demask[i] == 0: # and mask[i] == 0
+                   target_features.add(i)
             
             spec_reward_traj.append(reward_traj[-1])
             spec_selections.append(list(target_features))
 
-            mask[list(target_features)] = 1
+            # print(best_demask)
+            mask[:] = best_demask[:] # list(target_features)
+            # print(mask)
 
             tokens = list(seq_str)
             for j in range(num_tokens):

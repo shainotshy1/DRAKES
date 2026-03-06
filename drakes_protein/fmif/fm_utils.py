@@ -363,9 +363,10 @@ class Interpolant:
             resampler = BeamSampler(beam_sampler_gen, initial_state, total_steps, n, beam_w)
 
             state_builder = self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample)
-            sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
-
-            # sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, lasso_pen=lasso_lambda)         
+            if mh_n > 0:
+                sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
+            else:
+                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, lasso_pen=lasso_lambda)         
 
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
@@ -397,7 +398,7 @@ class Interpolant:
 
         total_reward_traj /= len(samplers)
 
-        print(f"Average Reward Trajectory: {total_reward_traj}")
+        if mh_n > 0: print(f"Average MH Reward Trajectory: {total_reward_traj}")
         seq_dtype = prot_traj[0][0].dtype
         # concat_prot_traj = []
         # concat_clean_traj = []
