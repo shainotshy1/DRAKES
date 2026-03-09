@@ -266,7 +266,7 @@ class InteractionSampler():
         masked_seq[0][mask == 0] = mu.MASK_TOKEN_INDEX
         new_step = 1 #int(floor((1 - num_untargeted * 1.0 / num_tokens) * (depth - 1)))
 
-        state = self.state_builder(masked_seq, new_step, state) # back track in diffusion process to when mask would be masked like so
+        state = self.state_builder(masked_seq, new_step, state) # p(x | x_t)
         return state
 
     def sample_aligned(self):
@@ -319,7 +319,7 @@ class InteractionSampler():
                 rewards_lst = []
                 print("Calculating reward estimates...")
                 for m in tqdm(all_masks):
-                    rewards_lst.append(self.generate_remasked_state(state, 1-m).calc_reward(n=reward_avg_n, select_argmax=True).item()) #1-m so the 1 becomes a mask
+                    rewards_lst.append(self.generate_remasked_state(state, 1-m).calc_reward(select_argmax=True).item()) #1-m so the 1 becomes a mask
                 rewards = np.array(rewards_lst)
 
                 if self.feedback_method == 'spectral':
@@ -327,7 +327,7 @@ class InteractionSampler():
                     fourier_dict = lgboost_to_fourier(best_model)
                     fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
-                    best_demask = 1 - np.array(self.exact_solver.solve())# 1 - m so that not a 1 goes back to meaning being "kept"
+                    best_demask = 1 - np.array(self.exact_solver.solve()) # Flip definition of 1 to being "kept"
 
                     top_spec_interactions.append([])
                     for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
@@ -343,40 +343,42 @@ class InteractionSampler():
                     # b = clf.intercept_
                     lasso_res = a if self.max_spec_order is None else np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
                     bad_indices = (a <= 0)
-                    best_demask = np.zeros_like(a)
-                    best_demask[lasso_res] = 1
-                    best_demask[bad_indices] = 0 # Don't include zeros or negatively contributing aminoa acids in the top-k
+                    best_demask = np.ones_like(a)
+                    # Like above, flip definition of a 1
+                    best_demask[lasso_res] = 0
+                    best_demask[bad_indices] = 1 # Don't include zeros or negatively contributing amino acids in the top-k
                 else:
                     raise ValueError("Selection method is invalid")
             elif self.feedback_method == 'exclusion':
-                # Mask out each token, and select the top-k tokens which value decreases upon removal
-                exclusion_rewards = np.full(mask.shape, np.inf)
+                # Mask out each token, and select the top-k tokens which value increases upon removal
+                exclusion_rewards = np.zeros_like(mask)
                 for i in range(len(mask)):
-                    if mask[i] == 0: # Non-locked amino acids
-                        m = np.ones_like(mask)#.copy()
-                        m[i] = 0
-                        exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=5).item()
-                exclusion_res = np.argpartition(exclusion_rewards, self.max_spec_order)[:self.max_spec_order] # bottom k rewards
-                best_demask = np.zeros_like(mask)
-                best_demask[exclusion_res] = 1
+                    m = np.ones_like(mask)
+                    m[i] = 0
+                    exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(select_argmax=True).item()
+                exclusion_res = np.argpartition(exclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top-k rewards
+                best_demask = np.ones_like(mask)
+                best_demask[exclusion_res] = 0
             elif self.feedback_method == 'inclusion':
-                # Mask out all but one token (keeping the currently locked amino acids locked), and select the top-k tokens which value increases upon removal
-                exclusion_rewards = np.full(mask.shape, -np.inf)
+                # Mask out all but one token, and select the top-k tokens which value increases upon inclusion
+                inclusion_rewards = np.zeros_like(mask)
                 for i in range(len(mask)):
-                    if mask[i] == 0: # Non-locked amino acids
-                        m = mask.copy()
-                        m[i] = 1
-                        exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=5).item()
-                exclusion_res = np.argpartition(exclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top k rewards
+                    m = np.zeros_like(mask)
+                    m[i] = 1
+                    inclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(select_argmax=True).item()
+                inclusion_res = np.argpartition(inclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top-k rewards
                 best_demask = np.zeros_like(mask)
-                best_demask[exclusion_res] = 1
+                best_demask[inclusion_res] = 1 # Include the tokens that when included have the highest reward
             else:
                 raise ValueError("Selection method is invalid")
 
             target_features = set()
 
             for i in range(len(best_demask)):
-               if best_demask[i] == 0: # and mask[i] == 0
+               if self.feedback_method == 'inclusion':
+                   if best_demask[i] == 1:
+                    target_features.add(i)
+               elif best_demask[i] == 0:
                    target_features.add(i)
             
             spec_reward_traj.append(reward_traj[-1])
