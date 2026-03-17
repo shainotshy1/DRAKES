@@ -134,7 +134,7 @@ class Interpolant:
 
         def calc_reward(self, n=1, select_argmax=False, calc_true_seq=False):
             if calc_true_seq:
-                avg_reward = 0
+                avg_reward = 0.0
                 for _ in range(n):
                     pred_state = self.full_demask_fn(self.masked_seq, self.step, self.reward_oracle, self.q_xs)
                     pred_reward = self.reward_oracle(pred_state.gen_clean_seq())
@@ -142,7 +142,7 @@ class Interpolant:
                 return avg_reward
             elif select_argmax: return self.reward_oracle(self.gen_clean_seq(select_argmax=True))
 
-            avg_reward = 0
+            avg_reward = 0.0
             for _ in range(n):
                 avg_reward += (1.0 / n) * self.reward_oracle(self.gen_clean_seq())
 
@@ -366,7 +366,7 @@ class Interpolant:
             if mh_n > 0:
                 sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
             else:
-                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, lasso_pen=lasso_lambda)         
+                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda)         
 
             samplers.append(sampler)
         best_samples = [] # (num_batch, )

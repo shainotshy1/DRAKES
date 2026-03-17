@@ -26,8 +26,6 @@ class AlignSamplerState():
     def return_early(self):
         return False
 
-reward_avg_n = 2 # parameter use in all sampling algorithms, so it is fair
-
 class BONSampler():
     def __init__(self, sampler, W, soft=False):
         # Parameter validation
@@ -43,7 +41,7 @@ class BONSampler():
     def sample_aligned(self):
         samples = self.sampler()
         assert isinstance(samples, AlignSamplerState), "Sample must be instance of AlignSamplerState"
-        rewards = samples.calc_reward(n=reward_avg_n) # type: ignore
+        rewards = samples.calc_reward(select_argmax=True) # type: ignore
         if self.soft:
             sm_rewards = self.sm(rewards)
             top_indices = torch.multinomial(sm_rewards, num_samples=self.W, replacement=True)
@@ -247,7 +245,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, lasso_pen=0.0):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -260,14 +258,104 @@ class InteractionSampler():
         self.feedback_method = feedback_method
         self.lasso_pen = lasso_pen
         self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
+        self.interpolant = interpolant
+
+        self.num_masks = 8192
+        self.mask_batch=512
+        self.remask_batch=512
+        self.reward_batch=512
+        self.reward_avg_n=5
+        self.p = 0.75
+
         
+        # copy so that we can update the values of the params
+        # yes my code in this repo is quite bad, but I'm too far in - trust the process >:)
+        self.model_params = copy.copy(model_params)
+
+        self.model_params.X = self.model_params.X.repeat(self.remask_batch, 1, 1, 1)
+        self.model_params.mask = self.model_params.mask.repeat(self.remask_batch, 1)
+        self.model_params.chain_M = self.model_params.chain_M.repeat(self.remask_batch, 1)
+        self.model_params.residue_idx = self.model_params.residue_idx.repeat(self.remask_batch, 1)
+        self.model_params.chain_encoding_all = self.model_params.chain_encoding_all.repeat(self.remask_batch, 1)
+
+        self.model = model
+
     def generate_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
         masked_seq[0][mask == 0] = mu.MASK_TOKEN_INDEX
-        new_step = 1 #int(floor((1 - num_untargeted * 1.0 / num_tokens) * (depth - 1)))
+        new_step = 1
 
         state = self.state_builder(masked_seq, new_step, state) # p(x | x_t)
         return state
+    
+    def generate_remasked_state_batch(self, state, masks):
+        masked_seq = state.gen_clean_seq()[0]
+        res = torch.zeros_like(torch.tensor(masks), device=masked_seq.device)
+        res[:] = masked_seq
+        res[masks == 0] = mu.MASK_TOKEN_INDEX
+        return res
+    
+    def sample_categorical(self, categorical_probs):
+        gumbel_norm = (
+            1e-10
+            - (torch.rand_like(categorical_probs) + 1e-10).log())
+        return (categorical_probs / gumbel_norm).argmax(dim=-1)
+    
+    def diffusion_mask_infill(self, batch, q_xs_no_mask):
+        copy_flag = (batch == mu.MASK_TOKEN_INDEX).to(batch.dtype)
+        pred = self.sample_categorical(q_xs_no_mask)
+        pred = pred * copy_flag + batch * (1 - copy_flag) # (B, L)
+        return pred
+    
+    def sample_batch_step_qx(self, masked_seq, t_1, t_2):
+        # Extract parameters
+        X = self.model_params.X
+        mask = self.model_params.mask
+        chain_M = self.model_params.chain_M
+        residue_idx = self.model_params.residue_idx
+        chain_encoding_all = self.model_params.chain_encoding_all
+        cls = self.model_params.cls
+        w = self.model_params.w
+        d_t = t_2 - t_1
+
+        with torch.no_grad():
+            if cls is not None:
+                uncond = (2 * torch.ones(X.shape[0], device=X.device)).long()
+                cond = (cls * torch.ones(X.shape[0], device=X.device)).long()
+                model_out_uncond = self.model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=uncond)
+                model_out_cond = self.model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all, cls=cond)
+                model_out = (1+w) * model_out_cond - w * model_out_uncond
+            else:
+                model_out = self.model(X, masked_seq, mask, chain_M, residue_idx, chain_encoding_all)
+        pred_logits_1 = model_out # [bsz, seqlen, 22]
+        pred_logits_1[:, :, mu.MASK_TOKEN_INDEX] = self.interpolant.neg_infinity
+        pred_logits_1 = pred_logits_1 / self.interpolant._cfg.temp - torch.logsumexp(pred_logits_1 / self.interpolant._cfg.temp, dim=-1, keepdim=True)
+        unmasked_indices = (masked_seq != mu.MASK_TOKEN_INDEX)
+        pred_logits_1[unmasked_indices] = self.interpolant.neg_infinity
+        pred_logits_1[unmasked_indices, masked_seq[unmasked_indices]] = 0
+        
+        move_chance_s = 1.0 - t_2
+        q_xs = pred_logits_1.exp() * d_t
+        q_xs[:, :, mu.MASK_TOKEN_INDEX] = move_chance_s
+        return q_xs
+
+    def diffusion_qx_calc(self, batch, t1, t2):
+        B, L = batch.shape
+        V = self.interpolant.num_tokens
+        res = torch.zeros((B, L, V), device=batch.device)
+        M = 0
+        while M < B:
+            res[M:M+self.remask_batch] = self.sample_batch_step_qx(batch[M:M+self.remask_batch], t1, t2)
+            M += self.remask_batch
+        return res
+    
+    def calc_batched_reward(self, out, batch, reward_oracle, alpha=1.0):
+        assert out.shape[0] == batch.shape[0], f"{out.shape[0]} != {batch.shape[0]}"
+        M = 0
+        N = batch.shape[0]
+        while M < N:
+            out[M:M+self.reward_batch] += alpha * reward_oracle(batch[M:M+self.reward_batch])
+            M += self.reward_batch
 
     def sample_aligned(self):
         print("----------------------------------")
@@ -297,9 +385,6 @@ class InteractionSampler():
             reward_traj.append(state.calc_reward().item())
             print(f"Previous true reward: {reward_traj[-1]}")
 
-            num_masks = 500
-            p = 0.75
-
             cv_r2 = 0 # default
 
             if state.spec_selections is None:
@@ -312,16 +397,28 @@ class InteractionSampler():
                 spec_reward_traj = list(state.spec_reward_traj)
 
             if self.feedback_method in ['spectral', 'lasso']:
+                all_masks = np.random.choice(2, size=(self.num_masks, num_tokens), p = np.array([self.p, 1-self.p])) # 0.75 prob of being a 0 i.e being "kept"
+                
+                num_timesteps = self.interpolant._cfg.num_timesteps
+                ts = torch.linspace(self.interpolant._cfg.min_t, 1.0, num_timesteps)
+                step = 0 # min(floor(self.interpolant._cfg.num_timesteps * self.p), num_timesteps - 2) # bound to ensure target_step + 1 <= n - 1
+                t1, t2 = ts[step], ts[step + 1]
 
-                all_masks = np.random.choice(2, size=(num_masks, num_tokens), p = np.array([p, 1-p])) # 0.75 prob of being a 0 i.e being "kept"
-                # all_masks = mask_samples #* untargeted.astype(mask_samples.dtype) # zero out currently targeted
-
-                rewards_lst = []
                 print("Calculating reward estimates...")
-                for m in tqdm(all_masks):
-                    rewards_lst.append(self.generate_remasked_state(state, 1-m).calc_reward(select_argmax=True).item()) #1-m so the 1 becomes a mask
-                rewards = np.array(rewards_lst)
-
+                rewards_torch = torch.zeros((self.num_masks, ), device=curr_res.device)
+                M = 0
+                its = (self.num_masks + self.mask_batch - 1) // self.mask_batch
+                for _ in tqdm(range(its)):
+                    batched_states = self.generate_remasked_state_batch(state, 1-all_masks[M:M+self.mask_batch])
+                    batched_qxs = self.diffusion_qx_calc(batched_states, t1, t2)
+                    batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
+                    for _ in range(self.reward_avg_n):
+                        sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
+                        self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=1/self.reward_avg_n)
+                    M += self.mask_batch
+                rewards = rewards_torch.cpu().numpy()
+                
+                print("Executing Edit Position Selection...")
                 if self.feedback_method == 'spectral':
                     best_model, cv_r2 = lgboost_fit(all_masks, rewards)
                     fourier_dict = lgboost_to_fourier(best_model)
@@ -339,6 +436,7 @@ class InteractionSampler():
                 elif self.feedback_method == 'lasso':
                     clf = Lasso(alpha=self.lasso_pen)
                     clf.fit(all_masks, rewards)
+                    cv_r2 = clf.score(all_masks, rewards)  
                     a = np.array(clf.coef_.flatten().tolist())
                     # b = clf.intercept_
                     lasso_res = a if self.max_spec_order is None else np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
@@ -355,7 +453,7 @@ class InteractionSampler():
                 for i in range(len(mask)):
                     m = np.ones_like(mask)
                     m[i] = 0
-                    exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(select_argmax=True).item()
+                    exclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=4).item()
                 exclusion_res = np.argpartition(exclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top-k rewards
                 best_demask = np.ones_like(mask)
                 best_demask[exclusion_res] = 0
@@ -365,7 +463,7 @@ class InteractionSampler():
                 for i in range(len(mask)):
                     m = np.zeros_like(mask)
                     m[i] = 1
-                    inclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(select_argmax=True).item()
+                    inclusion_rewards[i] = self.generate_remasked_state(state, m).calc_reward(n=4).item()
                 inclusion_res = np.argpartition(inclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top-k rewards
                 best_demask = np.zeros_like(mask)
                 best_demask[inclusion_res] = 1 # Include the tokens that when included have the highest reward
@@ -393,7 +491,7 @@ class InteractionSampler():
                 if mask[j] == 0:
                     tokens[j] = '-'
 
-            if self.feedback_method == 'spectral': r2_traj.append(cv_r2)
+            if self.feedback_method == 'spectral' or self.feedback_method == 'lasso': r2_traj.append(cv_r2)
 
             state = self.generate_remasked_state(state, mask)
             state.spec_selections = spec_selections
@@ -401,7 +499,7 @@ class InteractionSampler():
             state.spec_reward_traj = spec_reward_traj
             state.r2_traj = list(r2_traj)
 
-            if self.feedback_method == 'spectral': print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
+            if self.feedback_method == 'spectral' or self.feedback_method == 'lasso': print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
             else:  print("".join(tokens), f'Targets: {list(target_features)}')                
                 
             curr_iter += 1
@@ -451,7 +549,7 @@ class BeamSampler(TreeStateSampler):
                      
             states = next_states
         
-        max_state = max(states, key=lambda s : s.calc_reward(n=reward_avg_n).item())
+        max_state = max(states, key=lambda s : s.calc_reward(select_argmax=True).item())
 
         if self.save_visual:
             max_state_visual = 4 # len(num_states) - 2
