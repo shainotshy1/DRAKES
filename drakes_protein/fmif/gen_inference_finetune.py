@@ -7,6 +7,7 @@ import torch
 import pandas as pd
 
 from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
+from protein_oracle.utils import set_seed
 from torch.utils.data import DataLoader
 
 from execute_align_utils import generate_execution_func # type: ignore
@@ -100,6 +101,8 @@ def generate_output_fn(args):
         out_name += f"_feedbacksteps={args.spec_feedback_its}"
         out_name += f"_feedbackmethod={args.feedback_method}"
         out_name += f"_maxspecorder={args.max_spec_order}"
+        if args.feedback_method == "lasso" or args.feedback_method == "spectral":
+            out_name += f"_masks={args.num_spec_masks}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
 
@@ -142,12 +145,16 @@ def main():
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
     argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
+    argparser.add_argument("--num_spec_masks", type=int, required=False, default=512)
     argparser.add_argument("--MH_steps", type=int, required=False, default=0)
     argparser.add_argument("--MH_p",type=float, required=False, default=0.5)
     argparser.add_argument("--MH_b", type=float, required=False, default=1.0)
     argparser.add_argument("--MH_type", type=str, required=False, default="uniform")
+    argparser.add_argument("--seed", type=int, required=False, default=0)
 
     args = argparser.parse_args()
+
+    set_seed(args.seed, use_cuda=True)
 
     assert args.dataset != 'single' or args.target_protein is not None, "If dataset is 'single', --target-protein must be specified"
     assert args.oracle_mode != 'balanced' or args.oracle_alpha is not None, "If oracle_mode is 'balanced', --oracle-alpha must be specified"
@@ -178,7 +185,8 @@ def main():
                                             mh_n=args.MH_steps, \
                                             mh_p=args.MH_p, \
                                             mh_b=args.MH_b,
-                                            mh_type=args.MH_type)
+                                            mh_type=args.MH_type,
+                                            num_spec_masks=args.num_spec_masks)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

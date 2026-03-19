@@ -315,7 +315,8 @@ class Interpolant:
             mh_n=0,
             mh_p=0.5,
             mh_b=1.0,
-            mh_type='uniform'
+            mh_type='uniform',
+            num_spec_masks=512
         ):
 
         if type(n) != int or n < 1:
@@ -366,7 +367,7 @@ class Interpolant:
             if mh_n > 0:
                 sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
             else:
-                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda)         
+                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda,num_masks=num_spec_masks)         
 
             samplers.append(sampler)
         best_samples = [] # (num_batch, )

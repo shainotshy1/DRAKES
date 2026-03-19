@@ -116,7 +116,8 @@ def generate_execution_func(out_lst,
                             hidden_dim=128, 
                             num_encoder_layers=3, 
                             num_neighbors=30, 
-                            dropout=0.1):
+                            dropout=0.1,
+                            num_spec_masks=512):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
     assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
@@ -199,6 +200,8 @@ def generate_execution_func(out_lst,
         func_descr += f", balanced_alpha={oracle_alpha}"
     if spec_feedback_its > 0:
         func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
+        if feedback_method == "lasso" or feedback_method == "spectral":
+            func_descr += f", num_spec_masks={num_spec_masks}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
     if mh_n > 0:
@@ -232,7 +235,8 @@ def generate_execution_func(out_lst,
                                                                 mh_n=mh_n, \
                                                                 mh_p=mh_p, \
                                                                 mh_b=mh_b,
-                                                                mh_type=mh_type)
+                                                                mh_type=mh_type,
+                                                                num_spec_masks=num_spec_masks)
         protein_name = "_" + batch['protein_name'][0][:-4]
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:

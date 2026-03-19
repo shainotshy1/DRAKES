@@ -245,7 +245,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -260,14 +260,13 @@ class InteractionSampler():
         self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
         self.interpolant = interpolant
 
-        self.num_masks = 8192
+        self.num_masks=num_masks
         self.mask_batch=512
         self.remask_batch=512
         self.reward_batch=512
         self.reward_avg_n=5
         self.p = 0.75
 
-        
         # copy so that we can update the values of the params
         # yes my code in this repo is quite bad, but I'm too far in - trust the process >:)
         self.model_params = copy.copy(model_params)
