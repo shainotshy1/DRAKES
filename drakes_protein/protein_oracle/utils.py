@@ -18,7 +18,6 @@ def set_seed(seed, use_cuda):
     if use_cuda:
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
-    print(f'=> Seed of the run set to {seed}')
 
 def str2bool(v):
     if isinstance(v, bool):

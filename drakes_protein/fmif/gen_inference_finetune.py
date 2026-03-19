@@ -5,18 +5,22 @@ from tqdm import tqdm
 import logging
 import torch
 import pandas as pd
+import numpy as np
 
 from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
 from protein_oracle.utils import set_seed
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 from execute_align_utils import generate_execution_func # type: ignore
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-def get_drakes_data(base_path, dataset_name: str, val_batch_size: int, batch_repeat: int, target_protein = None):
+def get_drakes_data(base_path, dataset_name: str, val_batch_size: int, batch_repeat: int, target_protein = None, num_workers=1, worker_id=0):
     assert dataset_name != "single" or target_protein is not None, "If dataset is 'single', target_protein must be specified"
+    assert type(num_workers) is int and type(worker_id) is int, "num_workers and worker_id must be type 'int'"
+    assert num_workers > 0, "num_workers must be a positive integer"
+    assert 0 <= worker_id < num_workers, "worker_id must follow 0-indexing so it should satisfy 0 <= worker_id < num_workers"
 
     pdb_path = os.path.join(base_path, 'proteindpo_data/AlphaFold_model_PDBs')
     logging.info(f"Reading protein set ({pdb_path})")
@@ -46,8 +50,6 @@ def get_drakes_data(base_path, dataset_name: str, val_batch_size: int, batch_rep
         single_dict = {target_protein_key: dpo_dict[target_protein_key]}
 
         dpo_dataset = ProteinDPODataset(single_dict, pdb_idx_dict, pdb_structures) #type: ignore
-        loader_valid = DataLoader(dpo_dataset, batch_size=1, shuffle=False)
-        logging.info(f"Executing on protein {target_protein} (Batch repeats: {batch_repeat}, Proteins per batch: {val_batch_size})")
     else:
         if dataset_name == "validation":
             dpo_pkl_file = 'dpo_valid_dict_wt.pkl'
@@ -65,16 +67,28 @@ def get_drakes_data(base_path, dataset_name: str, val_batch_size: int, batch_rep
         dpo_dict = pickle.load(open(dpo_dict_full_path, 'rb'))
 
         dpo_dataset = ProteinDPODataset(dpo_dict, pdb_idx_dict, pdb_structures)
-        loader_valid = DataLoader(dpo_dataset, batch_size=val_batch_size, shuffle=False)
+
+    num_batch = len(dpo_dataset)
+    B = (num_batch + num_workers - 1) // num_workers
+    indices = np.arange(B * worker_id, min(B * (worker_id+1), num_batch), 1)
+    target_subset = Subset(dpo_dataset, indices)
+        
+    if dataset == "single":
+        loader_valid = DataLoader(target_subset, batch_size=1, shuffle=False)
+        logging.info(f"Executing on protein {target_protein} (Batch repeats: {batch_repeat}, Proteins per batch: {val_batch_size})")
+    else:
+        loader_valid = DataLoader(target_subset, batch_size=val_batch_size, shuffle=False)
         logging.info(f"Executing on {dataset_name} set (Batch repeats: {batch_repeat}, Proteins per batch: {val_batch_size}, Total proteins: {len(dpo_dataset)})")
+    
+    logging.info(f"WorkerID: {worker_id}, Assigned proteins: {len(target_subset)}")
 
     return loader_valid
 
-def execute_on_dataset(func, base_path, dataset_name="validation", target_protein=None, batch_repeat=1, val_batch_size=1):
+def execute_on_dataset(func, base_path, dataset_name="validation", target_protein=None, batch_repeat=1, val_batch_size=1, num_workers=1, worker_id=0):
     assert dataset_name in ['validation', 'test', 'train', 'single'], f"Encountered dataset value '{dataset_name}' which is not in ['validation', 'test', 'single']"
 
-    loader_valid = get_drakes_data(base_path, dataset_name, val_batch_size, batch_repeat, target_protein=target_protein)
-    
+    loader_valid = get_drakes_data(base_path, dataset_name, val_batch_size, batch_repeat, target_protein=target_protein, num_workers=num_workers, worker_id=worker_id)
+
     count = 0
     for batch in loader_valid:
         for _ in tqdm(range(batch_repeat)):
@@ -117,6 +131,9 @@ def generate_output_fn(args):
     if args.align_type != "bon":
         out_name += f"_stepsperlevel={args.steps_per_level}"
 
+    if args.num_workers > 1:
+        out_name += f"_w{args.worker_id}"
+
     full_out_path = f"{args.output_folder}/{out_name}.csv"
     return full_out_path
 
@@ -132,6 +149,8 @@ def main():
     argparser.add_argument("--align_type", choices=['bon', 'beam'], required=True)
     argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'scrmsd'], required=True)
     argparser.add_argument("--align_n", type=int, required=True, help="Number of samples parameter for alignment techniques")
+    argparser.add_argument("--num_workers", type=int, required=True, help="Number of workers assigned to the inference task")
+    argparser.add_argument("--worker_id", type=int, required=True, help="ID of the current worker")
 
     # Optional arguments
     argparser.add_argument("--batch_repeat", type=int, default=1, help="Number of times to repeat execution of each protein batch")
@@ -153,8 +172,6 @@ def main():
     argparser.add_argument("--seed", type=int, required=False, default=0)
 
     args = argparser.parse_args()
-
-    set_seed(args.seed, use_cuda=True)
 
     assert args.dataset != 'single' or args.target_protein is not None, "If dataset is 'single', --target-protein must be specified"
     assert args.oracle_mode != 'balanced' or args.oracle_alpha is not None, "If oracle_mode is 'balanced', --oracle-alpha must be specified"
@@ -186,14 +203,17 @@ def main():
                                             mh_p=args.MH_p, \
                                             mh_b=args.MH_b,
                                             mh_type=args.MH_type,
-                                            num_spec_masks=args.num_spec_masks)
+                                            num_spec_masks=args.num_spec_masks,
+                                            seed=args.seed)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \
                     dataset_name=args.dataset,          \
                     target_protein=args.target_protein, \
                     batch_repeat=args.batch_repeat,     \
-                    val_batch_size=1)
+                    val_batch_size=1,                   \
+                    num_workers=args.num_workers,       \
+                    worker_id=args.worker_id)           \
     
     output_fn = generate_output_fn(args)
     results_merge = pd.concat(results)

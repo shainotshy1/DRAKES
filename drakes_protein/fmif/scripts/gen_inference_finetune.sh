@@ -4,31 +4,41 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --output=spec10_ddg.out
-#SBATCH --job-name=spec10_ddg
+#SBATCH --job-name=protein
+#SBATCH --output=worker_%j.out
+
+# *********************************************************************************#
+# *** Uncomment the below if not running with ./scripts/batch_gen_inference.sh *** #
+# *********************************************************************************#
+# NUM_WORKERS=1
+# WORKER_ID=0
+# *********************************************************************************#
+
+echo "Running worker with ID: $WORKER_ID"
+echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=10
+BATCH_SIZE=1
 MODEL="pretrained"
-DATASET="single"
+DATASET="test"
 ALIGN_TYPE='bon'
 ALIGN_N=1
 ORACLE_MODE='ddg'
-# BEAM_W=1
-# STEPS_PER_LEVEL=1
 LASSO_LAMBDA=0.0
-TARGET_PROTEIN="HEEH_KT_rd6_0746"
-# ORACLE_ALPHA=1.0
-SPEC_FEEDBACK_ITS=5
-FEEDBACK_METHOD="spectral"
+SPEC_FEEDBACK_ITS=0
+FEEDBACK_METHOD="exclusion"
 MAX_SPEC_ORDER=10
 NUM_SPEC_MASKS=8192
-MH_TYPE="uniform"
-MH_N=0
-MH_P=0.5
-MH_B=0.001 #0.001
 SEED=0
+# BEAM_W=1
+# STEPS_PER_LEVEL=1
+# TARGET_PROTEIN="HEEH_KT_rd6_0746"
+# ORACLE_ALPHA=1.0
+# MH_TYPE="uniform"
+# MH_N=0
+# MH_P=0.5
+# MH_B=0.001
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 
@@ -47,6 +57,8 @@ fi
 python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \
         --batch_size=$BATCH_SIZE \
+        --worker_id=$WORKER_ID \
+        --num_workers=$NUM_WORKERS \
         --gpu=0 \
         --seed=$SEED \
         --model=$MODEL \
@@ -55,16 +67,9 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --align_type=$ALIGN_TYPE \
         --align_n=$ALIGN_N \
         --oracle_mode=$ORACLE_MODE \
-        --MH_steps=$MH_N \
-        --MH_p=$MH_P \
-        --MH_b=$MH_B \
-        --MH_type=$MH_TYPE \
         --spec_feedback_its=$SPEC_FEEDBACK_ITS \
         --max_spec_order=$MAX_SPEC_ORDER \
         --feedback_method=$FEEDBACK_METHOD \
         --num_spec_masks=$NUM_SPEC_MASKS \
-        --lasso_lambda=$LASSO_LAMBDA \
-        --target_protein=$TARGET_PROTEIN \
-        # --beam_w=$BEAM_W
-        # --steps_per_level=$STEPS_PER_LEVEL \
-        # --oracle_alpha=$ORACLE_ALPHA \
+        --lasso_lambda=$LASSO_LAMBDA
+        # --target_protein=$TARGET_PROTEIN

@@ -11,6 +11,7 @@ from tree_spex import lgboost_fit, lgboost_to_fourier, lgboost_tree_to_fourier, 
 import time
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
+from protein_oracle.utils import set_seed
 
 def _masked_categorical(num_batch, num_res, device):
     return torch.ones(
@@ -316,7 +317,8 @@ class Interpolant:
             mh_p=0.5,
             mh_b=1.0,
             mh_type='uniform',
-            num_spec_masks=512
+            num_spec_masks=512,
+            seed=0
         ):
 
         if type(n) != int or n < 1:
@@ -378,6 +380,7 @@ class Interpolant:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
         total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
         for i, sampler in enumerate(samplers):
+            set_seed(seed + i, use_cuda=True)
             if mh_n > 0:
                 best_sample = sampler.sample_aligned(N=mh_n, p=mh_p, beta=mh_b)
                 total_reward_traj += np.array(best_sample.reward_traj)
