@@ -5,28 +5,31 @@ import pandas as pd
 def merge_csvs(dir_name):
     fns = {}
 
+    print("Searching directory for possible merges...")
     for fn in os.listdir(dir_name):
         file_path = os.path.join(dir_name, fn)
-        name = fn.lower()
-        if name.endswith(".csv"):
-            info_lst = name.split('_')
+        if fn.endswith(".csv"):
+            info_lst = fn.split('_')
             worker_info = info_lst[-1]
-            group_name = name[:-4] # Remove .csv extension
+            group_name = fn[:-4] # Remove .csv extension
             if worker_info[0] == 'w':
-                group_name = name[:-(len(worker_info)+1)] # +1 to catch underscore
+                group_name = fn[:-(len(worker_info)+1)] # +1 to catch underscore
 
             if group_name not in fns:
                 fns[group_name] = []
 
             fns[group_name].append((fn, file_path))
 
+    num_merged = 0
     for group_name in fns:
         dfs = []
         fn_group = fns[group_name]
         
         if len(fn_group) == 1:
             continue
-
+        
+        num_merged += 1
+        
         for fn, file_path in fn_group:
             if fn.lower()[:-4] == group_name:
                 continue
@@ -38,6 +41,7 @@ def merge_csvs(dir_name):
         merged.to_csv(group_fn, index=False, mode='w')
         print(f"Saved group: {group_fn}")
 
+    print(f"Number of merges: {num_merged}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="CSV data merger")

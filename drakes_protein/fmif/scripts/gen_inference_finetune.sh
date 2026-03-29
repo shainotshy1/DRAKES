@@ -4,8 +4,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --job-name=protein
-#SBATCH --output=worker_%j.out
+#SBATCH --job-name=sp_protein
+#SBATCH --output=sp_worker_%j.out
 
 # *********************************************************************************#
 # *** Uncomment the below if not running with ./scripts/batch_gen_inference.sh *** #
@@ -19,15 +19,15 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=15
 MODEL="pretrained"
 DATASET="test"
 ALIGN_TYPE='bon'
 ALIGN_N=1
-ORACLE_MODE='ddg'
+ORACLE_MODE='protgpt'
 LASSO_LAMBDA=0.0
-SPEC_FEEDBACK_ITS=0
-FEEDBACK_METHOD="exclusion"
+SPEC_FEEDBACK_ITS=5
+FEEDBACK_METHOD="spectral"
 MAX_SPEC_ORDER=10
 NUM_SPEC_MASKS=8192
 SEED=0
