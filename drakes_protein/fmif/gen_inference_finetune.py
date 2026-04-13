@@ -116,7 +116,7 @@ def generate_output_fn(args):
         out_name += f"_feedbackmethod={args.feedback_method}"
         out_name += f"_maxspecorder={args.max_spec_order}"
         if args.feedback_method == "lasso" or args.feedback_method == "spectral":
-            out_name += f"_masks={args.num_spec_masks}"
+            out_name += f"_masks={args.num_spec_masks}_rmax={args.reward_batch_max}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
 
@@ -164,6 +164,7 @@ def main():
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
     argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
+    argparser.add_argument("--reward_batch_max", action="store_true", default=False, help="Whether to take the max or average of the reward batch when computing feedback (only applies if feedback_method is 'spectral' or 'lasso')")
     argparser.add_argument("--num_spec_masks", type=int, required=False, default=512)
     argparser.add_argument("--MH_steps", type=int, required=False, default=0)
     argparser.add_argument("--MH_p",type=float, required=False, default=0.5)
@@ -199,6 +200,7 @@ def main():
                                             spec_feedback_its=args.spec_feedback_its, \
                                             max_spec_order=args.max_spec_order, \
                                             feedback_method=args.feedback_method, \
+                                            reward_batch_max=args.reward_batch_max, \
                                             mh_n=args.MH_steps, \
                                             mh_p=args.MH_p, \
                                             mh_b=args.MH_b,

@@ -12,6 +12,13 @@ import model_utils as mu # type:ignore
 from math import floor
 from tqdm import tqdm
 import copy
+from itertools import chain, combinations
+
+def power_subset(iterable):
+    "power_subset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3)"
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(1, len(s)))
+
 
 class AlignSamplerState():
     def calc_reward(self):
@@ -245,7 +252,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -260,10 +267,13 @@ class InteractionSampler():
         self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
         self.interpolant = interpolant
 
+        max_batch = 512
         self.num_masks=num_masks
-        self.mask_batch=512
-        self.remask_batch=512
-        self.reward_batch=512
+        self.mask_batch=min(max_batch, self.num_masks)
+        self.remask_batch=min(max_batch, self.num_masks)
+        self.reward_batch=min(max_batch, self.num_masks)
+
+        self.batch_max = batch_max
         self.reward_avg_n=5
         self.p = 0.75
 
@@ -353,7 +363,10 @@ class InteractionSampler():
         M = 0
         N = batch.shape[0]
         while M < N:
-            out[M:M+self.reward_batch] += alpha * reward_oracle(batch[M:M+self.reward_batch])
+            if self.batch_max:
+                out[M:M+self.reward_batch] = torch.max(out[M:M+self.reward_batch], alpha * reward_oracle(batch[M:M+self.reward_batch]))
+            else:
+                out[M:M+self.reward_batch] += alpha * reward_oracle(batch[M:M+self.reward_batch])
             M += self.reward_batch
 
     def sample_aligned(self):
@@ -404,7 +417,12 @@ class InteractionSampler():
                 t1, t2 = ts[step], ts[step + 1]
 
                 print("Calculating reward estimates...")
-                rewards_torch = torch.zeros((self.num_masks, ), device=curr_res.device)
+                if self.batch_max:
+                    alpha = 1.0
+                    rewards_torch = torch.full((self.num_masks, ), float("-inf"), device=curr_res.device)
+                else:
+                    alpha = 1.0 / self.reward_avg_n
+                    rewards_torch = torch.zeros((self.num_masks, ), device=curr_res.device)
                 M = 0
                 its = (self.num_masks + self.mask_batch - 1) // self.mask_batch
                 for _ in tqdm(range(its)):
@@ -413,15 +431,63 @@ class InteractionSampler():
                     batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
                     for _ in range(self.reward_avg_n):
                         sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
-                        self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=1/self.reward_avg_n)
+                        self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=alpha)
                     M += self.mask_batch
                 rewards = rewards_torch.cpu().numpy()
                 
                 print("Executing Edit Position Selection...")
                 if self.feedback_method == 'spectral':
+                    print(" [Fitting Fourier Coefficients]")
                     best_model, cv_r2 = lgboost_fit(all_masks, rewards)
                     fourier_dict = lgboost_to_fourier(best_model)
-                    fourier_dict_trunc = dict(sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)[:2000])
+
+                    # with open(f"fourier_2kru_it{curr_iter+1}.txt", "w") as f:
+                    #     for item in fourier_dict.values():
+                    #         f.write(f"{item}\n")
+
+                    sorted_fourier = sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)
+                    fourier_dict_trunc = dict(sorted_fourier[:2000])
+                    # Dictionary items: (bitmask tuple, coefficient)
+                    # print(" [Calculating SHR]")
+                    # k_vals = np.power(2, np.arange(3, 9))
+                    # dsr_vals = []
+                    # for top_k in k_vals:
+                    #     fourier_dict_trunc_k = dict(sorted_fourier[:top_k])
+                    #     tot = 0
+                    #     for S, coefficient in fourier_dict_trunc_k.items():
+                    #         S_arr = np.array(S)
+                    #         # SHR Computation
+                    #         S_valid = 1
+                    #         nonzero_indices = np.where(S_arr == 1)[0]
+                    #         # print(list(nonzero_indices)[1:-1])
+                    #         for target_set in power_subset(list(nonzero_indices)): # Iterate through all except empty and full set
+                    #             S_arr_subset = S_arr.copy()
+                    #             S_arr_subset[list(target_set)] = 0
+                    #             if tuple(S_arr_subset) not in fourier_dict_trunc_k:
+                    #                 S_valid = 0
+                    #                 break
+                    #         tot += S_valid
+                            
+                    #         # DSR Computation
+
+                    #         # S_tot = 0
+                    #         # S_mag = np.sum(S_arr)
+                    #         # nonzero_indices = np.where(S_arr == 1)[0]
+                    #         # for i in nonzero_indices:
+                    #         #     S_arr_i = S_arr.copy()
+                    #         #     S_arr_i[i] = 0
+                    #         #     if tuple(S_arr_i) in fourier_dict_trunc_k:
+                    #         #         S_tot += 1
+                    #         # if S_mag > 0: 
+                    #         #     S_tot /= S_mag
+                    #         #     tot += S_tot
+                    #         # else:
+                    #         #     tot += 1
+                    #     tot /= top_k
+                    #     dsr_vals.append(tot)
+                    # print(f"    SHR values: {[(k, dsr) for k, dsr in zip(k_vals, dsr_vals)]}")
+
+                    print(" [Finding optimal mask]")
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
                     best_demask = 1 - np.array(self.exact_solver.solve()) # Flip definition of 1 to being "kept"
 
@@ -484,6 +550,8 @@ class InteractionSampler():
             # print(best_demask)
             mask[:] = best_demask[:] # list(target_features)
             # print(mask)
+
+            print(f"Clean Sequence: {seq_str}")
 
             tokens = list(seq_str)
             for j in range(num_tokens):

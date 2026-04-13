@@ -107,6 +107,7 @@ def generate_execution_func(out_lst,
                             spec_feedback_its=0,
                             max_spec_order=10,
                             feedback_method='spectral',
+                            reward_batch_max=False,
                             mh_n=0,
                             mh_p=0.5,
                             mh_b=1.0,
@@ -202,7 +203,7 @@ def generate_execution_func(out_lst,
     if spec_feedback_its > 0:
         func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
         if feedback_method == "lasso" or feedback_method == "spectral":
-            func_descr += f", num_spec_masks={num_spec_masks}"
+            func_descr += f", num_spec_masks={num_spec_masks}, rmax={reward_batch_max}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
     if mh_n > 0:
@@ -233,6 +234,7 @@ def generate_execution_func(out_lst,
                                                                 spec_feedback_its=spec_feedback_its, \
                                                                 max_spec_order=max_spec_order, \
                                                                 feedback_method=feedback_method, \
+                                                                reward_batch_max=reward_batch_max, \
                                                                 mh_n=mh_n, \
                                                                 mh_p=mh_p, \
                                                                 mh_b=mh_b,

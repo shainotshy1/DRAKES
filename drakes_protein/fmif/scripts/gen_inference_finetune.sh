@@ -4,8 +4,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --job-name=sp_protein
-#SBATCH --output=sp_worker_%j.out
+#SBATCH --job-name=protein
+#SBATCH --output=worker_%j.out
 
 # *********************************************************************************#
 # *** Uncomment the below if not running with ./scripts/batch_gen_inference.sh *** #
@@ -14,6 +14,11 @@
 # WORKER_ID=0
 # *********************************************************************************#
 
+if [ -z "$WORKER_ID" ]; then
+  WORKER_ID=0
+  NUM_WORKERS=1
+fi
+
 echo "Running worker with ID: $WORKER_ID"
 echo "Number of workers: $NUM_WORKERS"
 
@@ -21,24 +26,31 @@ BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
 BATCH_SIZE=15
 MODEL="pretrained"
-DATASET="test"
+DATASET="validation"
 ALIGN_TYPE='bon'
 ALIGN_N=1
-ORACLE_MODE='protgpt'
+ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0
 SPEC_FEEDBACK_ITS=5
-FEEDBACK_METHOD="spectral"
-MAX_SPEC_ORDER=10
+FEEDBACK_METHOD="lasso"
+MAX_SPEC_ORDER=40 # [2, 5, 10, 20]
 NUM_SPEC_MASKS=8192
+REWARD_BATCH_MAX=False
 SEED=0
 # BEAM_W=1
 # STEPS_PER_LEVEL=1
-# TARGET_PROTEIN="HEEH_KT_rd6_0746"
+# TARGET_PROTEIN="2KRU"
 # ORACLE_ALPHA=1.0
 # MH_TYPE="uniform"
 # MH_N=0
 # MH_P=0.5
 # MH_B=0.001
+
+if [ "$REWARD_BATCH_MAX" = "True" ]; then
+    REWARD_BATCH_MAX_STR="--reward_batch_max"
+else
+    REWARD_BATCH_MAX_STR=""
+fi
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
 
@@ -70,6 +82,7 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --spec_feedback_its=$SPEC_FEEDBACK_ITS \
         --max_spec_order=$MAX_SPEC_ORDER \
         --feedback_method=$FEEDBACK_METHOD \
+        $REWARD_BATCH_MAX_STR \
         --num_spec_masks=$NUM_SPEC_MASKS \
-        --lasso_lambda=$LASSO_LAMBDA
-        # --target_protein=$TARGET_PROTEIN
+        --lasso_lambda=$LASSO_LAMBDA \
+        --target_protein=$TARGET_PROTEIN
