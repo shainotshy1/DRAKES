@@ -13,6 +13,8 @@ from math import floor
 from tqdm import tqdm
 import copy
 from itertools import chain, combinations
+from sklearn.model_selection import GridSearchCV
+import json
 
 def power_subset(iterable):
     "power_subset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3)"
@@ -252,7 +254,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args=""):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -276,6 +278,7 @@ class InteractionSampler():
         self.batch_max = batch_max
         self.reward_avg_n=5
         self.p = 0.75
+        self.gbt_args = gbt_args
 
         # copy so that we can update the values of the params
         # yes my code in this repo is quite bad, but I'm too far in - trust the process >:)
@@ -437,8 +440,14 @@ class InteractionSampler():
                 
                 print("Executing Edit Position Selection...")
                 if self.feedback_method == 'spectral':
-                    print(" [Fitting Fourier Coefficients]")
-                    best_model, cv_r2 = lgboost_fit(all_masks, rewards)
+                    print(" [Fitting Fourier Coefficients]", end="", flush=True)
+                    target_args = json.loads(self.gbt_args)
+                    num_leaves = target_args.get("num_leaves", [30, 50])
+                    learning_rate = target_args.get("learning_rate", [0.01, 0.1])
+                    max_depth = target_args.get("max_depth", [3, 5])
+                    lambda_l1 = target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
+
+                    best_model, cv_r2 = lgboost_fit(all_masks, rewards, num_leaves=num_leaves, learning_rate=learning_rate, max_depth=max_depth, lambda_l1=lambda_l1)
                     fourier_dict = lgboost_to_fourier(best_model)
 
                     # with open(f"fourier_2kru_it{curr_iter+1}.txt", "w") as f:
@@ -486,7 +495,7 @@ class InteractionSampler():
                     #     tot /= top_k
                     #     dsr_vals.append(tot)
                     # print(f"    SHR values: {[(k, dsr) for k, dsr in zip(k_vals, dsr_vals)]}")
-
+                    print(f" => r2: {np.round(cv_r2, 4)}")
                     print(" [Finding optimal mask]")
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
                     best_demask = 1 - np.array(self.exact_solver.solve()) # Flip definition of 1 to being "kept"
@@ -566,7 +575,7 @@ class InteractionSampler():
             state.spec_reward_traj = spec_reward_traj
             state.r2_traj = list(r2_traj)
 
-            if self.feedback_method == 'spectral' or self.feedback_method == 'lasso': print("".join(tokens), f'| r2: {np.round(cv_r2, 4)}', f'Targets: {list(target_features)}')                
+            if self.feedback_method == 'spectral' or self.feedback_method == 'lasso': print("".join(tokens), f'Targets: {list(target_features)}')                
             else:  print("".join(tokens), f'Targets: {list(target_features)}')                
                 
             curr_iter += 1

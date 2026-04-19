@@ -119,6 +119,9 @@ def generate_output_fn(args):
             out_name += f"_masks={args.num_spec_masks}_rmax={args.reward_batch_max}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
+        if args.feedback_method == "spectral":
+            quotes = '""'
+            out_name += f"_{args.gbt_args.replace(' ', '').replace(':', '=').replace(',', '_').replace('}','').replace('{','').replace(quotes, '')}"
 
     if args.MH_steps > 0:
         if args.MH_type == 'uniform':
@@ -171,6 +174,7 @@ def main():
     argparser.add_argument("--MH_b", type=float, required=False, default=1.0)
     argparser.add_argument("--MH_type", type=str, required=False, default="uniform")
     argparser.add_argument("--seed", type=int, required=False, default=0)
+    argparser.add_argument("--gbt_args", type=str, required=False, default="")
 
     args = argparser.parse_args()
 
@@ -206,7 +210,8 @@ def main():
                                             mh_b=args.MH_b,
                                             mh_type=args.MH_type,
                                             num_spec_masks=args.num_spec_masks,
-                                            seed=args.seed)
+                                            seed=args.seed,
+                                            gbt_args=args.gbt_args)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

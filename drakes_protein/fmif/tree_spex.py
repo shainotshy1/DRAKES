@@ -20,15 +20,35 @@ def suppress_stdout():
 
 import logging
 
-def lgboost_fit(X, y):
+def lgboost_fit(X, y, num_leaves=[30, 50], learning_rate=[0.01, 0.1], max_depth=[4, 6], lambda_l1=[0.00001, 0.0001, 0.001, 0.01, 0.1, 1]):
     model = lgb.LGBMRegressor(verbose=-1, n_jobs=4)
+
+    if type(num_leaves) is not list:
+        num_leaves = [num_leaves]
+        
+    if type(learning_rate) is not list:
+        learning_rate = [learning_rate]
+
+    if type(max_depth) is not list:
+        max_depth = [max_depth]
+
+    if type(lambda_l1) is not list:
+        lambda_l1 = [lambda_l1]
 
     # Define the hyperparameter grid
     param_grid = {
-        'num_leaves': [31,50],
-        'learning_rate': [0.01, 0.1],
-        'max_depth': [4,6]
+        'num_leaves': num_leaves,
+        'learning_rate': learning_rate,
+        'max_depth': max_depth,
+        'lambda_l1': lambda_l1
     }
+
+    # param_grid = {
+    #     'max_depth': [3, 5, None],
+    #     'n_estimators': [500, 1000, 5000],
+    #     'learning_rate': [0.01, 0.1],
+    #     'lambda_l1': np.geomspace(0.00001, 0.1, 10)
+    # }
 
     # Perform GridSearchCV
     grid_search = GridSearchCV(
