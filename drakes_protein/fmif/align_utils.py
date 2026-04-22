@@ -15,6 +15,7 @@ import copy
 from itertools import chain, combinations
 from sklearn.model_selection import GridSearchCV
 import json
+from math import comb
 
 def power_subset(iterable):
     "power_subset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3)"
@@ -276,7 +277,7 @@ class InteractionSampler():
         self.reward_batch=min(max_batch, self.num_masks)
 
         self.batch_max = batch_max
-        self.reward_avg_n=5
+        self.reward_avg_n=10
         self.p = 0.75
         self.gbt_args = gbt_args
 
@@ -411,9 +412,21 @@ class InteractionSampler():
                 top_spec_interactions = list(state.top_spec_interactions)
                 spec_reward_traj = list(state.spec_reward_traj)
 
-            if self.feedback_method in ['spectral', 'lasso']:
+            if self.feedback_method in ['spectral', 'lasso', 'max-mask']:
                 all_masks = np.random.choice(2, size=(self.num_masks, num_tokens), p = np.array([self.p, 1-self.p])) # 0.75 prob of being a 0 i.e being "kept"
                 
+                if self.feedback_method == 'max-mask':
+                    for i in range(self.num_masks):
+                        
+                        num_ones = np.random.binomial(num_tokens, 1 - self.p)
+                        
+                        if self.max_spec_order is not None:
+                            k = min(self.max_spec_order, num_tokens)
+                            num_ones = min(num_ones, k)
+
+                        ones_idx = np.random.choice(num_tokens, size=num_ones, replace=False)
+                        all_masks[i, ones_idx] = 1
+
                 num_timesteps = self.interpolant._cfg.num_timesteps
                 ts = torch.linspace(self.interpolant._cfg.min_t, 1.0, num_timesteps)
                 step = 0 # min(floor(self.interpolant._cfg.num_timesteps * self.p), num_timesteps - 2) # bound to ensure target_step + 1 <= n - 1
@@ -445,56 +458,14 @@ class InteractionSampler():
                     num_leaves = target_args.get("num_leaves", [30, 50])
                     learning_rate = target_args.get("learning_rate", [0.01, 0.1])
                     max_depth = target_args.get("max_depth", [3, 5])
-                    lambda_l1 = target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
+                    lambda_l1 = [0.00001]#target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
 
                     best_model, cv_r2 = lgboost_fit(all_masks, rewards, num_leaves=num_leaves, learning_rate=learning_rate, max_depth=max_depth, lambda_l1=lambda_l1)
                     fourier_dict = lgboost_to_fourier(best_model)
 
-                    # with open(f"fourier_2kru_it{curr_iter+1}.txt", "w") as f:
-                    #     for item in fourier_dict.values():
-                    #         f.write(f"{item}\n")
-
                     sorted_fourier = sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)
                     fourier_dict_trunc = dict(sorted_fourier[:2000])
-                    # Dictionary items: (bitmask tuple, coefficient)
-                    # print(" [Calculating SHR]")
-                    # k_vals = np.power(2, np.arange(3, 9))
-                    # dsr_vals = []
-                    # for top_k in k_vals:
-                    #     fourier_dict_trunc_k = dict(sorted_fourier[:top_k])
-                    #     tot = 0
-                    #     for S, coefficient in fourier_dict_trunc_k.items():
-                    #         S_arr = np.array(S)
-                    #         # SHR Computation
-                    #         S_valid = 1
-                    #         nonzero_indices = np.where(S_arr == 1)[0]
-                    #         # print(list(nonzero_indices)[1:-1])
-                    #         for target_set in power_subset(list(nonzero_indices)): # Iterate through all except empty and full set
-                    #             S_arr_subset = S_arr.copy()
-                    #             S_arr_subset[list(target_set)] = 0
-                    #             if tuple(S_arr_subset) not in fourier_dict_trunc_k:
-                    #                 S_valid = 0
-                    #                 break
-                    #         tot += S_valid
-                            
-                    #         # DSR Computation
 
-                    #         # S_tot = 0
-                    #         # S_mag = np.sum(S_arr)
-                    #         # nonzero_indices = np.where(S_arr == 1)[0]
-                    #         # for i in nonzero_indices:
-                    #         #     S_arr_i = S_arr.copy()
-                    #         #     S_arr_i[i] = 0
-                    #         #     if tuple(S_arr_i) in fourier_dict_trunc_k:
-                    #         #         S_tot += 1
-                    #         # if S_mag > 0: 
-                    #         #     S_tot /= S_mag
-                    #         #     tot += S_tot
-                    #         # else:
-                    #         #     tot += 1
-                    #     tot /= top_k
-                    #     dsr_vals.append(tot)
-                    # print(f"    SHR values: {[(k, dsr) for k, dsr in zip(k_vals, dsr_vals)]}")
                     print(f" => r2: {np.round(cv_r2, 4)}")
                     print(" [Finding optimal mask]")
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
@@ -508,17 +479,65 @@ class InteractionSampler():
                                 top_interactions.append(i)
                         top_spec_interactions[-1].append((top_interactions, round(coefficient, 3))) # extract the index of the interaction instead of the bit map
                 elif self.feedback_method == 'lasso':
+                    print(" [Fitting LASSO]", end="", flush=True)
                     clf = Lasso(alpha=self.lasso_pen)
+
+                    targ_order = 1
+
+                    if targ_order > 1:
+                        print("Fitting to higher order interactions...")
+                        new_masks = []
+                        num_extra = sum([comb(num_tokens, k) for k in range(2, targ_order+1)])
+                        for mask in all_masks:
+                            m = np.zeros(num_tokens + num_extra)
+                            m[:num_tokens] = mask # First Order coefficients
+
+                            order_2_n = comb(num_tokens, 2)
+                            order_3_n = comb(num_tokens, 3)
+
+                            if targ_order >= 2: # Second Order coefficients
+                                outer_prod = mask.reshape(-1, 1) @ mask.reshape(1, -1)
+                                rows, cols = np.triu_indices(num_tokens, k=1)
+                                extra_coeffs = outer_prod[rows, cols]
+                                m[num_tokens:num_tokens + order_2_n] = extra_coeffs
+
+                            if targ_order >= 3: # Third Order coefficients
+                                outer_prod = mask.reshape(-1, 1) @ mask.reshape(1, -1)
+
+                                a = mask[:, None, None]
+                                b = mask[None, :, None]
+                                c = mask[None, None, :]
+
+                                products = a * b * c
+
+                                i, j, k = np.indices((num_tokens, num_tokens, num_tokens))
+                                mask = (i < j) & (j < k)
+
+                                extra_coeffs = products[mask]
+
+                                m[num_tokens + order_2_n:num_tokens + order_2_n + order_3_n] = extra_coeffs
+
+                            new_masks.append(m)
+
+                        all_masks = np.array(new_masks)
+
                     clf.fit(all_masks, rewards)
+
                     cv_r2 = clf.score(all_masks, rewards)  
+                    print(f" => r2: {np.round(cv_r2, 4)}")
+                    
                     a = np.array(clf.coef_.flatten().tolist())
+                    a = a[:num_tokens]
                     # b = clf.intercept_
                     lasso_res = a if self.max_spec_order is None else np.argpartition(a, -self.max_spec_order)[-self.max_spec_order:]
                     bad_indices = (a <= 0)
                     best_demask = np.ones_like(a)
                     # Like above, flip definition of a 1
                     best_demask[lasso_res] = 0
-                    best_demask[bad_indices] = 1 # Don't include zeros or negatively contributing amino acids in the top-k
+                    # best_demask[bad_indices] = 1 # Don't include zeros or negatively contributing amino acids in the top-k
+                elif self.feedback_method == 'max-mask':
+                    best_demask_idx = np.argmax(rewards)
+                    best_demask = all_masks[best_demask_idx]
                 else:
                     raise ValueError("Selection method is invalid")
             elif self.feedback_method == 'exclusion':

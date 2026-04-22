@@ -3,7 +3,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-NUM_WORKERS=2
+NUM_WORKERS=4
 
 for ((i=0; i<NUM_WORKERS; i++)); do
     echo "Submitting job for worker $i"

@@ -7,7 +7,7 @@ import torch
 import pandas as pd
 import numpy as np
 
-from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset, featurize
+from protein_oracle.data_utils import ProteinStructureDataset, ProteinDPODataset
 from protein_oracle.utils import set_seed
 from torch.utils.data import DataLoader, Subset
 
@@ -115,7 +115,7 @@ def generate_output_fn(args):
         out_name += f"_feedbacksteps={args.spec_feedback_its}"
         out_name += f"_feedbackmethod={args.feedback_method}"
         out_name += f"_maxspecorder={args.max_spec_order}"
-        if args.feedback_method == "lasso" or args.feedback_method == "spectral":
+        if args.feedback_method == "lasso" or args.feedback_method == "spectral" or args.feedback_method == "max-mask":
             out_name += f"_masks={args.num_spec_masks}_rmax={args.reward_batch_max}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"

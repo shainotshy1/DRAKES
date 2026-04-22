@@ -127,7 +127,7 @@ def generate_execution_func(out_lst,
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
-    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion']
+    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask']
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 
@@ -203,7 +203,7 @@ def generate_execution_func(out_lst,
         func_descr += f", balanced_alpha={oracle_alpha}"
     if spec_feedback_its > 0:
         func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
-        if feedback_method == "lasso" or feedback_method == "spectral":
+        if feedback_method == "lasso" or feedback_method == "spectral" or feedback_method == "max-mask":
             func_descr += f", num_spec_masks={num_spec_masks}, rmax={reward_batch_max}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"

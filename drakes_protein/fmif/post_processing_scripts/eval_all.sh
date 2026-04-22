@@ -18,7 +18,7 @@ SCRIPT_DIR=/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/post_p
 DIR=$1
 GPU="0"
 if [ "$#" -gt 1 ]; then
-    GPU=$2
+  GPU=$2
 fi
 echo "Using GPU $GPU"
 

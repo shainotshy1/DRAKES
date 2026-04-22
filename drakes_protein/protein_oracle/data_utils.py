@@ -81,19 +81,21 @@ class ProteinDPODataset(Dataset):
             }
 
 
-def featurize(batch, device):
+def featurize(batch, device, targ_len=75):        
     B = batch['structure'].shape[0]
-    L_max = max([len(x) for x in batch['aa_seq']])
+    L_max = min(max([len(x) for x in batch['aa_seq']]), targ_len)
     X = batch['structure'][:, :L_max, :, :].to(dtype=torch.float32, device=device)
     S = np.zeros([B, L_max], dtype=np.int32) #sequence AAs integers
     S_wt = np.zeros([B, L_max], dtype=np.int32)
     mask = np.zeros([B, L_max], dtype=np.int32)
     residue_idx = -100*np.ones([B, L_max], dtype=np.int32)
     for i, seq in enumerate(batch['aa_seq']):
+        seq = seq[:targ_len]
         S[i, :len(seq)] = np.asarray([ALPHABET.index(aa) for aa in seq], dtype=np.int32)
         mask[i, :len(seq)] = 1
         residue_idx[i, :len(seq)] = np.arange(len(seq))
     for i, seq in enumerate(batch['aa_seq_wt']):
+        seq = seq[:targ_len]
         S_wt[i, :len(seq)] = np.asarray([ALPHABET.index(aa) for aa in seq], dtype=np.int32)
     S = torch.from_numpy(S).to(dtype=torch.long, device=device)
     S_wt = torch.from_numpy(S_wt).to(dtype=torch.long, device=device)
