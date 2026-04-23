@@ -425,6 +425,7 @@ class InteractionSampler():
                             num_ones = min(num_ones, k)
 
                         ones_idx = np.random.choice(num_tokens, size=num_ones, replace=False)
+                        all_masks[i, :] = 0
                         all_masks[i, ones_idx] = 1
 
                 num_timesteps = self.interpolant._cfg.num_timesteps
@@ -534,10 +535,10 @@ class InteractionSampler():
                     best_demask = np.ones_like(a)
                     # Like above, flip definition of a 1
                     best_demask[lasso_res] = 0
-                    # best_demask[bad_indices] = 1 # Don't include zeros or negatively contributing amino acids in the top-k
+                    best_demask[bad_indices] = 1 # Don't include zeros or negatively contributing amino acids in the top-k
                 elif self.feedback_method == 'max-mask':
                     best_demask_idx = np.argmax(rewards)
-                    best_demask = all_masks[best_demask_idx]
+                    best_demask = 1 - all_masks[best_demask_idx]
                 else:
                     raise ValueError("Selection method is invalid")
             elif self.feedback_method == 'exclusion':
