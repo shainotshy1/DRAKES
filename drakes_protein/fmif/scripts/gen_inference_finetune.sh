@@ -17,7 +17,7 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=10
 MODEL="pretrained"
 DATASET="test"
 ALIGN_TYPE='bon'
@@ -26,9 +26,9 @@ ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0001
 SPEC_FEEDBACK_ITS=1
 # FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb
-FEEDBACK_METHOD="lasso"
+FEEDBACK_METHOD="spectral"
 MAX_SPEC_ORDER=20 # [2, 5, 10, 20]s
-NUM_SPEC_MASKS=512 # spectral / lasso / max-mask: random mask count
+NUM_SPEC_MASKS=4096 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 SPEX_ANALYSIS=False
 SEED=0
