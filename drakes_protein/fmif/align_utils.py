@@ -17,6 +17,16 @@ from sklearn.model_selection import GridSearchCV
 import json
 from math import comb
 
+import spectralexplain as spex
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.datasets import load_breast_cancer
+from sklearn.metrics import r2_score
+import pickle
+
+import time
+
 def power_subset(iterable):
     "power_subset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3)"
     s = list(iterable)
@@ -255,7 +265,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args=""):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args="", spex_analysis=False, protein_name="", hill_climb_iterations=512):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -269,17 +279,25 @@ class InteractionSampler():
         self.lasso_pen = lasso_pen
         self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
         self.interpolant = interpolant
+        self.protein_name = protein_name
 
         max_batch = 512
         self.num_masks=num_masks
         self.mask_batch=min(max_batch, self.num_masks)
-        self.remask_batch=min(max_batch, self.num_masks)
         self.reward_batch=min(max_batch, self.num_masks)
 
         self.batch_max = batch_max
-        self.reward_avg_n=10
+        self.reward_avg_n = 16
+
+        if self.feedback_method == 'hill-climb':
+            # Match reward_avg_n so diffusion_qx_calc runs one batched forward of size reward_avg_n
+            # (parallel stochastic next-states for expected reward).
+            self.remask_batch = self.reward_avg_n
+        else:
+            self.remask_batch = min(max_batch, self.num_masks)
         self.p = 0.75
         self.gbt_args = gbt_args
+        self.spex_analysis = spex_analysis
 
         # copy so that we can update the values of the params
         # yes my code in this repo is quite bad, but I'm too far in - trust the process >:)
@@ -292,6 +310,28 @@ class InteractionSampler():
         self.model_params.chain_encoding_all = self.model_params.chain_encoding_all.repeat(self.remask_batch, 1)
 
         self.model = model
+        self.hill_climb_iterations = hill_climb_iterations
+
+    def expected_reward_demask_mask(self, state, demask_mask, t1, t2):
+        masks_np = np.asarray(demask_mask, dtype=np.float64).reshape(1, -1)
+        # One row per parallel trajectory (same demask pattern; independent Gumbel draws in infill).
+        masks_np = np.repeat(masks_np, self.reward_avg_n, axis=0)
+        batched_states = self.generate_remasked_state_batch(state, masks_np)
+        batched_qxs = self.diffusion_qx_calc(batched_states, t1, t2)
+        batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
+        if self.batch_max:
+            alpha = 1.0
+            rewards_torch = torch.full(
+                (batched_states.shape[0],),
+                float("-inf"),
+                device=batched_states.device,
+            )
+        else:
+            alpha = 1.0 / self.reward_avg_n
+            rewards_torch = torch.zeros((batched_states.shape[0],), device=batched_states.device)
+        sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
+        self.calc_batched_reward(rewards_torch, sampled_next_states, state.reward_oracle, alpha=alpha)
+        return rewards_torch.sum().item()
 
     def generate_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
@@ -302,10 +342,23 @@ class InteractionSampler():
         return state
     
     def generate_remasked_state_batch(self, state, masks):
-        masked_seq = state.gen_clean_seq()[0]
-        res = torch.zeros_like(torch.tensor(masks), device=masked_seq.device)
-        res[:] = masked_seq
-        res[masks == 0] = mu.MASK_TOKEN_INDEX
+        clean_seq = state.gen_clean_seq()
+        masked_seq = clean_seq[0]
+        if not torch.is_tensor(masked_seq):
+            masked_seq = torch.as_tensor(masked_seq, device=clean_seq.device, dtype=torch.long)
+        else:
+            masked_seq = masked_seq.to(device=clean_seq.device, dtype=torch.long)
+        masks_arr = np.asarray(masks, dtype=np.float64)
+        if masks_arr.ndim == 1:
+            masks_arr = masks_arr.reshape(1, -1)
+        batch_size = int(masks_arr.shape[0])
+        masks_t = torch.as_tensor(
+            masks_arr,
+            device=masked_seq.device,
+            dtype=torch.float32,
+        )
+        res = masked_seq.unsqueeze(0).expand(batch_size, -1).contiguous().clone()
+        res[masks_t == 0] = mu.MASK_TOKEN_INDEX
         return res
     
     def sample_categorical(self, categorical_probs):
@@ -412,6 +465,76 @@ class InteractionSampler():
                 top_spec_interactions = list(state.top_spec_interactions)
                 spec_reward_traj = list(state.spec_reward_traj)
 
+
+            # Below four lines for use in spex analysis and LASSO/SPEX/Max-Mask
+            num_timesteps = self.interpolant._cfg.num_timesteps
+            ts = torch.linspace(self.interpolant._cfg.min_t, 1.0, num_timesteps)
+            step = 0 # min(floor(self.interpolant._cfg.num_timesteps * self.p), num_timesteps - 2) # bound to ensure target_step + 1 <= n - 1
+            t1, t2 = ts[step], ts[step + 1]
+            self.counted = 0
+            if self.spex_analysis:
+                def value_function(X):
+                    num_masks = X.shape[0]
+                    print(X.shape)
+                    assert len(X.shape) == 2 and X.shape[1] == num_tokens, f"Expected input shape (N, {num_tokens}), got {X.shape}"
+                    if self.batch_max:
+                        alpha = 1.0
+                        rewards_torch = torch.full((num_masks, ), float("-inf"), device=curr_res.device)
+                    else:
+                        alpha = 1.0 / self.reward_avg_n
+                        rewards_torch = torch.zeros((num_masks, ), device=curr_res.device)
+                    M = 0
+                    its = (num_masks + self.mask_batch - 1) // self.mask_batch
+                    for _ in tqdm(range(its)):
+                        batched_states = self.generate_remasked_state_batch(state, 1-X[M:M+self.mask_batch])
+                        batched_qxs = self.diffusion_qx_calc(batched_states, t1, t2)
+                        batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
+                        for _ in range(self.reward_avg_n):
+                            sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
+                            self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=alpha)
+                        M += self.mask_batch
+                    rewards = rewards_torch.cpu().numpy()
+                    self.counted += X.shape[0]
+                    return rewards
+
+                print("Running SPEX...")
+
+                explainer = spex.Explainer(
+                    value_function=value_function,
+                    features=range(num_tokens),
+                    sample_budget=100000,
+                    max_order=5,
+                    algorithm="spex"
+                )
+
+                print("Calls to value function:", self.counted)
+                # Find the choice of b used by spectral explainer
+                b_parameter = explainer.sparsity_parameter
+                print(f"The choice of b for the given budget was: {b_parameter}")
+
+                # Extract the Fourier dictionary
+                fourier_dict = explainer.fourier_transform
+                print(f"Number of non-zero Fourier coefficients: {len(fourier_dict)}")
+
+                timestamp = time.strftime("%Y%m%d-%H%M%S")
+                file_name = f'eval_results/spex/fourier_dict_{self.protein_name}_{timestamp}.pkl'
+
+                with open(file_name, 'wb') as f:
+                    pickle.dump(fourier_dict, f)
+
+                print(f"Dictionary successfully saved to {file_name}")
+
+                heldout_masks = np.random.binomial(1, 0.5, size=(1024, num_tokens)).astype(bool)
+
+                # Get the ground truth predictions from the black-box value function
+                y_true = value_function(heldout_masks)
+
+                np.savetxt(f"eval_results/spex/heldout_masks_{timestamp}_max={self.batch_max}.txt", heldout_masks.astype(int), fmt="%d")
+                np.savetxt(f"eval_results/spex/y_true_{timestamp}_max={self.batch_max}.txt", y_true, fmt="%.6f")
+
+                print("Saving heldout masks and true values to text files.")
+
+
             if self.feedback_method in ['spectral', 'lasso', 'max-mask']:
                 all_masks = np.random.choice(2, size=(self.num_masks, num_tokens), p = np.array([self.p, 1-self.p])) # 0.75 prob of being a 0 i.e being "kept"
                 
@@ -427,11 +550,6 @@ class InteractionSampler():
                         ones_idx = np.random.choice(num_tokens, size=num_ones, replace=False)
                         all_masks[i, :] = 0
                         all_masks[i, ones_idx] = 1
-
-                num_timesteps = self.interpolant._cfg.num_timesteps
-                ts = torch.linspace(self.interpolant._cfg.min_t, 1.0, num_timesteps)
-                step = 0 # min(floor(self.interpolant._cfg.num_timesteps * self.p), num_timesteps - 2) # bound to ensure target_step + 1 <= n - 1
-                t1, t2 = ts[step], ts[step + 1]
 
                 print("Calculating reward estimates...")
                 if self.batch_max:
@@ -456,10 +574,10 @@ class InteractionSampler():
                 if self.feedback_method == 'spectral':
                     print(" [Fitting Fourier Coefficients]", end="", flush=True)
                     target_args = json.loads(self.gbt_args)
-                    num_leaves = target_args.get("num_leaves", [30, 50])
-                    learning_rate = target_args.get("learning_rate", [0.01, 0.1])
-                    max_depth = target_args.get("max_depth", [3, 5])
-                    lambda_l1 = [0.00001]#target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
+                    num_leaves = 30 #target_args.get("num_leaves", [30, 50])
+                    learning_rate = 0.1 #target_args.get("learning_rate", [0.01, 0.1])
+                    max_depth = None #target_args.get("max_depth", [3, 5, None])
+                    lambda_l1 = [0.0] # 0.00001]#target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
 
                     best_model, cv_r2 = lgboost_fit(all_masks, rewards, num_leaves=num_leaves, learning_rate=learning_rate, max_depth=max_depth, lambda_l1=lambda_l1)
                     fourier_dict = lgboost_to_fourier(best_model)
@@ -561,6 +679,19 @@ class InteractionSampler():
                 inclusion_res = np.argpartition(inclusion_rewards, -self.max_spec_order)[-self.max_spec_order:] # top-k rewards
                 best_demask = np.zeros_like(mask)
                 best_demask[inclusion_res] = 1 # Include the tokens that when included have the highest reward
+            elif self.feedback_method == 'hill-climb':
+                print("Executing Edit Position Selection (hill-climb)...")
+                curr_mask = mask.astype(np.float64).copy()
+                curr_reward = self.expected_reward_demask_mask(state, curr_mask, t1, t2)
+                for _ in tqdm(range(self.hill_climb_iterations), desc="hill-climb"):
+                    proposal = curr_mask.copy()
+                    bit = int(np.random.randint(0, num_tokens))
+                    proposal[bit] = 1.0 - proposal[bit]
+                    prop_reward = self.expected_reward_demask_mask(state, proposal, t1, t2)
+                    if prop_reward > curr_reward:
+                        curr_mask = proposal
+                        curr_reward = prop_reward
+                best_demask = curr_mask
             else:
                 raise ValueError("Selection method is invalid")
 

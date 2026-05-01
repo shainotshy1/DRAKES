@@ -17,26 +17,34 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=15
+BATCH_SIZE=1
 MODEL="pretrained"
-DATASET="validation"
+DATASET="test"
 ALIGN_TYPE='bon'
 ALIGN_N=1
 ORACLE_MODE='ddg'
-LASSO_LAMBDA=0.00001
-SPEC_FEEDBACK_ITS=3
-FEEDBACK_METHOD="max-mask"
-MAX_SPEC_ORDER=10 # [2, 5, 10, 20]s
-NUM_SPEC_MASKS=2048 # Run on much smaller mask training sets...
+LASSO_LAMBDA=0.0001
+SPEC_FEEDBACK_ITS=1
+# FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb
+FEEDBACK_METHOD="lasso"
+MAX_SPEC_ORDER=20 # [2, 5, 10, 20]s
+NUM_SPEC_MASKS=512 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
+SPEX_ANALYSIS=False
 SEED=0
-GBT_ARGS='{"num_leaves": 50, "learning_rate": 0.01, "max_depth": 5, "lambda_l1": 0.00001}'
-# TARGET_PROTEIN="r6_560_TrROS_Hall"
+GBT_ARGS='{}' #"num_leaves": 50, "learning_rate": 0.01, "max_depth": 5, "lambda_l1": 0.00001}'
+# TARGET_PROTEIN="2KRU"
 
 if [ "$REWARD_BATCH_MAX" = "True" ]; then
     REWARD_BATCH_MAX_STR="--reward_batch_max"
 else
     REWARD_BATCH_MAX_STR=""
+fi
+
+if [ "$SPEX_ANALYSIS" = "True" ]; then
+    SPEX_ANALYSIS_STR="--spex_analysis"
+else
+    SPEX_ANALYSIS_STR=""
 fi
 
 OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
@@ -70,7 +78,9 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --max_spec_order=$MAX_SPEC_ORDER \
         --feedback_method=$FEEDBACK_METHOD \
         $REWARD_BATCH_MAX_STR \
+        $SPEX_ANALYSIS_STR \
         --num_spec_masks=$NUM_SPEC_MASKS \
         --gbt_args="$GBT_ARGS" \
         --lasso_lambda=$LASSO_LAMBDA \
-        --target_protein=$TARGET_PROTEIN
+        --hill_climb_iterations=$NUM_SPEC_MASKS \
+        # --target_protein=$TARGET_PROTEIN

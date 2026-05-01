@@ -120,14 +120,16 @@ def generate_execution_func(out_lst,
                             dropout=0.1,
                             num_spec_masks=512,
                             seed=0,
-                            gbt_args=""):
+                            gbt_args="",
+                            spex_analysis=False,
+                            hill_climb_iterations=512):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
     assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
-    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask']
+    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask', 'hill-climb']
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 
@@ -205,6 +207,8 @@ def generate_execution_func(out_lst,
         func_descr += f", feedback_steps={spec_feedback_its}, max_spec_order={max_spec_order}, feedback_method={feedback_method}"
         if feedback_method == "lasso" or feedback_method == "spectral" or feedback_method == "max-mask":
             func_descr += f", num_spec_masks={num_spec_masks}, rmax={reward_batch_max}"
+        if feedback_method == "hill-climb":
+            func_descr += f", hill_climb_iterations={hill_climb_iterations}, rmax={reward_batch_max}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
         if feedback_method == "spectral":
@@ -222,6 +226,10 @@ def generate_execution_func(out_lst,
         chain_M = chain_M.repeat(repeat_num, 1)
         residue_idx = residue_idx.repeat(repeat_num, 1)
         chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
+        
+        protein_name = "_" + batch['protein_name'][0][:-4]
+        logging.info(f"Executing protein: {protein_name[1:]}")
+
         S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj = noise_interpolant.sample(fmif_model, \
                                                                 X, \
                                                                 mask, \
@@ -244,8 +252,10 @@ def generate_execution_func(out_lst,
                                                                 mh_type=mh_type,
                                                                 num_spec_masks=num_spec_masks,
                                                                 seed=seed,
-                                                                gbt_args=gbt_args)
-        protein_name = "_" + batch['protein_name'][0][:-4]
+                                                                gbt_args=gbt_args,
+                                                                spex_analysis=spex_analysis,
+                                                                protein_name=protein_name,
+                                                                hill_climb_iterations=hill_climb_iterations)
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
             with h5py.File(hdf5_output, 'r+') as f:

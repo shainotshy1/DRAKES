@@ -57,6 +57,8 @@ def lgboost_fit(X, y, num_leaves=[30, 50], learning_rate=[0.01, 0.1], max_depth=
     )
 
     grid_search.fit(X, y)
+    # print(f"Best Parameters: {grid_search.best_params_}")
+    # print(f"Best Score: {grid_search.best_score_}")
     return grid_search.best_estimator_, grid_search.best_score_
 
 

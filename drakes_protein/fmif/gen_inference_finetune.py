@@ -117,6 +117,8 @@ def generate_output_fn(args):
         out_name += f"_maxspecorder={args.max_spec_order}"
         if args.feedback_method == "lasso" or args.feedback_method == "spectral" or args.feedback_method == "max-mask":
             out_name += f"_masks={args.num_spec_masks}_rmax={args.reward_batch_max}"
+        if args.feedback_method == "hill-climb":
+            out_name += f"_hcits={args.hill_climb_iterations}_rmax={args.reward_batch_max}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
         if args.feedback_method == "spectral":
@@ -167,8 +169,10 @@ def main():
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
     argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
-    argparser.add_argument("--reward_batch_max", action="store_true", default=False, help="Whether to take the max or average of the reward batch when computing feedback (only applies if feedback_method is 'spectral' or 'lasso')")
+    argparser.add_argument("--reward_batch_max", action="store_true", default=False, help="Whether to take the max or average of the reward batch when computing feedback (applies to 'spectral', 'lasso', and 'hill-climb')")
+    argparser.add_argument("--spex_analysis", action="store_true", default=False, help="Whether to perform spectral analysis")
     argparser.add_argument("--num_spec_masks", type=int, required=False, default=512)
+    argparser.add_argument("--hill_climb_iterations", type=int, required=False, default=512, help="Hill-climb proposal steps per feedback iteration (feedback_method='hill-climb')")
     argparser.add_argument("--MH_steps", type=int, required=False, default=0)
     argparser.add_argument("--MH_p",type=float, required=False, default=0.5)
     argparser.add_argument("--MH_b", type=float, required=False, default=1.0)
@@ -211,7 +215,9 @@ def main():
                                             mh_type=args.MH_type,
                                             num_spec_masks=args.num_spec_masks,
                                             seed=args.seed,
-                                            gbt_args=args.gbt_args)
+                                            gbt_args=args.gbt_args,
+                                            spex_analysis=args.spex_analysis,
+                                            hill_climb_iterations=args.hill_climb_iterations)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \
