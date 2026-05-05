@@ -30,7 +30,7 @@ def process_seq_data_directory(dir_name, target_col, process_fn):
             process_seq_data_csv(file_path, target_col, process_fn)
 
 def get_drakes_test_data():
-    base_path = "/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
+    base_path = "/u/sdickman/DRAKES/data_and_model"
     pdb_path = os.path.join(base_path, 'proteindpo_data/AlphaFold_model_PDBs')
     max_len = 75  # Define the maximum length of proteins
     dataset = ProteinStructureDataset(pdb_path, max_len) # max_len set to 75 (sequences range from 31 to 74)

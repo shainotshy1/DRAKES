@@ -122,10 +122,9 @@ class ExactSolver:
         self.max_solution_order = max_solution_order
         self.loaded = False
         self.key = {
-            #"WLSACCESSID": "38d41f1f-f181-4d1d-9d6b-63f1dfff392c",
-            #"WLSSECRET": "8ed03468-18d7-4e2a-adef-a8d6703c8d2a",
-            #"LICENSEID": 2403918,
-            "LICENSEID": 2680322,
+            "WLSACCESSID": "bceab7c5-472b-44c9-97dd-5af4b2777888",
+            "WLSSECRET": "946bcb1a-e77b-486a-9e2f-04082b704f77",
+            "LICENSEID": 2725026,
         }
 
         with suppress_stdout():

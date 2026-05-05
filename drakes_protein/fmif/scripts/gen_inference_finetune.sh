@@ -1,9 +1,11 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=1
+#SBATCH --account=bgvp-dtai-gh
+#SBATCH --partition=ghx4
+#SBATCH --gpus=1
 #SBATCH --mem=16G
+#SBATCH --time=12:00:00
+#SBATCH --ntasks-per-node=1
 #SBATCH --job-name=protein
 #SBATCH --output=worker_%j.out
 
@@ -15,20 +17,20 @@ fi
 echo "Running worker with ID: $WORKER_ID"
 echo "Number of workers: $NUM_WORKERS"
 
-BASE_PATH="/home/shai/BLISS_Experiments/DRAKES/DRAKES/data/data_and_model"
+BASE_PATH="/u/sdickman/DRAKES/data_and_model"
 BATCH_REPEAT=1
 BATCH_SIZE=10
-MODEL="pretrained"
+MODEL="drakes"
 DATASET="test"
 ALIGN_TYPE='bon'
 ALIGN_N=1
 ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0001
-SPEC_FEEDBACK_ITS=1
+SPEC_FEEDBACK_ITS=5
 # FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb
 FEEDBACK_METHOD="spectral"
-MAX_SPEC_ORDER=20 # [2, 5, 10, 20]s
-NUM_SPEC_MASKS=4096 # spectral / lasso / max-mask: random mask count
+MAX_SPEC_ORDER=20 # [2, 5, 10, 20]
+NUM_SPEC_MASKS=8192 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 SPEX_ANALYSIS=False
 SEED=0
@@ -47,19 +49,23 @@ else
     SPEX_ANALYSIS_STR=""
 fi
 
-OUTPUT_FOLDER="/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/test"
+OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/neurips"
 
-source /opt/miniconda/etc/profile.d/conda.sh
+eval "$(micromamba shell hook --shell bash)"
 
-if [ "$ORACLE_MODE" = 'scrmsd' ]; then
-        echo "Activating multiflow conda environment"
-        conda activate multiflow
-        echo "Set to:"$CONDA_PREFIX
-else
-        echo "Activating mf2 conda environment"
-        conda activate mf2
-        echo "Set to:"$CONDA_PREFIX
-fi
+micromamba activate mf2
+
+# source /opt/miniconda/etc/profile.d/conda.sh
+
+# if [ "$ORACLE_MODE" = 'scrmsd' ]; then
+#         echo "Activating multiflow conda environment"
+#         conda activate multiflow
+#         echo "Set to:"$CONDA_PREFIX
+# else
+#         echo "Activating mf2 conda environment"
+#         conda activate mf2
+#         echo "Set to:"$CONDA_PREFIX
+# fi
 
 python gen_inference_finetune.py --base_path=$BASE_PATH \
         --batch_repeat=$BATCH_REPEAT \

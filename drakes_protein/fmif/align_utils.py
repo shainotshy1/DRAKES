@@ -277,7 +277,10 @@ class InteractionSampler():
         self.max_spec_order = max_spec_order if max_spec_order > 0 else None
         self.feedback_method = feedback_method
         self.lasso_pen = lasso_pen
-        self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
+        if self.feedback_method == 'spectral':
+            self.exact_solver = ExactSolver(maximize=True, max_solution_order=self.max_spec_order)
+        else:
+            self.exact_solver = None
         self.interpolant = interpolant
         self.protein_name = protein_name
 
@@ -682,10 +685,36 @@ class InteractionSampler():
             elif self.feedback_method == 'hill-climb':
                 print("Executing Edit Position Selection (hill-climb)...")
                 curr_mask = mask.astype(np.float64).copy()
+                max_zeros = (
+                    None
+                    if self.max_spec_order is None
+                    else min(self.max_spec_order, num_tokens)
+                )
+                if max_zeros is not None:
+                    zero_idx = np.flatnonzero(curr_mask == 0)
+                    if zero_idx.size > max_zeros:
+                        to_restore = np.random.choice(
+                            zero_idx, size=zero_idx.size - max_zeros, replace=False
+                        )
+                        curr_mask[to_restore] = 1.0
                 curr_reward = self.expected_reward_demask_mask(state, curr_mask, t1, t2)
                 for _ in tqdm(range(self.hill_climb_iterations), desc="hill-climb"):
                     proposal = curr_mask.copy()
-                    bit = int(np.random.randint(0, num_tokens))
+                    if max_zeros is None:
+                        bit = int(np.random.randint(0, num_tokens))
+                    else:
+                        z = int(np.sum(curr_mask == 0))
+                        zero_idx = np.flatnonzero(curr_mask == 0)
+                        one_idx = np.flatnonzero(curr_mask == 1)
+                        # Always pick a flip that respects max_zeros: any bit if z < cap,
+                        # else only 0 -> 1 (must have zeros when z == max_zeros > 0).
+                        if z < max_zeros:
+                            valid = np.concatenate([zero_idx, one_idx])
+                        else:
+                            valid = zero_idx
+                        if valid.size == 0:
+                            continue
+                        bit = int(np.random.choice(valid))
                     proposal[bit] = 1.0 - proposal[bit]
                     prop_reward = self.expected_reward_demask_mask(state, proposal, t1, t2)
                     if prop_reward > curr_reward:
