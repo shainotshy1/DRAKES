@@ -119,6 +119,8 @@ def generate_output_fn(args):
             out_name += f"_masks={args.num_spec_masks}_rmax={args.reward_batch_max}"
         if args.feedback_method == "hill-climb":
             out_name += f"_hcits={args.hill_climb_iterations}_rmax={args.reward_batch_max}"
+        if args.feedback_method == "gradient":
+            out_name += f"_rmax={args.reward_batch_max}"
         if args.feedback_method == "lasso":
             out_name += f"_lassolambda={args.lasso_lambda}"
         if args.feedback_method == "spectral":
@@ -169,7 +171,7 @@ def main():
     argparser.add_argument("--spec_feedback_its", type=int, required=False, default=0)
     argparser.add_argument("--max_spec_order", type=int, required=False, default=10)
     argparser.add_argument("--feedback_method", type=str, required=False, default="spectral")
-    argparser.add_argument("--reward_batch_max", action="store_true", default=False, help="Whether to take the max or average of the reward batch when computing feedback (applies to 'spectral', 'lasso', and 'hill-climb')")
+    argparser.add_argument("--reward_batch_max", action="store_true", default=False, help="Max vs average over reward batches (spectral, lasso, max-mask, hill-climb); rmax appears in output filenames for gradient for consistency")
     argparser.add_argument("--spex_analysis", action="store_true", default=False, help="Whether to perform spectral analysis")
     argparser.add_argument("--num_spec_masks", type=int, required=False, default=512)
     argparser.add_argument("--hill_climb_iterations", type=int, required=False, default=512, help="Hill-climb proposal steps per feedback iteration (feedback_method='hill-climb')")
@@ -230,7 +232,16 @@ def main():
     
     output_fn = generate_output_fn(args)
     results_merge = pd.concat(results)
-    
+    if "sampling_wall_time_s" in results_merge.columns:
+        # Aggregate wall time at the protein level, then attach it to each row for that protein.
+        per_protein_sampling_s = results_merge.groupby("protein_name")["sampling_wall_time_s"].transform("sum")
+        results_merge["protein_sampling_wall_time_s"] = per_protein_sampling_s
+        logging.info(
+            "Sampling wall-time columns added: "
+            "'sampling_wall_time_s' (per sample), "
+            "'protein_sampling_wall_time_s' (sum per protein)"
+        )
+
     logging.info(f"Saving to file {output_fn}")
     results_merge.to_csv(output_fn, index=False)
 

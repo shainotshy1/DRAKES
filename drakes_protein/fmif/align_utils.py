@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.distributions.bernoulli import Bernoulli
 import numpy as np
@@ -265,7 +266,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args="", spex_analysis=False, protein_name="", hill_climb_iterations=512):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args="", spex_analysis=False, protein_name="", hill_climb_iterations=512, reward_model=None):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -311,6 +312,69 @@ class InteractionSampler():
 
         self.model = model
         self.hill_climb_iterations = hill_climb_iterations
+        self.reward_model = reward_model
+        if self.feedback_method == "gradient":
+            assert self.reward_model is not None, "feedback_method='gradient' requires reward_model (differentiable oracle module)"
+
+    def _gradient_edit_positions(self, state, num_tokens):
+        """Top-k positions by grad×embedding dot (∂R/∂h_S · h_S), excluding tokens with score ≤ 0 (never mask those)."""
+        device = state.masked_seq.device
+        S = state.gen_clean_seq(select_argmax=True).long()
+        X = self.model_params.X[0:1].to(device)
+        mask = self.model_params.mask[0:1].to(device)
+        chain_M = self.model_params.chain_M[0:1].to(device)
+        residue_idx = self.model_params.residue_idx[0:1].to(device)
+        chain_encoding_all = self.model_params.chain_encoding_all[0:1].to(device)
+
+        one_hot = F.one_hot(S.squeeze(0), num_classes=22).float().unsqueeze(0)
+        one_hot = one_hot.clone().detach().requires_grad_(True)
+
+        activation = {}
+
+        def hook_fn(_mod, _inp, out):
+            out.retain_grad()
+            activation["h_S"] = out
+
+        if not hasattr(self.reward_model, "W_s_ft"):
+            raise RuntimeError("reward_model must have W_s_ft (call finetune_init on ProteinMPNNOracle) for gradient feedback")
+
+        handle = self.reward_model.W_s_ft.register_forward_hook(hook_fn)
+        try:
+            self.reward_model.zero_grad(set_to_none=True)
+            R = self.reward_model(X, one_hot, mask, chain_M, residue_idx, chain_encoding_all)
+            loss = R.squeeze()
+            if loss.dim() > 0:
+                loss = loss[0]
+            loss.backward()
+            h_S = activation["h_S"]
+            grad_h = h_S.grad
+            if grad_h is None:
+                raise RuntimeError("gradient feedback: h_S.grad is None (backward did not reach sequence embeddings)")
+            # Per-position L1 of ∂R/∂h_S (feature attribution magnitude)
+            l1_per_pos = grad_h.abs().sum(dim=-1).squeeze(0).detach().cpu().numpy()
+            # Gradient × input saliency on decoder sequence embeddings
+            scores = (grad_h * h_S).sum(dim=-1).squeeze(0).detach().cpu().numpy()
+        finally:
+            handle.remove()
+            self.reward_model.zero_grad(set_to_none=True)
+
+        scores *= -1 # We want to select those with the largest gradients since these indicate decreases in reward.
+
+        # Like lasso (skip coef ≤ 0): never mask positions with non-positive grad×input saliency.
+        positive = scores > 0.0
+        pos_idx = np.flatnonzero(positive)
+        k_cap = self.max_spec_order if self.max_spec_order is not None else num_tokens
+        k_cap = min(int(k_cap), num_tokens)
+        k = min(k_cap, int(pos_idx.size))
+
+        best_demask = np.ones(num_tokens, dtype=np.float64)
+        if k > 0 and pos_idx.size > 0:
+            sc_pos = scores[pos_idx]
+            top_local = np.argpartition(-sc_pos, k - 1)[:k]
+            top_idx = pos_idx[top_local]
+            best_demask[top_idx] = 0.0
+
+        return best_demask, l1_per_pos, scores
 
     def expected_reward_demask_mask(self, state, demask_mask, t1, t2):
         masks_np = np.asarray(demask_mask, dtype=np.float64).reshape(1, -1)
@@ -427,6 +491,7 @@ class InteractionSampler():
             M += self.reward_batch
 
     def sample_aligned(self):
+        t_wall0 = time.perf_counter()
         print("----------------------------------")
         state = self.initial_state
         num_tokens = state.masked_seq.shape[1]
@@ -564,7 +629,7 @@ class InteractionSampler():
                     batched_states = self.generate_remasked_state_batch(state, 1-all_masks[M:M+self.mask_batch])
                     batched_qxs = self.diffusion_qx_calc(batched_states, t1, t2)
                     batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
-                    for _ in range(self.reward_avg_n):
+                    for _ in tqdm(range(self.reward_avg_n)):
                         sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
                         self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=alpha)
                     M += self.mask_batch
@@ -682,16 +747,51 @@ class InteractionSampler():
             elif self.feedback_method == 'hill-climb':
                 print("Executing Edit Position Selection (hill-climb)...")
                 curr_mask = mask.astype(np.float64).copy()
+                max_zeros = (
+                    None
+                    if self.max_spec_order is None
+                    else min(self.max_spec_order, num_tokens)
+                )
+                if max_zeros is not None:
+                    zero_idx = np.flatnonzero(curr_mask == 0)
+                    if zero_idx.size > max_zeros:
+                        to_restore = np.random.choice(
+                            zero_idx, size=zero_idx.size - max_zeros, replace=False
+                        )
+                        curr_mask[to_restore] = 1.0
                 curr_reward = self.expected_reward_demask_mask(state, curr_mask, t1, t2)
                 for _ in tqdm(range(self.hill_climb_iterations), desc="hill-climb"):
                     proposal = curr_mask.copy()
-                    bit = int(np.random.randint(0, num_tokens))
+                    if max_zeros is None:
+                        bit = int(np.random.randint(0, num_tokens))
+                    else:
+                        z = int(np.sum(curr_mask == 0))
+                        zero_idx = np.flatnonzero(curr_mask == 0)
+                        one_idx = np.flatnonzero(curr_mask == 1)
+                        # Always pick a flip that respects max_zeros: any bit if z < cap,
+                        # else only 0 -> 1 (must have zeros when z == max_zeros > 0).
+                        if z < max_zeros:
+                            valid = np.concatenate([zero_idx, one_idx])
+                        else:
+                            valid = zero_idx
+                        if valid.size == 0:
+                            continue
+                        bit = int(np.random.choice(valid))
                     proposal[bit] = 1.0 - proposal[bit]
                     prop_reward = self.expected_reward_demask_mask(state, proposal, t1, t2)
                     if prop_reward > curr_reward:
                         curr_mask = proposal
                         curr_reward = prop_reward
                 best_demask = curr_mask
+            elif self.feedback_method == "gradient":
+                print("Executing Edit Position Selection (gradient)...")
+                best_demask, l1_pos, scores = self._gradient_edit_positions(state, num_tokens)
+                n_pos = int(np.sum(scores > 0))
+                print(
+                    f" [gradient] top-k among score>0 only (like lasso coef>0); "
+                    f"positive-score tokens={n_pos}; grad·input score range [{np.min(scores):.4g}, {np.max(scores):.4g}]; "
+                    f"||∂R/∂h||_1 range [{np.min(l1_pos):.4g}, {np.max(l1_pos):.4g}]"
+                )
             else:
                 raise ValueError("Selection method is invalid")
 
@@ -730,6 +830,9 @@ class InteractionSampler():
             else:  print("".join(tokens), f'Targets: {list(target_features)}')                
                 
             curr_iter += 1
+        elapsed = time.perf_counter() - t_wall0
+        self.last_sample_wall_time_s = elapsed
+        state.sampling_wall_time_s = elapsed
         return state
     
 class BeamSampler(TreeStateSampler):   

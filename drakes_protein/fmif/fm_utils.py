@@ -324,6 +324,7 @@ class Interpolant:
             spex_analysis=False,
             protein_name="",
             hill_climb_iterations=512,
+            reward_model=None,
         ):
 
         if type(n) != int or n < 1:
@@ -374,7 +375,7 @@ class Interpolant:
             if mh_n > 0:
                 sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
             else:
-                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda,num_masks=num_spec_masks, batch_max=reward_batch_max, gbt_args=gbt_args, spex_analysis=spex_analysis, protein_name=protein_name, hill_climb_iterations=hill_climb_iterations)         
+                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda,num_masks=num_spec_masks, batch_max=reward_batch_max, gbt_args=gbt_args, spex_analysis=spex_analysis, protein_name=protein_name, hill_climb_iterations=hill_climb_iterations, reward_model=reward_model)         
 
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
@@ -384,6 +385,7 @@ class Interpolant:
         else:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
         total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
+        sampling_wall_times = []
         for i, sampler in enumerate(samplers):
             set_seed(seed + i, use_cuda=True)
             if mh_n > 0:
@@ -391,6 +393,9 @@ class Interpolant:
                 total_reward_traj += np.array(best_sample.reward_traj)
             else:
                 best_sample = sampler.sample_aligned()
+
+            wt = getattr(best_sample, "sampling_wall_time_s", None)
+            sampling_wall_times.append(float(wt) if wt is not None else float("nan"))
 
             if spec_feedback_its > 0:
                 top_spec_interactions.append(best_sample.top_spec_interactions) # type: ignore
@@ -421,7 +426,7 @@ class Interpolant:
         #         concat_clean_traj[i][j] = clean_traj[j][i]
         for i, best_sample in enumerate(best_samples):
             concat_best_samples[i] = best_sample.gen_clean_seq()
-        return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj
+        return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj, sampling_wall_times
 
     def sample_gradient(
             self,

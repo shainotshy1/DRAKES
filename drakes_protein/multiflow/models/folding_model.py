@@ -47,6 +47,9 @@ class FoldingModel:
             self._print_logger.info(f'Loading ESMFold on device {self.device}')
             torch.hub.set_dir(self._cfg.pt_hub_dir)
             self._esmf = esm.pretrained.esmfold_v1().eval().to(self.device)
+            # FP16 LayerNorm is not implemented on CPU in PyTorch.
+            if torch.device(self.device).type == "cpu":
+                self._esmf = self._esmf.float()
         fasta_seqs = fasta.FastaFile.read(fasta_path)
         folded_outputs = {
             'folded_path': [],

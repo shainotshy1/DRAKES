@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --output=eval_all4.out
+#SBATCH --output=eval_all1.out
 #SBATCH --job-name=EVAL
 
 if [ "$#" -lt 1 ]; then

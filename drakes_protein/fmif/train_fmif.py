@@ -219,7 +219,7 @@ def main(args):
                     valid_sp_acc, valid_sp_weights = 0., 0.
                     for _, batch in tqdm(enumerate(loader_valid)):
                         X, S, mask, lengths, chain_M, residue_idx, mask_self, chain_encoding_all = featurize(batch, device)
-                        S_sp, _, _ = noise_interpolant.sample(model, X, mask, chain_M, residue_idx, chain_encoding_all)
+                        S_sp, _, _, _, _, _, _ = noise_interpolant.sample(model, X, mask, chain_M, residue_idx, chain_encoding_all)
                         true_false_sp = (S_sp == S).float()
                         mask_for_loss = mask*chain_M
                         valid_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
@@ -231,7 +231,7 @@ def main(args):
                     test_sp_acc, test_sp_weights = 0., 0.
                     for _, batch in tqdm(enumerate(loader_test)):
                         X, S, mask, lengths, chain_M, residue_idx, mask_self, chain_encoding_all = featurize(batch, device)
-                        S_sp, _, _ = noise_interpolant.sample(model, X, mask, chain_M, residue_idx, chain_encoding_all)
+                        S_sp, _, _, _, _, _, _ = noise_interpolant.sample(model, X, mask, chain_M, residue_idx, chain_encoding_all)
                         true_false_sp = (S_sp == S).float()
                         mask_for_loss = mask*chain_M
                         test_sp_acc += torch.sum(true_false_sp * mask_for_loss).cpu().data.numpy()
