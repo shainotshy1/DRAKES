@@ -368,7 +368,7 @@ def main(args, log_path, save_path):
                     chain_M = chain_M.repeat(repeat_num, 1)
                     residue_idx = residue_idx.repeat(repeat_num, 1)
                     chain_encoding_all = chain_encoding_all.repeat(repeat_num, 1)
-                    S_sp, _, _ = noise_interpolant.sample(new_fmif_model, X, mask, chain_M, residue_idx, chain_encoding_all)
+                    S_sp, _, _, _, _, _, _ = noise_interpolant.sample(new_fmif_model, X, mask, chain_M, residue_idx, chain_encoding_all)
                     dg_pred = reward_model(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)
                     rewards.append(dg_pred.detach().cpu().numpy())
                     dg_pred_eval = reward_model_eval(X, S_sp, mask, chain_M, residue_idx, chain_encoding_all)

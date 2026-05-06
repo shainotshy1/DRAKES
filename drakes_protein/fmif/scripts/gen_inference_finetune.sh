@@ -20,17 +20,17 @@ echo "Number of workers: $NUM_WORKERS"
 BASE_PATH="/u/sdickman/DRAKES/data_and_model"
 BATCH_REPEAT=1
 BATCH_SIZE=10
-MODEL="drakes"
+MODEL="pretrained"
 DATASET="test"
 ALIGN_TYPE='bon'
 ALIGN_N=1
 ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0001
-SPEC_FEEDBACK_ITS=5
+SPEC_FEEDBACK_ITS=1
 # FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb
-FEEDBACK_METHOD="spectral"
+FEEDBACK_METHOD="hill-climb"
 MAX_SPEC_ORDER=20 # [2, 5, 10, 20]
-NUM_SPEC_MASKS=8192 # spectral / lasso / max-mask: random mask count
+NUM_SPEC_MASKS=1024 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 SPEX_ANALYSIS=False
 SEED=0

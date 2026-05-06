@@ -11,7 +11,7 @@ from protein_oracle.data_utils import ALPHABET
 from model_utils import ProteinMPNNFMIF # type: ignore
 from fm_utils import Interpolant # type: ignore
 
-def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_selections=None, spec_trajectories=None, r2_trajectories=None):
+def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_selections=None, spec_trajectories=None, r2_trajectories=None, sampling_wall_times=None):
     with torch.no_grad():
         results_list = []
         true_detok_seq = "".join([ALPHABET[x] for _ix, x in enumerate(S[0]) if mask_for_loss[0][_ix] == 1])
@@ -27,6 +27,8 @@ def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_
             if spec_selections is not None: resultdf['spec_selections'] = str(spec_selections[_it])
             if spec_trajectories is not None: resultdf['spec_trajectory'] = str(spec_trajectories[_it])
             if r2_trajectories is not None: resultdf['r2_trajectory'] = str(r2_trajectories[_it])
+            if sampling_wall_times is not None:
+                resultdf['sampling_wall_time_s'] = sampling_wall_times[_it]
             results_list.append(resultdf)
 
     return results_list
@@ -129,7 +131,7 @@ def generate_execution_func(out_lst,
     assert type(lasso_lambda) is float
     assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
-    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask', 'hill-climb']
+    assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask', 'hill-climb', 'gradient']
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 
@@ -209,6 +211,8 @@ def generate_execution_func(out_lst,
             func_descr += f", num_spec_masks={num_spec_masks}, rmax={reward_batch_max}"
         if feedback_method == "hill-climb":
             func_descr += f", hill_climb_iterations={hill_climb_iterations}, rmax={reward_batch_max}"
+        if feedback_method == "gradient":
+            func_descr += f", rmax={reward_batch_max}"
         if feedback_method == "lasso":
             func_descr += f", lassolambda={lasso_lambda}"
         if feedback_method == "spectral":
@@ -230,7 +234,7 @@ def generate_execution_func(out_lst,
         protein_name = "_" + batch['protein_name'][0][:-4]
         logging.info(f"Executing protein: {protein_name[1:]}")
 
-        S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj = noise_interpolant.sample(fmif_model, \
+        S_sp, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj, sampling_wall_times = noise_interpolant.sample(fmif_model, \
                                                                 X, \
                                                                 mask, \
                                                                 chain_M, \
@@ -255,7 +259,8 @@ def generate_execution_func(out_lst,
                                                                 gbt_args=gbt_args,
                                                                 spex_analysis=spex_analysis,
                                                                 protein_name=protein_name,
-                                                                hill_climb_iterations=hill_climb_iterations)
+                                                                hill_climb_iterations=hill_climb_iterations,
+                                                                reward_model=reward_model)
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
             with h5py.File(hdf5_output, 'r+') as f:
@@ -269,7 +274,7 @@ def generate_execution_func(out_lst,
                 print("Saved trajectory to hdf5:", name)
 
         mask_for_loss = mask*chain_M
-        results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories)
+        results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, sampling_wall_times)
         out_lst.extend(results_list)
 
     return validation_func
