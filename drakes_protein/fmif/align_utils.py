@@ -494,7 +494,7 @@ class InteractionSampler():
             M += self.reward_batch
 
     def sample_aligned(self):
-        t_wall0 = time.perf_counter()
+        #t_wall0 = time.perf_counter()
         print("----------------------------------")
         state = self.initial_state
         num_tokens = state.masked_seq.shape[1]
@@ -523,6 +523,9 @@ class InteractionSampler():
             print(f"Previous true reward: {reward_traj[-1]}")
 
             cv_r2 = 0 # default
+
+            if curr_iter == 0:
+                t_wall0 = time.perf_counter()
 
             if state.spec_selections is None:
                 spec_selections = []
@@ -585,7 +588,7 @@ class InteractionSampler():
                 print(f"Number of non-zero Fourier coefficients: {len(fourier_dict)}")
 
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
-                file_name = f'eval_results/spex/fourier_dict_{self.protein_name}_{timestamp}.pkl'
+                file_name = f'eval_results/spex_logs/r2_data/fourier_dict_{self.protein_name}_{timestamp}.pkl'
 
                 with open(file_name, 'wb') as f:
                     pickle.dump(fourier_dict, f)
@@ -597,8 +600,8 @@ class InteractionSampler():
                 # Get the ground truth predictions from the black-box value function
                 y_true = value_function(heldout_masks)
 
-                np.savetxt(f"eval_results/spex/heldout_masks_{timestamp}_max={self.batch_max}.txt", heldout_masks.astype(int), fmt="%d")
-                np.savetxt(f"eval_results/spex/y_true_{timestamp}_max={self.batch_max}.txt", y_true, fmt="%.6f")
+                np.savetxt(f"eval_results/spex_logs/r2_data/heldout_masks_{self.protein_name}_max={self.batch_max}_{timestamp}.txt", heldout_masks.astype(int), fmt="%d")
+                np.savetxt(f"eval_results/spex_logs/r2_data/y_true_{self.protein_name}_max={self.batch_max}_{timestamp}.txt", y_true, fmt="%.6f")
 
                 print("Saving heldout masks and true values to text files.")
 
@@ -632,7 +635,7 @@ class InteractionSampler():
                     batched_states = self.generate_remasked_state_batch(state, 1-all_masks[M:M+self.mask_batch])
                     batched_qxs = self.diffusion_qx_calc(batched_states, t1, t2)
                     batched_qxs[:, :, mu.MASK_TOKEN_INDEX] = 0
-                    for _ in tqdm(range(self.reward_avg_n)):
+                    for _ in range(self.reward_avg_n):
                         sampled_next_states = self.diffusion_mask_infill(batched_states, batched_qxs)
                         self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=alpha)
                     M += self.mask_batch

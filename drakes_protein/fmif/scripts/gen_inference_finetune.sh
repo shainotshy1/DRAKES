@@ -4,7 +4,7 @@
 #SBATCH --partition=ghx4
 #SBATCH --gpus=1
 #SBATCH --mem=16G
-#SBATCH --time=12:00:00
+#SBATCH --time=36:00:00
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=protein
 #SBATCH --output=worker_%j.out
@@ -19,7 +19,7 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/u/sdickman/DRAKES/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=10
+BATCH_SIZE=30
 MODEL="pretrained"
 DATASET="test"
 ALIGN_TYPE='bon'
@@ -27,10 +27,10 @@ ALIGN_N=1
 ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0001
 SPEC_FEEDBACK_ITS=1
-# FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb
-FEEDBACK_METHOD="hill-climb"
+# FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb | gradient
+FEEDBACK_METHOD="spectral"
 MAX_SPEC_ORDER=20 # [2, 5, 10, 20]
-NUM_SPEC_MASKS=1024 # spectral / lasso / max-mask: random mask count
+NUM_SPEC_MASKS=16384 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 SPEX_ANALYSIS=False
 SEED=0
@@ -49,7 +49,7 @@ else
     SPEX_ANALYSIS_STR=""
 fi
 
-OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/neurips"
+OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/spex_logs/proteins/timing_proteins"
 
 eval "$(micromamba shell hook --shell bash)"
 
