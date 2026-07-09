@@ -35,13 +35,25 @@ def lgboost_fit(X, y, num_leaves=[30, 50], learning_rate=[0.01, 0.1], max_depth=
     if type(lambda_l1) is not list:
         lambda_l1 = [lambda_l1]
 
-    # Define the hyperparameter grid
-    param_grid = {
-        'num_leaves': num_leaves,
-        'learning_rate': learning_rate,
-        'max_depth': max_depth,
-        'lambda_l1': lambda_l1
+    # Directly fit the model without grid search, using the first value of each hyperparameter
+    fit_params = {
+        'num_leaves': num_leaves[0],
+        'learning_rate': learning_rate[0],
+        'max_depth': max_depth[0],
+        'lambda_l1': lambda_l1[0]
     }
+    model.set_params(**fit_params)
+    model.fit(X, y)
+    # best_score = model.score(X, y)
+    return model, 0.0 #best_score # remove to speed up
+
+    # # Define the hyperparameter grid
+    # param_grid = {
+    #     'num_leaves': num_leaves,
+    #     'learning_rate': learning_rate,
+    #     'max_depth': max_depth,
+    #     'lambda_l1': lambda_l1
+    # }
 
     # param_grid = {
     #     'max_depth': [3, 5, None],
@@ -50,16 +62,16 @@ def lgboost_fit(X, y, num_leaves=[30, 50], learning_rate=[0.01, 0.1], max_depth=
     #     'lambda_l1': np.geomspace(0.00001, 0.1, 10)
     # }
 
-    # Perform GridSearchCV
-    grid_search = GridSearchCV(
-        model, param_grid=param_grid,
-        cv=5, scoring='r2', verbose=0
-    )
+    # # Perform GridSearchCV
+    # grid_search = GridSearchCV(
+    #     model, param_grid=param_grid,
+    #     cv=5, scoring='r2', verbose=0
+    # )
 
-    grid_search.fit(X, y)
+    # grid_search.fit(X, y)
     # print(f"Best Parameters: {grid_search.best_params_}")
     # print(f"Best Score: {grid_search.best_score_}")
-    return grid_search.best_estimator_, grid_search.best_score_
+    # return grid_search.best_estimator_, grid_search.best_score_
 
 
 def lgboost_tree_to_fourier(tree_info):

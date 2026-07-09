@@ -647,7 +647,7 @@ class InteractionSampler():
                     target_args = json.loads(self.gbt_args)
                     num_leaves = 30 #target_args.get("num_leaves", [30, 50])
                     learning_rate = 0.1 #target_args.get("learning_rate", [0.01, 0.1])
-                    max_depth = None #target_args.get("max_depth", [3, 5, None])
+                    max_depth = 3 #target_args.get("max_depth", [3, 5, None])
                     lambda_l1 = [0.0] # 0.00001]#target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
 
                     best_model, cv_r2 = lgboost_fit(all_masks, rewards, num_leaves=num_leaves, learning_rate=learning_rate, max_depth=max_depth, lambda_l1=lambda_l1)
