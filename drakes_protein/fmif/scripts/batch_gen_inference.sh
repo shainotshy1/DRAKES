@@ -3,8 +3,8 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-NUM_WORKERS=12
-NUM_COMPUTE=2  # Number of actual jobs to run in parallel. Set to -1 to disable grouping.
+NUM_WORKERS=20
+NUM_COMPUTE=-1  # Number of actual jobs to run in parallel. Set to -1 to disable grouping.
 
 if [ "$NUM_COMPUTE" -eq -1 ]; then
     # Default: Schedule all jobs independently as before
@@ -19,7 +19,7 @@ else
     # for ((c=0; c<NUM_COMPUTE; c++)); do
     #     JOB_IDS[$c]=""
     # done
-    JOB_IDS=("2631538" "2631539")
+    JOB_IDS=()
 
     for ((i=0; i<NUM_WORKERS; i++)); do
         GROUP_IDX=$((i % NUM_COMPUTE))

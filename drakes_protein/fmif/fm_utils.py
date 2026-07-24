@@ -1,5 +1,7 @@
 import torch
 import copy
+import os
+import pickle
 import torch.nn.functional as F
 from collections import defaultdict
 import model_utils as mu
@@ -90,7 +92,7 @@ class Interpolant:
         return noisy_batch
 
     class ProteinDiffusionState(AlignSamplerState):
-        def __init__(self, masked_seq, q_xs, step, parent_state, reward_oracle, full_demask_fn):
+        def __init__(self, masked_seq, q_xs, step, parent_state, reward_oracle, full_demask_fn, record_full_traj=False):
             self.masked_seq = masked_seq
             self.pred_seq = None
             self.q_xs = q_xs
@@ -103,7 +105,10 @@ class Interpolant:
             self.spec_reward_traj = None if parent_state is None else parent_state.spec_reward_traj
             self.r2_traj = None if parent_state is None else parent_state.r2_traj
             self.reward_traj = None
-
+            self.record_full_traj = record_full_traj
+            self.full_traj = []
+            if parent_state is not None and record_full_traj:
+                self.full_traj = parent_state.full_traj.copy()
             self.full_demask_fn = full_demask_fn
 
             self.q_xs_no_mask = self.q_xs.clone()
@@ -228,7 +233,9 @@ class Interpolant:
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
         q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn)
+        sample_state = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn, record_full_traj=prev_state.record_full_traj)
+        if prev_state.record_full_traj:
+            sample_state.full_traj.append(aatypes_t)
         return sample_state
     
     def mask_to_state_batch(self, _x, model, model_params, ts, reward_oracle, prev_state, full_demask_fn):
@@ -237,7 +244,9 @@ class Interpolant:
         aatypes_t = prev_state.masked_seq * copy_flag + _x * (1 - copy_flag)
         t_1, t_2 = ts[prev_state.step], ts[prev_state.step + 1]
         q_xs = self.generate_state_values(model, model_params, aatypes_t, t_1, t_2)
-        sample_states = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn)
+        sample_states = self.ProteinDiffusionState(aatypes_t, q_xs, prev_state.step + 1, prev_state, reward_oracle, full_demask_fn, record_full_traj=prev_state.record_full_traj)
+        if prev_state.record_full_traj:
+            sample_states.full_traj.append(aatypes_t)
         return sample_states
 
     def build_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, full_demask_fn, steps_per_level=1, beam_model_params=None):
@@ -264,38 +273,38 @@ class Interpolant:
             return sample
         return sampler_n_gen
 
-    def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, full_demask_fn, steps_per_level=1):
-        assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
-        assert steps_per_level > 0, "steps_per_level must be a positive integer"
-        # Generate sampler
-        def sampler_n_gen(state, n = 1):
-            def sample():
-                sample_states = state
-                for _ in range(steps_per_level):                        
-                    if sample_states.step >= num_timesteps - 1:
-                        return sample_states
-                    if sample_states.return_early():
-                        sample_states = sample_states.copy_to_next_state()
-                        continue
-                    unmasked = (sample_states.masked_seq == mu.MASK_TOKEN_INDEX).squeeze()
-                    num_masked = torch.sum(unmasked).cpu()
-                    demask_temp = torch.bernoulli(torch.full((n, num_masked), 0.5, device=state.q_xs.device)).int() # type: ignore
-                    demask = torch.zeros(size=(sample_states.masked_seq.shape[0], sample_states.q_xs.shape[1], ), device=demask_temp.device, dtype=demask_temp.dtype).repeat(n, 1)
-                    demask[:, unmasked] = demask_temp
-                    pred_wo_mask = sample_states.q_xs.clone()
-                    pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
-                    best_pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
-                    _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
-                    sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states, full_demask_fn)
-                return sample_states
-            return sample
-        return sampler_n_gen
+    # def build_spectral_sampler_gen(self, model, model_params, ts, reward_oracle, num_timesteps, full_demask_fn, steps_per_level=1):
+    #     assert type(steps_per_level) is int, "steps_per_level must be of type 'int'"
+    #     assert steps_per_level > 0, "steps_per_level must be a positive integer"
+    #     # Generate sampler
+    #     def sampler_n_gen(state, n = 1):
+    #         def sample():
+    #             sample_states = state
+    #             for _ in range(steps_per_level):                        
+    #                 if sample_states.step >= num_timesteps - 1:
+    #                     return sample_states
+    #                 if sample_states.return_early():
+    #                     sample_states = sample_states.copy_to_next_state()
+    #                     continue
+    #                 unmasked = (sample_states.masked_seq == mu.MASK_TOKEN_INDEX).squeeze()
+    #                 num_masked = torch.sum(unmasked).cpu()
+    #                 demask_temp = torch.bernoulli(torch.full((n, num_masked), 0.5, device=state.q_xs.device)).int() # type: ignore
+    #                 demask = torch.zeros(size=(sample_states.masked_seq.shape[0], sample_states.q_xs.shape[1], ), device=demask_temp.device, dtype=demask_temp.dtype).repeat(n, 1)
+    #                 demask[:, unmasked] = demask_temp
+    #                 pred_wo_mask = sample_states.q_xs.clone()
+    #                 pred_wo_mask[:, :, mu.MASK_TOKEN_INDEX] = -1e9
+    #                 best_pred = torch.argmax(pred_wo_mask, dim=-1)#_sample_categorical(pred_wo_mask) #
+    #                 _x = (best_pred * demask + mu.MASK_TOKEN_INDEX * (1 - demask))
+    #                 sample_states = self.mask_to_state_batch(_x, model, model_params, ts, reward_oracle, sample_states, full_demask_fn)
+    #             return sample_states
+    #         return sample
+    #     return sampler_n_gen
 
     def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle, full_demask_fn):
         def masked_state_builder(masked_seq, step, parent_state):
             assert type(step) and 0 <= step < len(ts)
             q_xs = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
-            state = self.ProteinDiffusionState(masked_seq, q_xs, 1, parent_state, reward_oracle, full_demask_fn)
+            state = self.ProteinDiffusionState(masked_seq, q_xs, 1, parent_state, reward_oracle, full_demask_fn, record_full_traj=parent_state.record_full_traj)
             return state
         return masked_state_builder
 
@@ -325,6 +334,8 @@ class Interpolant:
             protein_name="",
             hill_climb_iterations=512,
             reward_model=None,
+            reward_model_eval=None,
+            save_full_traj_dataset=False,
         ):
 
         if type(n) != int or n < 1:
@@ -353,7 +364,7 @@ class Interpolant:
             beam_model_params = None if align_type != "beam" else self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
 
             def full_demask_sample(masked_seq, step, reward_oracle, q_xs):
-                initial_state = self.ProteinDiffusionState(masked_seq, q_xs, step, None, reward_oracle, None)
+                initial_state = self.ProteinDiffusionState(masked_seq, q_xs, step, None, reward_oracle, None, record_full_traj=save_full_traj_dataset)
                 steps_left = total_steps - step + 1
                 beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n) 
                 beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
@@ -364,7 +375,7 @@ class Interpolant:
 
             aatypes_0 = _masked_categorical(1, num_res, self._device).long() # single sample
             q_xs = self.generate_state_values(model, single_model_params, aatypes_0, ts[0], ts[1])
-            initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, 1, None, batch_oracle, full_demask_sample)
+            initial_state = self.ProteinDiffusionState(aatypes_0, q_xs, 1, None, batch_oracle, full_demask_sample, record_full_traj=save_full_traj_dataset)
 
             beam_init_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n)
             beam_model_params = self.ProteinModelParams(X_i, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i, cls=cls_i, w=w_i, n=n//beam_w) # n is n // beam_W per child (W children so total n per level)
@@ -386,6 +397,19 @@ class Interpolant:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
         total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
         sampling_wall_times = []
+        concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=torch.int64)
+        full_traj_pkl_path = None
+        if save_full_traj_dataset:
+            full_traj_pkl_path = os.path.join("eval_results", "full_traj_dataset.pkl")
+            os.makedirs(os.path.dirname(full_traj_pkl_path), exist_ok=True)
+            if os.path.exists(full_traj_pkl_path):
+                idx = 1
+                while True:
+                    candidate = os.path.join("eval_results", f"full_traj_dataset_{idx}.pkl")
+                    if not os.path.exists(candidate):
+                        full_traj_pkl_path = candidate
+                        break
+                    idx += 1
         for i, sampler in enumerate(samplers):
             set_seed(seed + i, use_cuda=True)
             if mh_n > 0:
@@ -404,19 +428,62 @@ class Interpolant:
                 r2_trajectories.append(best_sample.r2_traj) # type: ignore
             prot_traj.append([])
             best_samples.append(best_sample)
+
+            concat_best_samples[i] = best_sample.gen_clean_seq()
+            if save_full_traj_dataset:
+                best_sample.full_traj.append(concat_best_samples[i])
+
             curr = best_sample
             while curr is not None:
                 prot_traj[-1].append(curr.masked_seq)
                 curr = curr.parent_state
             prot_traj[-1] = prot_traj[-1][::-1]
 
+            if save_full_traj_dataset:
+                assert reward_model is not None and reward_model_eval is not None, \
+                    "save_full_traj_dataset requires reward_model and reward_model_eval"
+                masked_alphabet = mu.ALPHABET + '-'
+                final_seq = best_sample.full_traj[-1]
+                if final_seq.dim() == 1:
+                    final_seq = final_seq.unsqueeze(0)
+                with torch.no_grad():
+                    X_i = X[i:i+1]
+                    mask_i = mask[i:i+1]
+                    chain_M_i = chain_M[i:i+1]
+                    residue_idx_i = residue_idx[i:i+1]
+                    chain_encoding_all_i = chain_encoding_all[i:i+1]
+                    final_align_reward = reward_model(
+                        X_i, final_seq, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i
+                    ).item()
+                    final_eval_reward = reward_model_eval(
+                        X_i, final_seq, mask_i, chain_M_i, residue_idx_i, chain_encoding_all_i
+                    ).item()
+
+                prot_name = protein_name.lstrip("_")
+                records = [
+                    {
+                        "protein_name": prot_name,
+                        "t": t + 1,
+                        "sequence": "".join([masked_alphabet[x] for x in seq.cpu().numpy().flatten()]),
+                        "final_align_reward": final_align_reward,
+                        "final_eval_reward": final_eval_reward,
+                    }
+                    for t, seq in enumerate(best_sample.full_traj)
+                ]
+                if os.path.exists(full_traj_pkl_path):
+                    with open(full_traj_pkl_path, "rb") as f:
+                        data = pickle.load(f)
+                else:
+                    data = []
+                data.extend(records)
+                with open(full_traj_pkl_path, "wb") as f:
+                    pickle.dump(data, f)
+
         total_reward_traj /= len(samplers)
 
         if mh_n > 0: print(f"Average MH Reward Trajectory: {total_reward_traj}")
-        seq_dtype = prot_traj[0][0].dtype
         # concat_prot_traj = []
         # concat_clean_traj = []
-        concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype)
         # Not using, will currently comment this out
         # for i in range(len(prot_traj[0])):
         #     concat_prot_traj.append(torch.zeros(mask.shape, device=mask.device, dtype=seq_dtype))
@@ -424,8 +491,15 @@ class Interpolant:
         #     for j, best_sample in enumerate(best_samples):
         #         concat_prot_traj[i][j] = prot_traj[j][i]
         #         concat_clean_traj[i][j] = clean_traj[j][i]
-        for i, best_sample in enumerate(best_samples):
-            concat_best_samples[i] = best_sample.gen_clean_seq()
+        # for i, best_sample in enumerate(best_samples):
+        #     concat_best_samples[i] = best_sample.gen_clean_seq()
+            # # print prot traj using alphabet conversion for each state in the loop
+            # if save_full_traj_dataset:
+            #     best_sample.full_traj.append(concat_best_samples[i])
+            #     masked_alphabet = mu.ALPHABET + '-'
+            #     for i, seq in enumerate(best_sample.full_traj):
+            #         print(f"[{i}] {''.join([masked_alphabet[x] for x in seq.cpu().numpy().flatten()])}")
+
         return concat_best_samples, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, total_reward_traj, sampling_wall_times
 
     def sample_gradient(

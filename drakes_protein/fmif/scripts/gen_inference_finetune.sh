@@ -3,9 +3,9 @@
 #SBATCH --account=bgvp-dtai-gh
 #SBATCH --partition=ghx4
 #SBATCH --gpus=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --time=02:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=protein
 #SBATCH --output=worker_%j.out
@@ -20,23 +20,24 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/u/sdickman/DRAKES/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=100
 MODEL="pretrained"
-DATASET="test"
+DATASET="train"
 ALIGN_TYPE='bon'
 ALIGN_N=1
 ORACLE_MODE='ddg'
 LASSO_LAMBDA=0.0001
-SPEC_FEEDBACK_ITS=1
+SPEC_FEEDBACK_ITS=0
 # FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb | gradient
-FEEDBACK_METHOD="spectral"
+FEEDBACK_METHOD="exclusion"
 MAX_SPEC_ORDER=20 # [2, 5, 10, 20]
-NUM_SPEC_MASKS=1024 # spectral / lasso / max-mask: random mask count
+NUM_SPEC_MASKS=2048 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 SPEX_ANALYSIS=False
+SAVE_FULL_TRAJ_DATASET=True
 SEED=0
 GBT_ARGS='{}' #"num_leaves": 50, "learning_rate": 0.01, "max_depth": 5, "lambda_l1": 0.00001}'
-# TARGET_PROTEIN="2KRU"
+# TARGET_PROTEIN="7JJK"
 
 if [ "$REWARD_BATCH_MAX" = "True" ]; then
     REWARD_BATCH_MAX_STR="--reward_batch_max"
@@ -48,6 +49,12 @@ if [ "$SPEX_ANALYSIS" = "True" ]; then
     SPEX_ANALYSIS_STR="--spex_analysis"
 else
     SPEX_ANALYSIS_STR=""
+fi
+
+if [ "$SAVE_FULL_TRAJ_DATASET" = "True" ]; then
+    SAVE_FULL_TRAJ_DATASET_STR="--save_full_traj_dataset"
+else
+    SAVE_FULL_TRAJ_DATASET_STR=""
 fi
 
 OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/spex_logs/proteins/timing_proteins"
@@ -86,6 +93,7 @@ python gen_inference_finetune.py --base_path=$BASE_PATH \
         --feedback_method=$FEEDBACK_METHOD \
         $REWARD_BATCH_MAX_STR \
         $SPEX_ANALYSIS_STR \
+        $SAVE_FULL_TRAJ_DATASET_STR \
         --num_spec_masks=$NUM_SPEC_MASKS \
         --gbt_args="$GBT_ARGS" \
         --lasso_lambda=$LASSO_LAMBDA \

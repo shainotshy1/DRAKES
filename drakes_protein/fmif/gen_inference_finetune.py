@@ -181,6 +181,7 @@ def main():
     argparser.add_argument("--MH_type", type=str, required=False, default="uniform")
     argparser.add_argument("--seed", type=int, required=False, default=0)
     argparser.add_argument("--gbt_args", type=str, required=False, default="")
+    argparser.add_argument("--save_full_traj_dataset", action="store_true", default=False, help="Whether to save the full trajectory dataset")
 
     args = argparser.parse_args()
 
@@ -219,7 +220,8 @@ def main():
                                             seed=args.seed,
                                             gbt_args=args.gbt_args,
                                             spex_analysis=args.spex_analysis,
-                                            hill_climb_iterations=args.hill_climb_iterations)
+                                            hill_climb_iterations=args.hill_climb_iterations,
+                                            save_full_traj_dataset=args.save_full_traj_dataset)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \
