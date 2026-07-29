@@ -336,6 +336,7 @@ class Interpolant:
             reward_model=None,
             reward_model_eval=None,
             save_full_traj_dataset=False,
+            full_traj_pkl_path=None,
         ):
 
         if type(n) != int or n < 1:
@@ -398,18 +399,11 @@ class Interpolant:
         total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
         sampling_wall_times = []
         concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=torch.int64)
-        full_traj_pkl_path = None
-        if save_full_traj_dataset:
-            full_traj_pkl_path = os.path.join("eval_results", "full_traj_dataset.pkl")
+        if save_full_traj_dataset and full_traj_pkl_path is None:
+            full_traj_pkl_path = os.path.join(
+                "eval_results", f"full_traj_dataset_{time.time_ns()}.pkl"
+            )
             os.makedirs(os.path.dirname(full_traj_pkl_path), exist_ok=True)
-            if os.path.exists(full_traj_pkl_path):
-                idx = 1
-                while True:
-                    candidate = os.path.join("eval_results", f"full_traj_dataset_{idx}.pkl")
-                    if not os.path.exists(candidate):
-                        full_traj_pkl_path = candidate
-                        break
-                    idx += 1
         for i, sampler in enumerate(samplers):
             set_seed(seed + i, use_cuda=True)
             if mh_n > 0:

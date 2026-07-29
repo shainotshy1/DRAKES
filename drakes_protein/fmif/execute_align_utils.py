@@ -125,7 +125,8 @@ def generate_execution_func(out_lst,
                             gbt_args="",
                             spex_analysis=False,
                             hill_climb_iterations=512,
-                            save_full_traj_dataset=False):
+                            save_full_traj_dataset=False,
+                            full_traj_pkl_path=None):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
     assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
@@ -263,7 +264,8 @@ def generate_execution_func(out_lst,
                                                                 hill_climb_iterations=hill_climb_iterations,
                                                                 reward_model=reward_model,
                                                                 reward_model_eval=reward_model_eval,
-                                                                save_full_traj_dataset=save_full_traj_dataset)
+                                                                save_full_traj_dataset=save_full_traj_dataset,
+                                                                full_traj_pkl_path=full_traj_pkl_path)
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
             with h5py.File(hdf5_output, 'r+') as f:
