@@ -16,7 +16,9 @@ import copy
 from itertools import chain, combinations
 from sklearn.model_selection import GridSearchCV
 import json
+import time
 from math import comb
+from protein_oracle.utils import set_seed
 
 import spectralexplain as spex
 import numpy as np
@@ -176,7 +178,8 @@ class MHSampler():
         state = self.state_builder(masked_seq, new_step, state) # Re-run diffusion process from this partially masked state
         return state
 
-    def sample_aligned(self, N=0, p=0.5, beta=1.0):
+    def sample_aligned(self, N=0, p=0.5, beta=1.0, feedback_trajectories=1):
+        assert feedback_trajectories == 1, "Feedback trajectories>1 is not supported for MH sampler"
         if self.mh_type == 'uniform':
             return self.sample_aligned_uniform(N, p, beta)
         elif self.mh_type == 'split-gibbs':
@@ -266,7 +269,7 @@ class MHSampler():
         return state
 
 class InteractionSampler():
-    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args="", spex_analysis=False, spectral_method="proxyspex", protein_name="", hill_climb_iterations=512, reward_model=None):
+    def __init__(self, initial_state, depth, feedback_steps, max_spec_order, feedback_method, state_builder, resampler, interpolant, model, model_params, lasso_pen=0.0, num_masks=512, batch_max=False, gbt_args="", spex_analysis=False, spectral_method="proxyspex", protein_name="", hill_climb_iterations=512, reward_model=None, tilt_beta=0.0, compute_statistics=False):
         # Parameter validation
         assert type(depth) is int, "depth must be type 'int'"
         assert depth > 0, "depth must be a positive integer"
@@ -292,6 +295,8 @@ class InteractionSampler():
 
         self.batch_max = batch_max
         self.reward_avg_n = 64
+        
+        self.tilt_beta = tilt_beta
 
         if self.feedback_method == 'hill-climb':
             # Match reward_avg_n so diffusion_qx_calc runs one batched forward of size reward_avg_n
@@ -319,6 +324,9 @@ class InteractionSampler():
         self.model = model
         self.hill_climb_iterations = hill_climb_iterations
         self.reward_model = reward_model
+
+        # Statistics tracking (populated during sample_aligned when enabled)
+        self.compute_statistics = False#compute_statistics
         if self.feedback_method == "gradient":
             assert self.reward_model is not None, "feedback_method='gradient' requires reward_model (differentiable oracle module)"
 
@@ -416,9 +424,11 @@ class InteractionSampler():
     def generate_remasked_state(self, state, mask):
         masked_seq = state.gen_clean_seq()
         masked_seq[0][mask == 0] = mu.MASK_TOKEN_INDEX
+        # new_step = np.sum(mask != 0) / len(mask) * self.interpolant._cfg.num_timesteps # step is proportional to number of masks
+        # new_step = int(np.floor(new_step))
         new_step = 1
 
-        state = self.state_builder(masked_seq, new_step, state) # p(x | x_t)
+        state = self.state_builder(masked_seq, int(new_step), state) # p(x | x_t)
         return state
     
     def generate_remasked_state_batch(self, state, masks):
@@ -504,15 +514,36 @@ class InteractionSampler():
         M = 0
         N = batch.shape[0]
         while M < N:
-            if self.batch_max:
-                out[M:M+self.reward_batch] = torch.max(out[M:M+self.reward_batch], alpha * reward_oracle(batch[M:M+self.reward_batch]))
+            chunk = batch[M:M+self.reward_batch]
+            if self.compute_statistics:
+                if chunk.is_cuda:
+                    torch.cuda.synchronize()
+                t0 = time.perf_counter()
+                reward = reward_oracle(chunk)
+                if chunk.is_cuda:
+                    torch.cuda.synchronize()
+                avg_cost = (time.perf_counter() - t0) / self.reward_batch
+                print(f"Reward oracle average compute cost (latency / reward_batch): {avg_cost:.6f} s")
             else:
-                out[M:M+self.reward_batch] += alpha * reward_oracle(batch[M:M+self.reward_batch])
+                reward = reward_oracle(chunk)
+            if self.batch_max:
+                out[M:M+self.reward_batch] = torch.max(out[M:M+self.reward_batch], alpha * reward)
+            else:
+                out[M:M+self.reward_batch] += alpha * reward
             M += self.reward_batch
 
-    def sample_aligned(self):
+    def sample_aligned(self, feedback_trajectories=1):
+        global_t0 = time.perf_counter()
         t_wall0 = time.perf_counter()
         print("----------------------------------")
+        # Reset statistics accumulators. Diffusion-iteration counters live on the
+        # interpolant since the diffusion loop (with return_early) runs inside its
+        # build_sampler_gen closure.
+        self.interpolant._stats_enabled = self.compute_statistics
+        self.interpolant._stats_diffusion_iters = 0
+        self.interpolant._stats_diffusion_time = 0.0
+        self.interpolant._stats_diffusion_items = 0
+        states = []
         state = self.initial_state
         num_tokens = state.masked_seq.shape[1]
         reward_traj = []
@@ -523,6 +554,7 @@ class InteractionSampler():
             print("Executing realign")
             self.resampler.initial_state = state
             state = self.resampler.sample_aligned()
+                         
             curr_res = state.gen_clean_seq()
             curr_res = curr_res[0]
             seq_str = "".join([ALPHABET[x] for x in curr_res])
@@ -530,10 +562,18 @@ class InteractionSampler():
             # num_untargeted = int(np.sum(untargeted)) # count the number of tokens that we have not already locked via a previous spectral iteration
             if curr_iter == self.feedback_steps: # or num_untargeted == 0: 
                 print(seq_str)
-                reward_traj.append(state.calc_reward().item())
-                state.spec_reward_traj = list(reward_traj)
-                state.r2_traj = list(r2_traj)
-                print(f"Reward Trajectory: {[np.round(r, 4) for r in reward_traj]}")
+                states.append(state)
+                for ft in range(1, feedback_trajectories):
+                    set_seed(ft + 1234, use_cuda=True)
+                    s = self.resampler.sample_aligned()
+                    states.append(s)
+
+                for s in states:
+                    reward_traj_s = list(reward_traj) + [s.calc_reward().item()]
+                    s.spec_reward_traj = reward_traj_s
+                    s.r2_traj = list(r2_traj)
+
+                print(f"Reward Trajectory: {[np.round(r, 4) for r in state.spec_reward_traj]}")
                 break
 
             reward_traj.append(state.calc_reward().item())
@@ -563,7 +603,7 @@ class InteractionSampler():
 
             def value_function(X):
                 num_masks = X.shape[0]
-                print("batch value request:", X.shape)
+                # print("batch value request:", X.shape)
                 assert len(X.shape) == 2 and X.shape[1] == num_tokens, f"Expected input shape (N, {num_tokens}), got {X.shape}"
                 if self.batch_max:
                     alpha = 1.0
@@ -582,6 +622,11 @@ class InteractionSampler():
                         self.calc_batched_reward(rewards_torch[M:M+self.mask_batch], sampled_next_states, state.reward_oracle, alpha=alpha)
                     M += self.mask_batch
                 rewards = rewards_torch.cpu().numpy()
+
+                if self.tilt_beta != 0.0:
+                    f_n = (rewards - np.max(rewards)) / (np.max(rewards) - np.min(rewards))
+                    rewards = np.exp(self.tilt_beta * f_n)
+
                 self.counted += X.shape[0]
                 return rewards
 
@@ -606,7 +651,7 @@ class InteractionSampler():
                 print(f"Number of non-zero Fourier coefficients: {len(fourier_dict)}")
 
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
-                file_name = f'eval_results/spex_logs/r2_data/fourier_dict_{self.protein_name}_{timestamp}.pkl'
+                file_name = f'eval_results/followups/exps7/fourier_dict_{self.protein_name}_{timestamp}.pkl'
 
                 with open(file_name, 'wb') as f:
                     pickle.dump(fourier_dict, f)
@@ -618,8 +663,8 @@ class InteractionSampler():
                 # Get the ground truth predictions from the black-box value function
                 y_true = value_function(heldout_masks)
 
-                np.savetxt(f"eval_results/spex_logs/r2_data/heldout_masks_{self.protein_name}_max={self.batch_max}_{timestamp}.txt", heldout_masks.astype(int), fmt="%d")
-                np.savetxt(f"eval_results/spex_logs/r2_data/y_true_{self.protein_name}_max={self.batch_max}_{timestamp}.txt", y_true, fmt="%.6f")
+                np.savetxt(f"eval_results/followups/exps7/heldout_masks_{self.protein_name}_max={self.batch_max}_beta={self.tilt_beta}_{timestamp}.txt", heldout_masks.astype(int), fmt="%d")
+                np.savetxt(f"eval_results/followups/exps7/y_true_{self.protein_name}_max={self.batch_max}_beta={self.tilt_beta}_{timestamp}.txt", y_true, fmt="%.6f")
 
                 print("Saving heldout masks and true values to text files.")
 
@@ -641,7 +686,8 @@ class InteractionSampler():
                             all_masks[i, :] = 0
                             all_masks[i, ones_idx] = 1
 
-                    print("Calculating reward estimates...")
+
+                    # print("Calculating reward estimates...")
                     if self.batch_max:
                         alpha = 1.0
                         rewards_torch = torch.full((self.num_masks, ), float("-inf"), device=curr_res.device)
@@ -660,6 +706,10 @@ class InteractionSampler():
                         M += self.mask_batch
                     rewards = rewards_torch.cpu().numpy()
                     
+                    if self.tilt_beta != 0.0:
+                        f_n = (rewards - np.max(rewards)) / (np.max(rewards) - np.min(rewards))
+                        rewards = np.exp(self.tilt_beta * f_n)
+
                 print("Executing Edit Position Selection...")
                 if self.feedback_method == 'spectral':
                     print(" [Fitting Fourier Coefficients]", end="", flush=True)
@@ -669,6 +719,7 @@ class InteractionSampler():
                     max_depth = None #target_args.get("max_depth", [3, 5, None])
                     lambda_l1 = [0.0] # 0.00001]#target_args.get("lambda_l1", [0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
 
+                    fit_start = time.perf_counter()
                     if self.spectral_method == "proxyspex":
                         best_model, cv_r2 = lgboost_fit(all_masks, rewards, num_leaves=num_leaves, learning_rate=learning_rate, max_depth=max_depth, lambda_l1=lambda_l1)
                         fourier_dict = lgboost_to_fourier(best_model)
@@ -693,14 +744,19 @@ class InteractionSampler():
                         print(f"Number of non-zero Fourier coefficients: {len(fourier_dict)}")
                     else:
                         raise ValueError("Spectral method is invalid")
+                    fit_time = time.perf_counter() - fit_start
+                    print(f" [Fourier fitting overhead: {fit_time:.4f} s]")
 
                     sorted_fourier = sorted(fourier_dict.items(), key=lambda item: abs(item[1]), reverse=True)
                     fourier_dict_trunc = dict(sorted_fourier[:2000])
 
                     print(f" => r2: {np.round(cv_r2, 4)}")
                     print(" [Finding optimal mask]")
+                    solve_start = time.perf_counter()
                     self.exact_solver.load_fourier_dictionary(fourier_dict_trunc)
                     best_demask = 1 - np.array(self.exact_solver.solve()) # Flip definition of 1 to being "kept"
+                    solve_time = time.perf_counter() - solve_start
+                    print(f" [Fourier solving overhead: {solve_time:.4f} s]")
 
                     top_spec_interactions.append([])
                     for interactions, coefficient in list(fourier_dict_trunc.items())[:10]: # Saving top interactions)
@@ -866,7 +922,7 @@ class InteractionSampler():
                     tokens[j] = '-'
 
             if self.feedback_method == 'spectral' or self.feedback_method == 'lasso': r2_traj.append(cv_r2)
-
+               
             state = self.generate_remasked_state(state, mask)
             state.spec_selections = spec_selections
             state.top_spec_interactions = top_spec_interactions
@@ -879,8 +935,54 @@ class InteractionSampler():
             curr_iter += 1
         elapsed = time.perf_counter() - t_wall0
         self.last_sample_wall_time_s = elapsed
-        state.sampling_wall_time_s = elapsed
-        return state
+        for s in states:
+            s.sampling_wall_time_s = elapsed
+
+        if self.compute_statistics:
+            self.interpolant._stats_enabled = False
+            diff_iters = getattr(self.interpolant, "_stats_diffusion_iters", 0)
+            diff_time = getattr(self.interpolant, "_stats_diffusion_time", 0.0)
+            diff_items = getattr(self.interpolant, "_stats_diffusion_items", 0)
+            total_reward_calls = self.num_masks * self.feedback_steps
+            diff_latency_avg = (diff_time / diff_items) if diff_items > 0 else float("nan")
+            reward_latency_avg = self._measure_reward_oracle_latency(state)
+            print("========== InteractionSampler statistics ==========")
+            print(f"Total diffusion call iterations: {diff_iters}")
+            print(f"Total reward oracle calls: {total_reward_calls} (num_masks={self.num_masks} * feedback_steps={self.feedback_steps})")
+            print(f"Diffusion iteration latency average (per-item across batch): {diff_latency_avg:.6f} s")
+            print(f"Reward oracle latency average (per-item across batch): {reward_latency_avg:.6f} s")
+            print("===================================================")
+
+        global_elapsed = time.perf_counter() - global_t0
+        print(f"Global elapsed time: {global_elapsed:.6f} s")
+
+        if feedback_trajectories > 1:
+            return states
+        else:
+            return state
+
+    def _measure_reward_oracle_latency(self, state):
+        """Average per-item latency of a batched reward_oracle call.
+
+        Builds a batch of reward_batch identical sequences and times one batched
+        reward_oracle call (no reward_avg_n resampling and no diffusion step), then
+        divides by the batch size for the average per-item latency. A warmup call is
+        issued first so the timed call excludes one-time CUDA/init overhead.
+        """
+        seq = state.gen_clean_seq()
+        if seq.shape[0] != 1:
+            seq = seq[:1]
+        batch = seq.repeat(self.reward_batch, 1)
+        is_cuda = batch.is_cuda
+        with torch.no_grad():
+            state.reward_oracle(batch)  # warmup
+            if is_cuda:
+                torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            state.reward_oracle(batch)
+            if is_cuda:
+                torch.cuda.synchronize()
+        return (time.perf_counter() - t0) / self.reward_batch
     
 class BeamSampler(TreeStateSampler):   
     def __init__(self, sampler_gen, initial_state, depth, child_n, W, save_visual=False, soft=False, reward_threshold=None):
@@ -908,7 +1010,7 @@ class BeamSampler(TreeStateSampler):
 
             next_states = []
             for state in states:
-                assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
+                # assert isinstance(state, AlignSamplerState), "State must be instance of AlignSamplerState"
                 # if state.return_early(): 
                 #     next_states.append(state)
                 #     continue
@@ -917,12 +1019,12 @@ class BeamSampler(TreeStateSampler):
                 n_ = self.child_n if i == 0 else self.child_n // self.W
                 sampler = self.sampler_gen(state, n_)
                 bon_sampler = BONSampler(sampler=sampler, W=w_, soft=self.soft)
-                samples, top_indices, rewards = bon_sampler.sample_aligned() # type: ignore
+                samples, top_indices, rewards = bon_sampler.sample_aligned()
                 next_states.extend([samples.get_state(i.item()) for i in top_indices])
-                if self.save_visual:
-                    gen_states[-1].append([int(k.item()) for k in top_indices])
-                    num_states[-1].append(n_)
-                    labels[-1].append([f"{r.item():.1e}" for r in rewards])
+                # if self.save_visual:
+                #     gen_states[-1].append([int(k.item()) for k in top_indices])
+                #     num_states[-1].append(n_)
+                #     labels[-1].append([f"{r.item():.1e}" for r in rewards])
                      
             states = next_states
         

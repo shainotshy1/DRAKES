@@ -259,6 +259,7 @@ class Interpolant:
                     if sample_states.step >= num_timesteps - 1:
                         break
                     if sample_states.return_early():
+                        # print(f"Returning early at step {sample_states.step}")
                         sample_states = sample_states.copy_to_next_state()
                         continue
                     if i == 0:
@@ -266,7 +267,18 @@ class Interpolant:
                     else:
                         _x = _sample_categorical(sample_states.q_xs, n=1)
                     params = beam_model_params if (beam_model_params is not None and state.step != 1) else model_params # This model params is size n // W since each child generates this many samples instead of n, so the total is n/W * W = n
-                    sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states, full_demask_fn)
+                    if getattr(self, "_stats_enabled", False):
+                        if torch.cuda.is_available():
+                            torch.cuda.synchronize()
+                        _stat_t0 = time.perf_counter()
+                        sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states, full_demask_fn)
+                        if torch.cuda.is_available():
+                            torch.cuda.synchronize()
+                        self._stats_diffusion_time += time.perf_counter() - _stat_t0
+                        self._stats_diffusion_iters += 1
+                        self._stats_diffusion_items += int(_x.shape[0])
+                    else:
+                        sample_states = self.mask_batch_to_state(_x, model, params, ts, reward_oracle, sample_states, full_demask_fn)
                 if state != sample_states: # This condition is true if have we reach sample_states.step = num_timesteps - 1; i.e reached the end
                     sample_states.parent_state = state # Override to make the parent state include the whole trajectory
                 return sample_states
@@ -302,9 +314,9 @@ class Interpolant:
 
     def gen_masked_state_builder(self, model, single_model_params, ts, reward_oracle, full_demask_fn):
         def masked_state_builder(masked_seq, step, parent_state):
-            assert type(step) and 0 <= step < len(ts)
+            assert type(step) is int and 0 <= step < len(ts)
             q_xs = self.generate_state_values(model, single_model_params, masked_seq, ts[step - 1], ts[step])
-            state = self.ProteinDiffusionState(masked_seq, q_xs, 1, parent_state, reward_oracle, full_demask_fn, record_full_traj=parent_state.record_full_traj)
+            state = self.ProteinDiffusionState(masked_seq, q_xs, step, parent_state, reward_oracle, full_demask_fn, record_full_traj=parent_state.record_full_traj)
             return state
         return masked_state_builder
 
@@ -337,6 +349,9 @@ class Interpolant:
             reward_model_eval=None,
             save_full_traj_dataset=False,
             full_traj_pkl_path=None,
+            tilt_beta=1.0,
+            compute_statistics=False,
+            num_feedback_trajectories=1,
         ):
 
         if type(n) != int or n < 1:
@@ -387,7 +402,7 @@ class Interpolant:
             if mh_n > 0:
                 sampler = MHSampler(initial_state, total_steps, state_builder, resampler, mh_type)
             else:
-                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda,num_masks=num_spec_masks, batch_max=reward_batch_max, gbt_args=gbt_args, spex_analysis=spex_analysis, protein_name=protein_name, hill_climb_iterations=hill_climb_iterations, reward_model=reward_model)         
+                sampler = InteractionSampler(initial_state, total_steps, spec_feedback_its, max_spec_order, feedback_method, self.gen_masked_state_builder(model, single_model_params, ts, batch_oracle, full_demask_sample), resampler, interpolant=self, model=model, model_params=single_model_params, lasso_pen=lasso_lambda,num_masks=num_spec_masks, batch_max=reward_batch_max, gbt_args=gbt_args, spex_analysis=spex_analysis, protein_name=protein_name, hill_climb_iterations=hill_climb_iterations, reward_model=reward_model, tilt_beta=tilt_beta, compute_statistics=compute_statistics)         
 
             samplers.append(sampler)
         best_samples = [] # (num_batch, )
@@ -398,40 +413,46 @@ class Interpolant:
             top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories = None, None, None, None
         total_reward_traj = np.zeros((mh_n + 1, ), dtype=float)
         sampling_wall_times = []
-        concat_best_samples = torch.zeros(mask.shape, device=mask.device, dtype=torch.int64)
+        concat_best_samples = torch.zeros((mask.shape[0] * num_feedback_trajectories, mask.shape[1]), device=mask.device, dtype=torch.int64)
         if save_full_traj_dataset and full_traj_pkl_path is None:
             full_traj_pkl_path = os.path.join(
                 "eval_results", f"full_traj_dataset_{time.time_ns()}.pkl"
             )
             os.makedirs(os.path.dirname(full_traj_pkl_path), exist_ok=True)
+
+        params = {
+            "feedback_trajectories": num_feedback_trajectories,
+        }
+        if mh_n > 0:
+            mh_params = {
+                "N": mh_n, 
+                "p": mh_p, 
+                "beta": mh_b,
+            }
+            params.update(mh_params)
+
         for i, sampler in enumerate(samplers):
             set_seed(seed + i, use_cuda=True)
+            best_sample = sampler.sample_aligned(**params)
             if mh_n > 0:
-                best_sample = sampler.sample_aligned(N=mh_n, p=mh_p, beta=mh_b)
                 total_reward_traj += np.array(best_sample.reward_traj)
-            else:
-                best_sample = sampler.sample_aligned()
 
             wt = getattr(best_sample, "sampling_wall_time_s", None)
             sampling_wall_times.append(float(wt) if wt is not None else float("nan"))
 
-            if spec_feedback_its > 0:
-                top_spec_interactions.append(best_sample.top_spec_interactions) # type: ignore
-                spec_selections.append(best_sample.spec_selections) # type: ignore
-                spec_trajectories.append(best_sample.spec_reward_traj) # type: ignore
-                r2_trajectories.append(best_sample.r2_traj) # type: ignore
-            prot_traj.append([])
-            best_samples.append(best_sample)
+            if type(best_sample) is not list:
+                best_sample = [best_sample]
 
-            concat_best_samples[i] = best_sample.gen_clean_seq()
-            if save_full_traj_dataset:
-                best_sample.full_traj.append(concat_best_samples[i])
-
-            curr = best_sample
-            while curr is not None:
-                prot_traj[-1].append(curr.masked_seq)
-                curr = curr.parent_state
-            prot_traj[-1] = prot_traj[-1][::-1]
+            for si, s in enumerate(best_sample):
+                if spec_feedback_its > 0:
+                    top_spec_interactions.append(s.top_spec_interactions) # type: ignore
+                    spec_selections.append(s.spec_selections) # type: ignore
+                    spec_trajectories.append(s.spec_reward_traj) # type: ignore
+                    r2_trajectories.append(s.r2_traj) # type: ignore
+                prot_traj.append([])
+                clean_seq = s.gen_clean_seq()
+                concat_best_samples[si + i * num_feedback_trajectories] = clean_seq
+                s.full_traj.append(clean_seq)
 
             if save_full_traj_dataset:
                 assert reward_model is not None and reward_model_eval is not None, \

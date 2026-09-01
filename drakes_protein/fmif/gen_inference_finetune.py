@@ -137,6 +137,9 @@ def generate_output_fn(args):
         out_name += f"_W={args.beam_w}"
     if args.align_type != "bon":
         out_name += f"_stepsperlevel={args.steps_per_level}"
+    
+    if args.tilt_beta != 0.0:
+        out_name += f"_tilt_beta={args.tilt_beta}"
 
     if args.num_workers > 1:
         out_name += f"_w{args.worker_id}"
@@ -154,7 +157,7 @@ def main():
     argparser.add_argument("--dataset", required=True, choices=['validation', 'test', 'train', 'single'], help="Dataset must be on of ['validation', 'test', 'train']")
     argparser.add_argument("--output_folder", type=str, required=True, help="Output folder for protein generations")
     argparser.add_argument("--align_type", choices=['bon', 'beam'], required=True)
-    argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'scrmsd'], required=True)
+    argparser.add_argument("--oracle_mode", choices=['ddg', 'protgpt', 'scrmsd', 'balanced'], required=True)
     argparser.add_argument("--align_n", type=int, required=True, help="Number of samples parameter for alignment techniques")
     argparser.add_argument("--num_workers", type=int, required=True, help="Number of workers assigned to the inference task")
     argparser.add_argument("--worker_id", type=int, required=True, help="ID of the current worker")
@@ -183,6 +186,9 @@ def main():
     argparser.add_argument("--gbt_args", type=str, required=False, default="")
     argparser.add_argument("--save_full_traj_dataset", action="store_true", default=False, help="Whether to save the full trajectory dataset")
     argparser.add_argument("--full_traj_pkl_path", type=str, required=False, default=None, help="Path to save the full trajectory dataset")
+    argparser.add_argument("--exponential_tilt", action='store_true', default=False, help="Whether to use exponential tilt to upweight high reward samples")
+    argparser.add_argument("--tilt_beta", type=float, required=False, default=1.0, help="Beta parameter for exponential tilt")
+    argparser.add_argument("--num_feedback_trajectories", type=int, required=False, default=1, help="Number of trajectories to sample for each initial protein sequence")
 
     args = argparser.parse_args()
 
@@ -195,6 +201,10 @@ def main():
     if args.oracle_mode == 'scrmsd':
         import pyrosetta
         pyrosetta.init(extra_options="-out:level 100")
+
+    tilt_beta = args.tilt_beta
+    if not args.exponential_tilt:
+        tilt_beta = 0.0
 
     results = []
     execution_func = generate_execution_func(results,       \
@@ -223,7 +233,9 @@ def main():
                                             spex_analysis=args.spex_analysis, \
                                             hill_climb_iterations=args.hill_climb_iterations, \
                                             save_full_traj_dataset=args.save_full_traj_dataset, \
-                                            full_traj_pkl_path=args.full_traj_pkl_path)
+                                            full_traj_pkl_path=args.full_traj_pkl_path, \
+                                            tilt_beta=tilt_beta, \
+                                            num_feedback_trajectories=args.num_feedback_trajectories)
     
     execute_on_dataset(execution_func,                  \
                     args.base_path,                     \

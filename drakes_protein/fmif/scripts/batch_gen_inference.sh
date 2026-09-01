@@ -3,7 +3,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-NUM_WORKERS=10
+NUM_WORKERS=12
 NUM_COMPUTE=-1  # Number of actual jobs to run in parallel. Set to -1 to disable grouping.
 
 if [ "$NUM_COMPUTE" -eq -1 ]; then
@@ -15,7 +15,7 @@ if [ "$NUM_COMPUTE" -eq -1 ]; then
     done
 else
     # Assign jobs evenly among compute groups
-    JOB_IDS=()
+    # JOB_IDS=()
     # for ((c=0; c<NUM_COMPUTE; c++)); do
     #     JOB_IDS[$c]=""
     # done

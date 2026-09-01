@@ -11,7 +11,7 @@ from protein_oracle.data_utils import ALPHABET
 from model_utils import ProteinMPNNFMIF # type: ignore
 from fm_utils import Interpolant # type: ignore
 
-def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_selections=None, spec_trajectories=None, r2_trajectories=None, sampling_wall_times=None):
+def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_selections=None, spec_trajectories=None, r2_trajectories=None, sampling_wall_times=None, num_feedback_trajectories=1):
     with torch.no_grad():
         results_list = []
         true_detok_seq = "".join([ALPHABET[x] for _ix, x in enumerate(S[0]) if mask_for_loss[0][_ix] == 1])
@@ -20,7 +20,7 @@ def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_
             seq_revovery = (S_sp[_it] == S[0]).float().mean().item()
             resultdf = pd.DataFrame(columns=['seq_recovery'])
             resultdf.loc[0] = [seq_revovery]
-            resultdf['seq'] = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it][_ix] == 1])
+            resultdf['seq'] = "".join([ALPHABET[x] for _ix, x in enumerate(ssp) if mask_for_loss[_it // num_feedback_trajectories][_ix] == 1])
             resultdf['true_seq'] = true_detok_seq
             resultdf['protein_name'] = batch['protein_name'][0]
             if top_spec_interactions is not None: resultdf['top_spec_interactions'] = str(top_spec_interactions[_it])
@@ -28,7 +28,7 @@ def gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions=None, spec_
             if spec_trajectories is not None: resultdf['spec_trajectory'] = str(spec_trajectories[_it])
             if r2_trajectories is not None: resultdf['r2_trajectory'] = str(r2_trajectories[_it])
             if sampling_wall_times is not None:
-                resultdf['sampling_wall_time_s'] = sampling_wall_times[_it]
+                resultdf['sampling_wall_time_s'] = sampling_wall_times[_it // num_feedback_trajectories]
             results_list.append(resultdf)
 
     return results_list
@@ -43,7 +43,7 @@ class InterpolantConfig:
 def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, chain_encoding_all, mask_for_loss, protein_name, test_name, mode="ddg", alpha=1.0):
     cached_batches = {}
 
-    valid_modes = ["ddg", "protgpt", "scrmsd"]
+    valid_modes = ["ddg", "protgpt", "scrmsd", "balanced"]
     assert mode in valid_modes, f"Invalid mode: {mode} (Choose from {valid_modes})"
     assert mode != "balanced" or (type(alpha) is float and 0 <= alpha <= 1), "If mode is 'balanced', alpha must be a float between 0 and 1"
 
@@ -84,17 +84,20 @@ def build_reward_oracle(reward_model, device, X, mask, chain_M, residue_idx, cha
         from align_scrmsd_oracle import build_scRMSD_oracle # type: ignore
         scrmsd_oracle = build_scRMSD_oracle(protein_name, mask_for_loss, test_name, device_id=device.index)
         return scrmsd_oracle
+    elif mode == 'balanced':
+        protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
+
+        from align_loglikelihood_oracle import build_protgpt_oracle # type: ignore
+        protgpt_oracle = build_protgpt_oracle(device)
+
+        def balanced_reward(samples):
+            ddg_rewards = ddg_oracle(samples)
+            prot_gpt_rewards = protgpt_oracle(samples)
+            return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
+        return balanced_reward
     else:
         raise ValueError()
-    # if mode == 'protgpt':
-    #     return protgpt_oracle
-    # elif mode == 'balanced':
-    #     protgpt_scaling = 0.005 # This scaling is to make choosing the alpha value more linear, it is okay that it is hard coded as we can choose alpha to compensate
-    #     def balanced_reward(samples):
-    #         ddg_rewards = ddg_oracle(samples)
-    #         prot_gpt_rewards = protgpt_oracle(samples)
-    #         return alpha * ddg_rewards + (1 - alpha) * prot_gpt_rewards * protgpt_scaling
-    #     return balanced_reward
+
 
 def generate_execution_func(out_lst, 
                             device, 
@@ -126,14 +129,17 @@ def generate_execution_func(out_lst,
                             spex_analysis=False,
                             hill_climb_iterations=512,
                             save_full_traj_dataset=False,
-                            full_traj_pkl_path=None):
+                            full_traj_pkl_path=None,
+                            tilt_beta=1.0,
+                            num_feedback_trajectories=1):
     assert model in ['pretrained', 'drakes'], f"Encountered model value '{model}' which is not in ['pretrained' or 'drakes']"
     assert align_type in ['bon', 'beam'], f"Encountered align_type value '{align_type}' which is not in ['bon', 'beam']"
     assert type(N) is int and N > 0
     assert type(lasso_lambda) is float
-    assert oracle_mode in ['ddg', 'protgpt', 'scrmsd']
+    assert oracle_mode in ['ddg', 'protgpt', 'scrmsd', 'balanced']
     assert oracle_mode != 'balanced' or type(oracle_alpha) is float and 0 <= oracle_alpha <= 1
     assert feedback_method in ['spectral', 'lasso', 'exclusion', 'inclusion', 'max-mask', 'hill-climb', 'gradient']
+    assert type(num_feedback_trajectories) is int and num_feedback_trajectories > 0
 
     logging.info(f"Generating dataset evaluator (Repeats per protein: {repeat_num})")
 
@@ -219,9 +225,12 @@ def generate_execution_func(out_lst,
             func_descr += f", lassolambda={lasso_lambda}"
         if feedback_method == "spectral":
             func_descr += f", {gbt_args}"
+    if tilt_beta != 0.0:
+        func_descr += f", tilt_beta={tilt_beta}"
     if mh_n > 0:
         func_descr += f", MH_TYPE={mh_type}, MH_N={mh_n}, P={mh_p}, Beta={mh_b}"
-
+    if num_feedback_trajectories > 1:
+        func_descr += f", num_feedback_trajectories={num_feedback_trajectories}"
     logging.info(f"Setup execution function ({func_descr})")
     def validation_func(batch):
         X, S, mask, chain_M, residue_idx, chain_encoding_all, S_wt = featurize(batch, device)
@@ -265,7 +274,9 @@ def generate_execution_func(out_lst,
                                                                 reward_model=reward_model,
                                                                 reward_model_eval=reward_model_eval,
                                                                 save_full_traj_dataset=save_full_traj_dataset,
-                                                                full_traj_pkl_path=full_traj_pkl_path)
+                                                                full_traj_pkl_path=full_traj_pkl_path,
+                                                                tilt_beta=tilt_beta,
+                                                                num_feedback_trajectories=num_feedback_trajectories)
         hdf5_output = '/home/shai/BLISS_Experiments/DRAKES/DRAKES/drakes_protein/fmif/eval_results/hdf5_data/mh_trajectories.hdf5'
         if mh_n > 0:
             with h5py.File(hdf5_output, 'r+') as f:
@@ -279,7 +290,7 @@ def generate_execution_func(out_lst,
                 print("Saved trajectory to hdf5:", name)
 
         mask_for_loss = mask*chain_M
-        results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, sampling_wall_times)
+        results_list = gen_results(S_sp, S, batch, mask_for_loss, top_spec_interactions, spec_selections, spec_trajectories, r2_trajectories, sampling_wall_times, num_feedback_trajectories)
         out_lst.extend(results_list)
 
     return validation_func
