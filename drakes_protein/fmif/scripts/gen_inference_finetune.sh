@@ -5,10 +5,10 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=02:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=protein
-#SBATCH --output=exp3_%j.out
+#SBATCH --output=exp6_%j.out
 
 if [ -z "$WORKER_ID" ]; then
   WORKER_ID=0
@@ -20,30 +20,30 @@ echo "Number of workers: $NUM_WORKERS"
 
 BASE_PATH="/u/sdickman/DRAKES/data_and_model"
 BATCH_REPEAT=1
-BATCH_SIZE=1
+BATCH_SIZE=15
 BEAM_W=1
 MODEL="pretrained"
-DATASET="test"
+DATASET="single"
 ALIGN_TYPE='bon'
 ALIGN_N=1
-ORACLE_MODE='ddg'
+ORACLE_MODE='balanced'
 LASSO_LAMBDA=0.0001
-ORACLE_ALPHA=0.5
-SPEC_FEEDBACK_ITS=1
+ORACLE_ALPHA=0.9
+SPEC_FEEDBACK_ITS=5
 # FEEDBACK_METHOD: spectral | lasso | max-mask | exclusion | inclusion | hill-climb | gradient
-FEEDBACK_METHOD="spectral"
-MAX_SPEC_ORDER=20 # [2, 5, 10, 20]
-NUM_SPEC_MASKS=8192 # spectral / lasso / max-mask: random mask count
+FEEDBACK_METHOD="lasso"
+MAX_SPEC_ORDER=10
+NUM_SPEC_MASKS=2048 # spectral / lasso / max-mask: random mask count
 REWARD_BATCH_MAX=False
 EXPONENTIAL_TILT=False
 TILT_BETA=0.25
-SPEX_ANALYSIS=False
-NUM_FEEDBACK_TRAJECTORIES=20
+SPEX_ANALYSIS=False 
+NUM_FEEDBACK_TRAJECTORIES=1
 SAVE_FULL_TRAJ_DATASET=False
 TRAJ_DATASET_PATH="" #"/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/full_traj_${DATASET}_${MODEL}_${WORKER_ID}.pkl" # unique to worker id
 SEED=0
 GBT_ARGS='{}' #"num_leaves": 50, "learning_rate": 0.01, "max_depth": 5, "lambda_l1": 0.00001}'
-TARGET_PROTEIN="r6_560_TrROS_Hall"
+TARGET_PROTEIN="2KRU" #"r6_560_TrROS_Hall"
 
 if [ "$REWARD_BATCH_MAX" = "True" ]; then
     REWARD_BATCH_MAX_STR="--reward_batch_max"
@@ -69,7 +69,7 @@ else
     EXPONENTIAL_TILT_STR=""
 fi
 
-OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/exps3"
+OUTPUT_FOLDER="/u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/exps6"
 
 eval "$(micromamba shell hook --shell bash)"
 

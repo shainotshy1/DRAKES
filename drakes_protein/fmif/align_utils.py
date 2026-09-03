@@ -294,7 +294,7 @@ class InteractionSampler():
         self.reward_batch=min(max_batch, self.num_masks)
 
         self.batch_max = batch_max
-        self.reward_avg_n = 64
+        self.reward_avg_n = 16
         
         self.tilt_beta = tilt_beta
 

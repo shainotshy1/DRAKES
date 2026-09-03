@@ -3,7 +3,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-NUM_WORKERS=12
+NUM_WORKERS=6
 NUM_COMPUTE=-1  # Number of actual jobs to run in parallel. Set to -1 to disable grouping.
 
 if [ "$NUM_COMPUTE" -eq -1 ]; then
