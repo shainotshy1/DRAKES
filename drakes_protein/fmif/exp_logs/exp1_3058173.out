@@ -1,0 +1,1851 @@
+Running worker with ID: 0
+Number of workers: 1
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 30)
+INFO:root:Loading PRETRAINED model state dict (/u/sdickman/DRAKES/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=ddg, N=100)
+INFO:root:Reading protein set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Reading validation set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/processed_data/dpo_test_dict_wt.pkl)
+INFO:root:Executing on test set (Batch repeats: 1, Proteins per batch: 1, Total proteins: 12)
+INFO:root:WorkerID: 0, Assigned proteins: 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: r6_560_TrROS_Hall
+100%|██████████| 1/1 [00:40<00:00, 40.33s/it]100%|██████████| 1/1 [00:40<00:00, 40.33s/it]
+----------------------------------
+Executing realign
+APPPPVVTVLVAVTQPDGRTVLRRVTLTGLPRPLRPGDVVTLPETGERATVVEVLP
+Reward Trajectory: [np.float64(0.5494)]
+Global elapsed time: 1.312749 s
+----------------------------------
+Executing realign
+APPPRTVTVLVAVTLPDGKTVLVEVTLTGLPRELRPGDVVRLPETGLEARIVRVLP
+Reward Trajectory: [np.float64(0.5704)]
+Global elapsed time: 1.146950 s
+----------------------------------
+Executing realign
+APPPRVVRVVVAVTEDDGKTVLVEVTLEGLPRELRPGDTVTLPETGRKATVVRVLP
+Reward Trajectory: [np.float64(0.5882)]
+Global elapsed time: 1.114823 s
+----------------------------------
+Executing realign
+APPPRVVRVLVAVTLPDGKVVLREVTLEGLPRELRPGDRVTLPETGEEATIVRILP
+Reward Trajectory: [np.float64(0.6115)]
+Global elapsed time: 1.133288 s
+----------------------------------
+Executing realign
+AAPPRTVTVRVAVTNADGKTELVEVTLTGLPRELKPGDVVTLPETGKKATIVEVLP
+Reward Trajectory: [np.float64(0.5402)]
+Global elapsed time: 1.121638 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTLPDGKTELRTVTLTGLPRELKPGDVVTLPETGQEATIVEVLP
+Reward Trajectory: [np.float64(0.5974)]
+Global elapsed time: 1.112766 s
+----------------------------------
+Executing realign
+AVPPRVVTVVVAVTLPDGRVVEREVTLTGLPRELRPGDVVTLPETGLEARVLRVLP
+Reward Trajectory: [np.float64(0.5448)]
+Global elapsed time: 1.121217 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTQPDGKTTLRRVTLTGLPRELRPGDVVTLPETGEEATVVEVLP
+Reward Trajectory: [np.float64(0.5735)]
+Global elapsed time: 1.112021 s
+----------------------------------
+Executing realign
+APPPRVVTVRVAVTQPDGKTVLREVTLEGLPRELKPGDVVTLPETGEEATIVEVLP
+Reward Trajectory: [np.float64(0.5669)]
+Global elapsed time: 1.121562 s
+----------------------------------
+Executing realign
+APPPRVVEVLVAVTLPDGRTVLRRVRLEGLPRELRPGDVVRLPETGEEAVVVEVLP
+Reward Trajectory: [np.float64(0.6034)]
+Global elapsed time: 1.118558 s
+----------------------------------
+Executing realign
+APPPRVVRVLVAVREPDGRVTLREVTLTGLPRELRPGDVVTLPETGKRATVVRILP
+Reward Trajectory: [np.float64(0.5324)]
+Global elapsed time: 1.125770 s
+----------------------------------
+Executing realign
+APPPRVVRVLVEVTQPDGRTVLVEVELTGLPRELRPGDVVTLPETGQRARIVRVLP
+Reward Trajectory: [np.float64(0.5867)]
+Global elapsed time: 1.117115 s
+----------------------------------
+Executing realign
+APPPRVVTVRVAVTEDDGKTVLVEVTLTGLPRELRPGDTVTLPETGRKATVVEVLP
+Reward Trajectory: [np.float64(0.5803)]
+Global elapsed time: 1.125550 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTLPDGKTVLVRVTLTGLPRELRPGDVVTLPETGLEATVVEILP
+Reward Trajectory: [np.float64(0.5833)]
+Global elapsed time: 1.115856 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTQPDGKTVLREVTLSGLPRELRPGDIVTLPETGEKARIVKVLP
+Reward Trajectory: [np.float64(0.6068)]
+Global elapsed time: 1.120663 s
+----------------------------------
+Executing realign
+AAPPRRVRVLVAVTLPDGETRLVEVELEGLPRELRPGDVVTLPETGLEARIVRVLP
+Reward Trajectory: [np.float64(0.5367)]
+Global elapsed time: 1.116139 s
+----------------------------------
+Executing realign
+AAPPRVVTVRVAVTNPDGKTTLVEVTLEGLPRELKPGDVVTLPETGQKATIVEVLP
+Reward Trajectory: [np.float64(0.534)]
+Global elapsed time: 1.115114 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTQPDGKTVLRRVTLTGLPRELKPGDVVTLPETGEEATVVEVLP
+Reward Trajectory: [np.float64(0.6011)]
+Global elapsed time: 1.124128 s
+----------------------------------
+Executing realign
+APPPRVVRVLVAVTEPDGKTTLVEVTLEGLPRELKPGDVVTLPETGKEATIVEVLP
+Reward Trajectory: [np.float64(0.5367)]
+Global elapsed time: 1.115580 s
+----------------------------------
+Executing realign
+AAPPRVVTVLVAVTEPDGRTVLRRVTLTGLPRELRPGDVVTLPETGQEATVVEVLP
+Reward Trajectory: [np.float64(0.5887)]
+Global elapsed time: 1.112027 s
+----------------------------------
+Executing realign
+APPPRRVRVLVAVTEPDGRTRLVEVELTGLPRELRPGDVVTLPETGREATIVEVLP
+Reward Trajectory: [np.float64(0.5583)]
+Global elapsed time: 1.120985 s
+----------------------------------
+Executing realign
+AAPPRVVTVRVAVTQPDGKTELVEVTLTGLPRELKPGDVVTLPETGQKATIVEVLP
+Reward Trajectory: [np.float64(0.53)]
+Global elapsed time: 1.117778 s
+----------------------------------
+Executing realign
+AAPPRVVTVRVAVTEPDGKVVLKDVTLTGLPRELKPGDVVTLPETGQEATIVEIIP
+Reward Trajectory: [np.float64(0.5139)]
+Global elapsed time: 1.116996 s
+----------------------------------
+Executing realign
+APPPRVVRVVVAVELPDGRVVEVEVELTGLPRELRPGDTVRLPETGQEAVIRRILP
+Reward Trajectory: [np.float64(0.5403)]
+Global elapsed time: 1.113593 s
+----------------------------------
+Executing realign
+APPPRRVTVLVAVTEPDGRTVLREVTLEGLPRELKPGDVVTLPETGKEATIVRVLP
+Reward Trajectory: [np.float64(0.5557)]
+Global elapsed time: 1.114530 s
+----------------------------------
+Executing realign
+APPPRVVTVLVAVTLPDGRTVLREVTLTGLPRELRPGDVVTLPETGQRATVVRVLP
+Reward Trajectory: [np.float64(0.5658)]
+Global elapsed time: 1.107334 s
+----------------------------------
+Executing realign
+APPPRTVTVLVAVTQPDGKTVLREVTLTGLPRELRPGDVVTLPETGQEATIVRILP
+Reward Trajectory: [np.float64(0.5731)]
+Global elapsed time: 1.123221 s
+----------------------------------
+Executing realign
+APPPRVVRVLVAVTEPDGKTVLREVTLSGLPRELKPGDVVTLPETGQEATIVEVLP
+Reward Trajectory: [np.float64(0.5965)]
+Global elapsed time: 1.115658 s
+----------------------------------
+Executing realign
+VPPPRVVRVRVAVTEPDGKVVERTVTLTGLPRELRPGDVVTLPETGQEATILEVLP
+Reward Trajectory: [np.float64(0.5765)]
+Global elapsed time: 1.106999 s
+----------------------------------
+Executing realign
+AAPPRTVRVLVAVTLPDGRTVEREVTLTGLPRELKPGDVVRLPETGELATVVRVLP
+Reward Trajectory: [np.float64(0.5722)]
+Global elapsed time: 1.123840 s
+Progress: 1 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: HEEH_KT_rd6_0746
+100%|██████████| 1/1 [00:30<00:00, 30.13s/it]100%|██████████| 1/1 [00:30<00:00, 30.13s/it]
+----------------------------------
+Executing realign
+SAAVEEALRALAAARRPLYVDGRRLEIGSAAFRAYLERAIAEA
+Reward Trajectory: [np.float64(0.437)]
+Global elapsed time: 0.953077 s
+----------------------------------
+Executing realign
+DAAVEEAIRALAAANRPLYVDGRTLEIGSAEFRAYVRRALAEA
+Reward Trajectory: [np.float64(0.4091)]
+Global elapsed time: 0.969012 s
+----------------------------------
+Executing realign
+DEAVEEEIRRLAAAKKPLYVDGRRLEIGSEEFRAYVRERIAAE
+Reward Trajectory: [np.float64(0.4175)]
+Global elapsed time: 0.950902 s
+----------------------------------
+Executing realign
+DAAVREALEALKAANVPLYVDGRLLEIGSAEFEAYVRRAIAER
+Reward Trajectory: [np.float64(0.486)]
+Global elapsed time: 0.956294 s
+----------------------------------
+Executing realign
+DEAVEEAVRRLAAERRPLYVDGKRLEIGSEEFRAYIRRAIAEA
+Reward Trajectory: [np.float64(0.3618)]
+Global elapsed time: 0.971177 s
+----------------------------------
+Executing realign
+DAAVEEAIKKLAAAKKPLYVDGKTLEIGSEEFKAYIRRYIAEN
+Reward Trajectory: [np.float64(0.3549)]
+Global elapsed time: 0.955372 s
+----------------------------------
+Executing realign
+DAAVQEVIEALAAANRPLHVNGRTLEIGSEEFRAYVRRAVAAA
+Reward Trajectory: [np.float64(0.2308)]
+Global elapsed time: 0.960526 s
+----------------------------------
+Executing realign
+SAAVDEVLARLAAAQRPLFVDGKLLEIGSAAFRAYVERAVAAA
+Reward Trajectory: [np.float64(0.4317)]
+Global elapsed time: 0.948155 s
+----------------------------------
+Executing realign
+SAAVEEVIEELAAANVPLFVDGKRLEIGSEEFRAYVERAVAEA
+Reward Trajectory: [np.float64(0.4926)]
+Global elapsed time: 0.951494 s
+----------------------------------
+Executing realign
+DEAVREAIERLAAAKKPLYVDGKTLEIGSEEFEAYIRRAIAEA
+Reward Trajectory: [np.float64(0.3544)]
+Global elapsed time: 0.940634 s
+----------------------------------
+Executing realign
+SAAVEEAIERLAAAKKPLYVDGRTLEIGSEEFRAYIERKIAEA
+Reward Trajectory: [np.float64(0.4695)]
+Global elapsed time: 0.962639 s
+----------------------------------
+Executing realign
+DAAVEEAVRRLAAAKRPLVVDGKTLEIGSEEFLAYVRRAIAEA
+Reward Trajectory: [np.float64(0.3553)]
+Global elapsed time: 0.945171 s
+----------------------------------
+Executing realign
+DAAVEEAIRRLAEERRPLYVDGRRLEIGSEEFRAYVRRAIAEA
+Reward Trajectory: [np.float64(0.4393)]
+Global elapsed time: 0.955107 s
+----------------------------------
+Executing realign
+EKAVEEAIEKLRKENKPLVVDGKVLEIGSEEFEAYVRKAIAEA
+Reward Trajectory: [np.float64(0.2668)]
+Global elapsed time: 1.121539 s
+----------------------------------
+Executing realign
+EAAVREEVERLAAARTPLFVDGRRLEIGSEEFLAWVRRRIAEE
+Reward Trajectory: [np.float64(0.4522)]
+Global elapsed time: 0.964205 s
+----------------------------------
+Executing realign
+DEAVERAVKELAAAKKPLYVDGKLLEIGSEEFLAYVRRAIAEA
+Reward Trajectory: [np.float64(0.428)]
+Global elapsed time: 0.959210 s
+----------------------------------
+Executing realign
+EAAVEEALARLAAAKEPLYVDGRTLEIGSEEFLAYLRRAIAEA
+Reward Trajectory: [np.float64(0.4804)]
+Global elapsed time: 0.945736 s
+----------------------------------
+Executing realign
+SAAVEEAIKALAAAKTPLYVDGKTLEIGSAEFRAYVEKAIAAA
+Reward Trajectory: [np.float64(0.3644)]
+Global elapsed time: 0.954686 s
+----------------------------------
+Executing realign
+SEAVEKAVRALAKAKKPLYVNGKLLEIGSAEFRAYIERAIAAS
+Reward Trajectory: [np.float64(0.4171)]
+Global elapsed time: 0.944190 s
+----------------------------------
+Executing realign
+DAAVREAVERLRRERRPLYVDGRRLEIGSREFLAYVRRALAAA
+Reward Trajectory: [np.float64(0.4269)]
+Global elapsed time: 0.959311 s
+----------------------------------
+Executing realign
+DAAVEEAVRALAAARRPLYVDGRTLEIGSEEFLAYVRRALAEA
+Reward Trajectory: [np.float64(0.434)]
+Global elapsed time: 0.958498 s
+----------------------------------
+Executing realign
+SAAVEEAIAALAAAQKPLVVDGKTLEIGSAAFRAYIERAIAEA
+Reward Trajectory: [np.float64(0.4632)]
+Global elapsed time: 0.952423 s
+----------------------------------
+Executing realign
+DAAVREAIERLAAARVPLYVDGRTLAIGSAEFEAYIRRAIAEA
+Reward Trajectory: [np.float64(0.545)]
+Global elapsed time: 0.967055 s
+----------------------------------
+Executing realign
+SAAVEEAIEALAAARKPLYVDGKLLEIGSAAFRAYIERAIAEA
+Reward Trajectory: [np.float64(0.4494)]
+Global elapsed time: 0.956920 s
+----------------------------------
+Executing realign
+DEAVREAIEALAAAKRPLYVDGKLLEIGSEEFEAYVRRYLAER
+Reward Trajectory: [np.float64(0.4241)]
+Global elapsed time: 0.956766 s
+----------------------------------
+Executing realign
+SAAVEEAIKKLAAEKKPLYVDGKTLEIGSEEFRAYIEKAIAEA
+Reward Trajectory: [np.float64(0.4619)]
+Global elapsed time: 0.957940 s
+----------------------------------
+Executing realign
+DAAVEEELRRLAAAKEPLYVDGRRLEIGSEEFLAYVRRRIAEQ
+Reward Trajectory: [np.float64(0.519)]
+Global elapsed time: 0.963805 s
+----------------------------------
+Executing realign
+DAAVEEALRALAEANVPLVVDGKTLEIGSEEFRAWVRRAIAEA
+Reward Trajectory: [np.float64(0.3464)]
+Global elapsed time: 0.953927 s
+----------------------------------
+Executing realign
+SAAVEEVLRRLAEANRPLYVDGRLLEIGSEEFRAYVERRVAEE
+Reward Trajectory: [np.float64(0.4777)]
+Global elapsed time: 0.941988 s
+----------------------------------
+Executing realign
+EEAVRRRIEELARARRPLYVDGRRLEIGSAEFEAWVRREIAER
+Reward Trajectory: [np.float64(0.4232)]
+Global elapsed time: 0.965016 s
+Progress: 2 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2M2J
+100%|██████████| 1/1 [00:41<00:00, 41.93s/it]100%|██████████| 1/1 [00:41<00:00, 41.93s/it]
+----------------------------------
+Executing realign
+APARELTPAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFHVTSIEPYGGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5576)]
+Global elapsed time: 1.369310 s
+----------------------------------
+Executing realign
+ARARELTPEEAAARTPVATLTIVGRFASLDEARAAVADAAAAAGAAAFHVTSVEPYGGDGSLRVTAEIFEA
+Reward Trajectory: [np.float64(0.5394)]
+Global elapsed time: 1.348210 s
+----------------------------------
+Executing realign
+APARELTAAEAAARTPTATLTIVGRFASEEEARAAVAAAAAAAGAAAFHVTSIEPYNGSGELRVTAEIFAA
+Reward Trajectory: [np.float64(0.5773)]
+Global elapsed time: 1.349159 s
+----------------------------------
+Executing realign
+AMAKELTAEEAAARTPVATLTIVGKFASEEEARAAVAKAAAAAGAAAFYVTSIEPYNGDGSLKVTAEIFKA
+Reward Trajectory: [np.float64(0.5284)]
+Global elapsed time: 1.342575 s
+----------------------------------
+Executing realign
+AMAKELTPEEAAARTPVATLTIVGKFASEEEARAAVAKAAAEAGAASFYVTSIEPYNGDGSLRVVAEIFKA
+Reward Trajectory: [np.float64(0.59)]
+Global elapsed time: 1.340802 s
+----------------------------------
+Executing realign
+ATAKELTAAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFYVTSIEPYNGDGSLKVTAQVFAA
+Reward Trajectory: [np.float64(0.567)]
+Global elapsed time: 1.341797 s
+----------------------------------
+Executing realign
+AMARELTAEEAAARTPVATLTIVGKFASEEEARAAVAEAAAAAGAAAFYITSIEPYNGDGSLKVTAEVFKA
+Reward Trajectory: [np.float64(0.6145)]
+Global elapsed time: 1.353303 s
+----------------------------------
+Executing realign
+AMAKELTAEEAAARTPVETITIVGKFKSEEEARAAVAKAAAEKGAAAFHVTSIEDYNGDGSKKVVAEIFKA
+Reward Trajectory: [np.float64(0.5668)]
+Global elapsed time: 1.479891 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGKFKSEEEARAAVAEAAAAAGAAAFHITSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5881)]
+Global elapsed time: 1.343815 s
+----------------------------------
+Executing realign
+AMARELTPAEAAARTPVATLTIVGKFASEAEARAAVAEAAAAAGAAAFHVTSIEPYGGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.587)]
+Global elapsed time: 1.351204 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFHVTSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5413)]
+Global elapsed time: 1.339171 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGRFASLAEARAAVAAAAAAAGAAAFHITAVEPYGGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.6364)]
+Global elapsed time: 1.341038 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGKFASEEEARAAVAAAAAAAGAAAFHITSIEPYNGDGSLRVTAEIFEA
+Reward Trajectory: [np.float64(0.579)]
+Global elapsed time: 1.346753 s
+----------------------------------
+Executing realign
+AMARELTPEEAAARTPVATLTIVGHFKSEEEARAAVARAAAEAGAAAFHVTSIEPYGGDGKLRVTAEIFEA
+Reward Trajectory: [np.float64(0.5548)]
+Global elapsed time: 1.345012 s
+----------------------------------
+Executing realign
+AMARELTPAEAAARTPTATLTIVGKFASEEEARAAVAAAAAAAGAAAFHVTSIEPYGGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5875)]
+Global elapsed time: 1.350470 s
+----------------------------------
+Executing realign
+MTAKELTAAEAAARTPVATLTIVGKFASEEEARAAVAAAAAAAGAAAFYVTSIEPYGGDGSLRVTAQVFKA
+Reward Trajectory: [np.float64(0.5978)]
+Global elapsed time: 1.357106 s
+----------------------------------
+Executing realign
+ARARELTPEEAAARTPVATLTIVGRFASEEEARAAVADAAAAAGAAAFHVTAIEPYGGDGKLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5505)]
+Global elapsed time: 1.356619 s
+----------------------------------
+Executing realign
+AMARELTAAEAAARTPTATLTIVGRFASEEEARAAVARAAAAAGAAAFYVTSIEPYGGDGSLRVTAEVFAA
+Reward Trajectory: [np.float64(0.6595)]
+Global elapsed time: 1.346488 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGRFASEAEARAAVAAAAAAAGAAAFHITSIEPYNGSGELRVTAEIFDA
+Reward Trajectory: [np.float64(0.5739)]
+Global elapsed time: 1.359116 s
+----------------------------------
+Executing realign
+ATARELTAAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFYVTSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.6673)]
+Global elapsed time: 1.360715 s
+----------------------------------
+Executing realign
+APARELTAAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFYVTSIEPYNGDGSLRVTAQVFKA
+Reward Trajectory: [np.float64(0.6076)]
+Global elapsed time: 1.355324 s
+----------------------------------
+Executing realign
+APARELTPAEAAARTPVATLTIVGKFASEEEARAAVAAAAAAAGAAAFHVTSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5631)]
+Global elapsed time: 1.364598 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGKFASEEEARAAVAAAAAAAGAAAFHVTSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5429)]
+Global elapsed time: 1.376899 s
+----------------------------------
+Executing realign
+APARELTPEEAAARTPVATLTIVGKFASEEEARAAVAAAAAAAGAAAFHITSIEPYAGDGSLRVTAEIFKA
+Reward Trajectory: [np.float64(0.5761)]
+Global elapsed time: 1.386695 s
+----------------------------------
+Executing realign
+AMAKELTPEEAAARTPVATLTIVGKFASEEEARAAVAKAAAEAGAAAFYVTSIEPYNGDGSLKVTAQIFKA
+Reward Trajectory: [np.float64(0.6028)]
+Global elapsed time: 1.343692 s
+----------------------------------
+Executing realign
+APARELTAAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFYVTSIEPYGGDGSLRVVADIFAA
+Reward Trajectory: [np.float64(0.5668)]
+Global elapsed time: 1.353788 s
+----------------------------------
+Executing realign
+ARARELTPAEAAARTPVATLTIVGRFASEAEARAAVAAAAAAAGAAAFYVTSIEPYNGDGSLRVTAEIFDA
+Reward Trajectory: [np.float64(0.615)]
+Global elapsed time: 1.336466 s
+----------------------------------
+Executing realign
+AMARELTPAEAAARTPTATLTIVGKFASLEEARAAVAAAAAAAGAAAFHITSVEPYGGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.6765)]
+Global elapsed time: 1.341644 s
+----------------------------------
+Executing realign
+AMARELTPEEAAARTPTATLTIVGKFKSEAEARAAVAEAAAAAGAAAFYVTSIEPYNGDGSLKVTAEIFAA
+Reward Trajectory: [np.float64(0.6088)]
+Global elapsed time: 1.345364 s
+----------------------------------
+Executing realign
+APARELTPAEAAARTPVATLTIVGKFASEAEARAAVAAAAAAAGAAAFHVTSIEPYNGDGSLRVTAEIFAA
+Reward Trajectory: [np.float64(0.5607)]
+Global elapsed time: 1.348070 s
+Progress: 3 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2MA4
+100%|██████████| 1/1 [00:41<00:00, 41.10s/it]100%|██████████| 1/1 [00:41<00:00, 41.10s/it]
+----------------------------------
+Executing realign
+AKVMKKEEFEKKAKEYEKIGEVETKGKLSKEEAIKIAVEEAEKLGADVVVITELDPEDGVILKAEVYKKK
+Reward Trajectory: [np.float64(0.3113)]
+Global elapsed time: 1.344771 s
+----------------------------------
+Executing realign
+AKIMKKEEFEKIAKDYEKIGEVETDGKLSKEEAREILVKKAEELGADVLVIVEEPEEEEVILKGEVYKKK
+Reward Trajectory: [np.float64(0.3178)]
+Global elapsed time: 1.335104 s
+----------------------------------
+Executing realign
+AEVMEPAEFAKRAADYERIGTVETDGRRPAEEALAEAVAAARAAGADVLVVTELPPGDGAVLRAEIYRRK
+Reward Trajectory: [np.float64(0.3468)]
+Global elapsed time: 1.339347 s
+----------------------------------
+Executing realign
+AKVMKKEEFEKIKDEYEKIGTVETKGKKSKEEAIEEIVKKAKEAGADVVVITKLDKGDGSILKADIYKKK
+Reward Trajectory: [np.float64(0.2312)]
+Global elapsed time: 1.340941 s
+----------------------------------
+Executing realign
+ARVMAPEDFAKIAGEYEKIGTVETDGRRSLEEALAEAVAAAEAAGADVLVVTEAPPGDGVTLRAEIYRRK
+Reward Trajectory: [np.float64(0.4114)]
+Global elapsed time: 1.337052 s
+----------------------------------
+Executing realign
+AKIMKPEEFAKIADEYEKIGEVETDGRLSAEEARKEAVAAAEAMGADVVVITEEDPGGGVRLRAEVYKKK
+Reward Trajectory: [np.float64(0.3725)]
+Global elapsed time: 1.330576 s
+----------------------------------
+Executing realign
+ARVMTPEEFAKRAADYEKIGEVETDGELPAEEALRQAVAAAEAAGADVLVVTELPPGGGVHLRAEIYRKK
+Reward Trajectory: [np.float64(0.3456)]
+Global elapsed time: 1.344600 s
+----------------------------------
+Executing realign
+AKVMKEEEFAKIAKEYEKIGTVKTDGKKSKEEAIKELVKKAKEAGADVLVIKKLDEEDEVILEGEIYKKK
+Reward Trajectory: [np.float64(0.3845)]
+Global elapsed time: 1.336439 s
+----------------------------------
+Executing realign
+AKVMKEEEFKKIADEYEKIGTVKTEGKKSKEEAIKEAVEKAEKLGADVVVIKKLDEGDGVILEAEVYKKK
+Reward Trajectory: [np.float64(0.3693)]
+Global elapsed time: 1.324633 s
+----------------------------------
+Executing realign
+ARVMAPEEFAKVASDYERVGEVETDGELSAEEALRQAVAAAAAAGADVLVVTELPPGEGVRLRAEIYRRK
+Reward Trajectory: [np.float64(0.5135)]
+Global elapsed time: 1.337006 s
+----------------------------------
+Executing realign
+AKIMKKEEFEKIADEYEKIGEVETDGELSAEEAREIIVKKAEEAGADVVVIVEEDEEEGVKLKAEIYKKK
+Reward Trajectory: [np.float64(0.3751)]
+Global elapsed time: 1.345761 s
+----------------------------------
+Executing realign
+AKVMKEEEFAKIADEYELIGEVETEGEKSKEEAIKEAVEKAKEAGADVLVITELPPEEKVILKAKIYKKK
+Reward Trajectory: [np.float64(0.3337)]
+Global elapsed time: 1.332099 s
+----------------------------------
+Executing realign
+AKVMKPEEFAKIADEYEKIGEVSTEGKKSKEEAIEEAVKKAEEMGADVVVITELDDGDGVILKAEVYKKK
+Reward Trajectory: [np.float64(0.3823)]
+Global elapsed time: 1.336204 s
+----------------------------------
+Executing realign
+AKVMKKEEFEKIADEYEKIGEVETEGKKSKEEAIEEAVKKAEEMGADVLVITELEEGEGVILKAEVYKKK
+Reward Trajectory: [np.float64(0.4083)]
+Global elapsed time: 1.339822 s
+----------------------------------
+Executing realign
+AKVMKEEEFAKIADEYEKIGTVETKGKLSKEEAIKEAVEKAEKLGADVLVIKELPDKDEVILTAEVYKKK
+Reward Trajectory: [np.float64(0.344)]
+Global elapsed time: 1.316683 s
+----------------------------------
+Executing realign
+AKIMKKEEFAKIADEYEKIGEVETDGKKSKEEAREEIVKKAEEMGADVVVIVEEDDGEGVILKAEVYKKK
+Reward Trajectory: [np.float64(0.4233)]
+Global elapsed time: 1.324899 s
+----------------------------------
+Executing realign
+AKVMKKEEFEKIAHEYEKIGEVETDGKKSKEEAIEEAVKKAEEAGADVVVIEKLDDGESVILKASIYKKK
+Reward Trajectory: [np.float64(0.2977)]
+Global elapsed time: 1.324272 s
+----------------------------------
+Executing realign
+AKVMKPEEFAKIADEYEKIGEVETDGKKSKEEAIKEAVEAAEKMGADVVVITELPEGEGVVLKAEVYKKK
+Reward Trajectory: [np.float64(0.2674)]
+Global elapsed time: 1.319643 s
+----------------------------------
+Executing realign
+AKIMKKEDFEKIADEYEKIGEVETEGKKSKEEARKEAVKKAEEAGADVVVIVEEEEGEGVILKAEIYKKK
+Reward Trajectory: [np.float64(0.2226)]
+Global elapsed time: 1.320966 s
+----------------------------------
+Executing realign
+AKVMKEEEFKKIAKDYEKIGEVETEGEKSKEEAIEELVKKAEEMGADILVIKELPEEEKVILKGEVYKKK
+Reward Trajectory: [np.float64(0.3059)]
+Global elapsed time: 1.327764 s
+----------------------------------
+Executing realign
+AEIMEPEEFAKIAGEYEKIGEVETDGLLSAEEARRLAVRAADELGADVLVVTEEPPEEGVVLRAEVYRRK
+Reward Trajectory: [np.float64(0.3452)]
+Global elapsed time: 1.324042 s
+----------------------------------
+Executing realign
+AKVMKKEEFEKIASEYEKIGTVETEGKLSKEEAIKLLVEKAEKAGADVLVITELPEGDGSILKGEIYKKK
+Reward Trajectory: [np.float64(0.3463)]
+Global elapsed time: 1.317444 s
+----------------------------------
+Executing realign
+AKVMKKEEFEKIKDEYEKIGEVETDGKKSKEEAIEEAVKKAEELGADVVVITELPDGEGVILKAEVYKKK
+Reward Trajectory: [np.float64(0.327)]
+Global elapsed time: 1.325836 s
+----------------------------------
+Executing realign
+AKIMKPEEFAKIADEYEEIGTVKTDGKLSKEEARELAVKAAEEAGADVVVIEKEDDGDGVTLTAKIYKKK
+Reward Trajectory: [np.float64(0.3071)]
+Global elapsed time: 1.319766 s
+----------------------------------
+Executing realign
+AKILKKEEFAKIADEYEKIGEVETEGKLSAEEARKIAVEKAKEAGADVVVITKEDPGDGVTLKAEIYKKK
+Reward Trajectory: [np.float64(0.2904)]
+Global elapsed time: 1.320117 s
+----------------------------------
+Executing realign
+ARVLAPEEFARIAGDYERIGTVETDGARSLAEALEELVAAAEAAGADVLVVTEAPPGDAVTLRGEIYRRK
+Reward Trajectory: [np.float64(0.3442)]
+Global elapsed time: 1.321330 s
+----------------------------------
+Executing realign
+AKIMKPEEFAKIAKEYEKIGEVETEGKLSAEEAREIAVKKAEEAGADVLVIKEEDPEGEVILKAEIYKKK
+Reward Trajectory: [np.float64(0.2886)]
+Global elapsed time: 1.321776 s
+----------------------------------
+Executing realign
+AKVMKPEEFAKIADEYEKIGTVETDGELPAEEALELAVKAAEEAGADVLVVTEMPPGGGVRLRAEIYKKK
+Reward Trajectory: [np.float64(0.3581)]
+Global elapsed time: 1.325292 s
+----------------------------------
+Executing realign
+MKVMKKEEFEKIAKDYEKIGEVETKGKKSKEEAIKEAVEKAKKLGADILVITELDEGEEVILKAEVYKKK
+Reward Trajectory: [np.float64(0.375)]
+Global elapsed time: 1.317534 s
+----------------------------------
+Executing realign
+AKIMKKEEFEKIASDYEKIGEVSTDGKLSAEEAREIAVKKAEEAGADILVVVKEDEGDGVTLTAEIYKKK
+Reward Trajectory: [np.float64(0.256)]
+Global elapsed time: 1.319218 s
+Progress: 4 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 1F0M
+100%|██████████| 1/1 [00:38<00:00, 38.81s/it]100%|██████████| 1/1 [00:38<00:00, 38.81s/it]
+----------------------------------
+Executing realign
+AYATVAEWLTAIGLGQYIDAFRAAGFTTFEKLAQMDEADVLAIGITDPAERARLLASIAELRARLA
+Reward Trajectory: [np.float64(0.8301)]
+Global elapsed time: 1.256455 s
+----------------------------------
+Executing realign
+AFRTVAEWLEAIGLGRYIDAFRAAGFTTFERLARMDEADVLAVGITDPAERARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8311)]
+Global elapsed time: 1.254643 s
+----------------------------------
+Executing realign
+AFATVEEFLEAIGLGQYIAAFRAAGFTTFERLAQMDEADVLAIGITDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8365)]
+Global elapsed time: 1.257450 s
+----------------------------------
+Executing realign
+AYATVAEFLEAIGLGQYIEAFRAAGFTTFEKLAQMDEADVLAIGITDPADRARLLAAIAELRASLA
+Reward Trajectory: [np.float64(0.8436)]
+Global elapsed time: 1.253830 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGQYIAAFKAAGFTDFATLARMDEADVLAVGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8366)]
+Global elapsed time: 1.251953 s
+----------------------------------
+Executing realign
+AYATVAEFLTAIGLGQYIAAFEAAGFTTFERLAQMDEADVLAIGMTDPAERARLLAAIEELRARLA
+Reward Trajectory: [np.float64(0.8438)]
+Global elapsed time: 1.251459 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGRYIAAFEAAGFTTFEKLAQMDEADVLAIGMTDPAERARLLAAIAELRASLA
+Reward Trajectory: [np.float64(0.8474)]
+Global elapsed time: 1.250867 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGQYIEAFRAAGFTTFERLAKMTEEDVLAIGITDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8323)]
+Global elapsed time: 1.249472 s
+----------------------------------
+Executing realign
+AYATVAEFLEAIGLGQYIAAFEAAGFTTFEKLAQMDEADVLAVGITDPADRARLLAAIEALRASLE
+Reward Trajectory: [np.float64(0.8436)]
+Global elapsed time: 1.259485 s
+----------------------------------
+Executing realign
+AYATVAEFLEAIGLGQYIAAFEAAGFTTFERLAQMDEADVLAVGMTDPADRARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8381)]
+Global elapsed time: 1.263917 s
+----------------------------------
+Executing realign
+EYATVAEFLEAIGLGQYIAAFEAAGFTTFERLAKMDEADVLAIGITDPADRARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8306)]
+Global elapsed time: 1.249205 s
+----------------------------------
+Executing realign
+AFQTVAEFLEAIGLGRYIAAFEAAGFTTFEKLAKMTEADVLAVGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8507)]
+Global elapsed time: 1.252783 s
+----------------------------------
+Executing realign
+AFSTVEEFLEAIGLGQYIDAFRAAGFTTFERLAQMDEADVLAVGITDPAERARLLAAIEELRASLK
+Reward Trajectory: [np.float64(0.8382)]
+Global elapsed time: 1.255620 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGRYTAAFEAAGFTTFERLARMTEADVLAVGITDPAERARLLAAIEALRASLA
+Reward Trajectory: [np.float64(0.8491)]
+Global elapsed time: 1.256228 s
+----------------------------------
+Executing realign
+EFATVDEWLEAIGLGRYRAAFRAAGFTTFERLARMDEADVLAVGITDPAERARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8054)]
+Global elapsed time: 1.243870 s
+----------------------------------
+Executing realign
+AFKTVAEFLEAIGLGQYIAAFEAAGFTTFERLAQMDEADVLAVGITDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8337)]
+Global elapsed time: 1.247957 s
+----------------------------------
+Executing realign
+AFSTVAEFLEAIGLGQYIAAFEAAGFTTFEKLAQMDEADVLAVGITDPADRARLLAAIAELRASMA
+Reward Trajectory: [np.float64(0.8373)]
+Global elapsed time: 1.252244 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGQYIDAFRAAGFTTFERLAQMDEADVLAVGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8477)]
+Global elapsed time: 1.254953 s
+----------------------------------
+Executing realign
+KFKTVAEFLEAIGLGQYIAAFEEAGFTTFEKLAQMDEADVLAVGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8245)]
+Global elapsed time: 1.243791 s
+----------------------------------
+Executing realign
+SFQTVAEFLEAIGLGQYIAAFEAAGFTTFEKLAQMDEADVLAVGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8428)]
+Global elapsed time: 1.242483 s
+----------------------------------
+Executing realign
+SFKTVAEFLEAIGLGRYIEAFRAAGFTTFERLAQMDEADVLAIGMTDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8173)]
+Global elapsed time: 1.262375 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGRYTAAFEAAGFTTFERLARMDEADVLAVGITDPAERARLLAAIEALRASLA
+Reward Trajectory: [np.float64(0.8386)]
+Global elapsed time: 1.253234 s
+----------------------------------
+Executing realign
+AFRTVAEFLEAIGLGRYIEAFEAAGFTTFERLAQMDEADVLAIGMTDPAERARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8424)]
+Global elapsed time: 1.250141 s
+----------------------------------
+Executing realign
+AFRTVAEWLEAIGLGQYIDAFRAAGYTTFERLARMTEADVLAVGITDPAERARLLAAIEELRARLA
+Reward Trajectory: [np.float64(0.8453)]
+Global elapsed time: 1.244329 s
+----------------------------------
+Executing realign
+AYATVAEFLEAIGLGQYIAAFEAAGFTTFERLAKMDEADVLAVGITDPADRARLLAAIAELRASMA
+Reward Trajectory: [np.float64(0.8362)]
+Global elapsed time: 1.253436 s
+----------------------------------
+Executing realign
+AFRTVAEFLEAIGLGQYIAAFEAAGFTTFERLAQMDEADVLAVGITDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8355)]
+Global elapsed time: 1.246769 s
+----------------------------------
+Executing realign
+AFRTVAEFLEAIGLGQYIAAFREAGFTTFERLAKMDEADVLAIGVTDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8388)]
+Global elapsed time: 1.261113 s
+----------------------------------
+Executing realign
+AFATVEEFLTAIGLGQYIAAFRAAGYTTFEKLAQMDEADVLAIGITDPADRARLLAAIAELRARLA
+Reward Trajectory: [np.float64(0.8449)]
+Global elapsed time: 1.254110 s
+----------------------------------
+Executing realign
+AFSTVAEFLEAIGLGRYIAAFRAAGFTTFERLAKMTEADVLAIGITDPAERARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8523)]
+Global elapsed time: 1.257516 s
+----------------------------------
+Executing realign
+AFATVAEFLEAIGLGRYIAAFEAAGYTTFERLARMDEADVLAVGITDPADRARLLAAIEELRASLA
+Reward Trajectory: [np.float64(0.8242)]
+Global elapsed time: 1.257734 s
+Progress: 5 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 5JRT
+100%|██████████| 1/1 [00:36<00:00, 36.88s/it]100%|██████████| 1/1 [00:36<00:00, 36.88s/it]
+----------------------------------
+Executing realign
+MTIEEFIKSLGLSHLLPIFKKNNITLEKLKKMDEKELLEIGITDPEERKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.5357)]
+Global elapsed time: 1.185250 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFEKHKITLEKLKKMDEEELKKIGITDPKEREKIINGVKSLE
+Reward Trajectory: [np.float64(0.4885)]
+Global elapsed time: 1.191071 s
+----------------------------------
+Executing realign
+MTIKEFIKSLGLEHLYPIFEKNNITLEKLKKMDEKELKEIGITDKAEREKIIKGVESLE
+Reward Trajectory: [np.float64(0.4873)]
+Global elapsed time: 1.177297 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEKELKEIGITDPKEREKIINGVKKLE
+Reward Trajectory: [np.float64(0.4826)]
+Global elapsed time: 1.192156 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEKKLEEIGITNPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5222)]
+Global elapsed time: 1.195553 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEDLLPIFKKNNITLEKLKKMGEKELEEIGITDPEKRKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5391)]
+Global elapsed time: 1.183208 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEDLLPIFKKNNITLEKLKKMNEEELKKIGITDEAKRKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.4867)]
+Global elapsed time: 1.194762 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEEELKKIGITDPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.4764)]
+Global elapsed time: 1.180819 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEKELKEIGINDEKERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.502)]
+Global elapsed time: 1.194683 s
+----------------------------------
+Executing realign
+MTIKEFIESLGLEHLLPIFEKNKITLEKLKKMDEKELEKIGIKNPEERKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.535)]
+Global elapsed time: 1.182849 s
+----------------------------------
+Executing realign
+MTIKEFIKSLGLEHLLPIFEKNKITLEKLKKMNEKELEKIGIKDPEERKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.5206)]
+Global elapsed time: 1.191277 s
+----------------------------------
+Executing realign
+MTIEEFIESLGLSHLMPIFKKHKITLEKLKKMGFEELEKIGITNPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5522)]
+Global elapsed time: 1.187929 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNNITLEKLKKMDEKELLEIGITDPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5398)]
+Global elapsed time: 1.187459 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMGFKELEKIGITDKAEREKIINGVKSLE
+Reward Trajectory: [np.float64(0.5416)]
+Global elapsed time: 1.190062 s
+----------------------------------
+Executing realign
+MTIKEFIKSLGLEDLYPIFEKNKITLEKLKKMGEEELEKIGITDPEKRKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.5473)]
+Global elapsed time: 1.183391 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNNITLEKLKKMDEKELKEIGITDEKERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5201)]
+Global elapsed time: 1.180465 s
+----------------------------------
+Executing realign
+MTIEEFIESLGLSHLLPIFKKHKITLEKLKKMGEKELEEIGITDPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5781)]
+Global elapsed time: 1.183188 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNNITLEKLKKMDEKELEKIGITDPEERKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.5499)]
+Global elapsed time: 1.180823 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEEELEKIGIKDPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5171)]
+Global elapsed time: 1.193319 s
+----------------------------------
+Executing realign
+MTIKEFIESLGLSHLLPIFEKHNITLEKLKKMGAEELEKIGITDPAEREKIINGVKSLE
+Reward Trajectory: [np.float64(0.5942)]
+Global elapsed time: 1.184605 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEKELKEIGITDPAEREKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5105)]
+Global elapsed time: 1.184892 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLRKMGEEELKKIGITDPAERKKIIEGVKKLE
+Reward Trajectory: [np.float64(0.5326)]
+Global elapsed time: 1.193250 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEEELKKIGITDPKEREKIIEGVKSLE
+Reward Trajectory: [np.float64(0.4848)]
+Global elapsed time: 1.189602 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNNITLEKLKKMDEEELKKIGITDEAERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.538)]
+Global elapsed time: 1.192810 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMGEEELEKIGITDPEERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5317)]
+Global elapsed time: 1.186558 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEHLLPIFKKNKITLEKLKKMDEEELKKIGITDESERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.529)]
+Global elapsed time: 1.193431 s
+----------------------------------
+Executing realign
+MTIEEFIKSLGLEDLLPIFEKHNITLEKLKKMDEKELEEIGIKDPEKRKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5276)]
+Global elapsed time: 1.183847 s
+----------------------------------
+Executing realign
+MTIKEFIKSLGLEHLYPIFEKNNVTLEKLEKMDEKELEKIGITNPEERKKIIEGVKSLK
+Reward Trajectory: [np.float64(0.5396)]
+Global elapsed time: 1.201015 s
+----------------------------------
+Executing realign
+MTIEEFIESLGLSHLLPIFKKNKITLEKLKKMDEKELKEIGITDEKERKKIIEGVKSLE
+Reward Trajectory: [np.float64(0.5129)]
+Global elapsed time: 1.189194 s
+----------------------------------
+Executing realign
+MTIEEFLRSLGLEHLLPIFREHGVTLERLAEMGEEELAEIGITDPAEREAIIRGVEALR
+Reward Trajectory: [np.float64(0.6029)]
+Global elapsed time: 1.184125 s
+Progress: 6 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 7JJK
+100%|██████████| 1/1 [00:36<00:00, 36.20s/it]100%|██████████| 1/1 [00:36<00:00, 36.20s/it]
+----------------------------------
+Executing realign
+APADAFEVWAAEMRPILAAAYPDADEAELDALLRERWAALTPEEKAPYVARAAALAA
+Reward Trajectory: [np.float64(0.6891)]
+Global elapsed time: 1.163980 s
+----------------------------------
+Executing realign
+APPDAFDVWAAEMRPLLAAAYPDADDEELDALLRELWAALTPEERAPYVARAAALAA
+Reward Trajectory: [np.float64(0.6884)]
+Global elapsed time: 1.181798 s
+----------------------------------
+Executing realign
+AAPDAFQVWAARMRPALAAAYPDADDATLDELLRELWAKLTPEERAPYVAEAAALAA
+Reward Trajectory: [np.float64(0.7047)]
+Global elapsed time: 1.170797 s
+----------------------------------
+Executing realign
+APADAFDVWAAERRPLLAAAYPDADDAELAELLRKEWAALTPEERAPYEARAAALAQ
+Reward Trajectory: [np.float64(0.6571)]
+Global elapsed time: 1.169935 s
+----------------------------------
+Executing realign
+AVPDAFAVWAAERRPELAAAYPDADDEQLDALLREEWAALTPAERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6901)]
+Global elapsed time: 1.163395 s
+----------------------------------
+Executing realign
+APADAFDVWAAEMRPLLAAAYPDADDAQLDELLRELWASLTPAEKQPYVERAAALAA
+Reward Trajectory: [np.float64(0.7033)]
+Global elapsed time: 1.166550 s
+----------------------------------
+Executing realign
+APADAFDVWAAERRPELAARYPDADDAQLAELLREEWARLTPAERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6797)]
+Global elapsed time: 1.169799 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAEMRPELEAAYPDADAEEIDERLRELWASLTPEERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6661)]
+Global elapsed time: 1.151738 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAERRPELAARYPDADDAQLAELLREEWARLTPEERKPYVERAAALAA
+Reward Trajectory: [np.float64(0.6893)]
+Global elapsed time: 1.160089 s
+----------------------------------
+Executing realign
+APPDAFDVWAAEMRPALAAAYPDADDATLDELLRRLWAALTPEERKPYVERAAALAK
+Reward Trajectory: [np.float64(0.6808)]
+Global elapsed time: 1.166526 s
+----------------------------------
+Executing realign
+KVPDAFDVWAAEMRPALAAAYPDADDEELAALLRELWAALTPAEREPYVRRAAALAK
+Reward Trajectory: [np.float64(0.6681)]
+Global elapsed time: 1.170957 s
+----------------------------------
+Executing realign
+APPDAFEVWAARRRPELAAAYPDADDEQLDELLREEWAALTPEEKAPYVAEAARLAA
+Reward Trajectory: [np.float64(0.6753)]
+Global elapsed time: 1.169914 s
+----------------------------------
+Executing realign
+APPDAFQVWAAEMRPLLAAAYPDADDEQLDALLRERWAALTPEERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6576)]
+Global elapsed time: 1.168347 s
+----------------------------------
+Executing realign
+APADAFDVWAAEMRPLLAAAYPDADDAELDERLRELWAALTPEEKAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6835)]
+Global elapsed time: 1.169554 s
+----------------------------------
+Executing realign
+APPDAFDVWAAEMRPLLAAAYPDADDAQLDALLAELWAALTPAERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6852)]
+Global elapsed time: 1.162312 s
+----------------------------------
+Executing realign
+KVPDAFAVWAAERRPELAAAYPDADEAQLDALLREEWARLTPAEKAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6899)]
+Global elapsed time: 1.154946 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAEMRPLLAAAYPDADDEQIDALLRELWAALTPEERAPYVERAAALAL
+Reward Trajectory: [np.float64(0.7023)]
+Global elapsed time: 1.161731 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAEMRPELAAAYPDADDAQLDELLRERWAALTPEEKAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6638)]
+Global elapsed time: 1.167590 s
+----------------------------------
+Executing realign
+APPDAFDVWAAERRPELAAKYPDADDATLAELLKREWASLTPEERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6945)]
+Global elapsed time: 1.163013 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAERRPELAAAYPDADDEELAALLREEWAALTPEEKAPYVERAAALAK
+Reward Trajectory: [np.float64(0.64)]
+Global elapsed time: 1.160068 s
+----------------------------------
+Executing realign
+APPDAFAVWAAEMRPALAAAYPDADDAELEARLRELWAALTPAERAPYVARAAALAA
+Reward Trajectory: [np.float64(0.7076)]
+Global elapsed time: 1.168585 s
+----------------------------------
+Executing realign
+APPDAFDVWAAERRPELAAAFPDADDATLAALLAEEWAALTPEERQPYVERAAALAA
+Reward Trajectory: [np.float64(0.659)]
+Global elapsed time: 1.176046 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAEMRPALAAAYPDADDAELAERLRELWAALTPEQKAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6546)]
+Global elapsed time: 1.164941 s
+----------------------------------
+Executing realign
+AVPDAFAVWAAEMRPVLAAAYPDADDEELDALLRELWAKLTPEERQPYVERAAALAE
+Reward Trajectory: [np.float64(0.6768)]
+Global elapsed time: 1.182559 s
+----------------------------------
+Executing realign
+AVPDAFAVWAAEMRPVLAAAYPDADDEELDARLRELWAALTPEERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6865)]
+Global elapsed time: 1.166202 s
+----------------------------------
+Executing realign
+APPDAFDVWAAEMRPALAAAFPDADDAELDERLRELWAALTPEERAPYVARAAALAA
+Reward Trajectory: [np.float64(0.6822)]
+Global elapsed time: 1.168867 s
+----------------------------------
+Executing realign
+APPDAFAVWAARMRPLLAAALPDADDAELEALLRELWAKLTPEERAPYVAEAAALAA
+Reward Trajectory: [np.float64(0.6778)]
+Global elapsed time: 1.171899 s
+----------------------------------
+Executing realign
+AVPDAFDVWAAERRPELAAAYPDADDEELAALLREEWAKLTPAERAPYVERAAALAA
+Reward Trajectory: [np.float64(0.6807)]
+Global elapsed time: 1.165308 s
+----------------------------------
+Executing realign
+AVPDAFQVWAAEQRPLLAAAYPDADDAQLDALLRELWAALTPAERAPYVERAEALAA
+Reward Trajectory: [np.float64(0.6723)]
+Global elapsed time: 1.163096 s
+----------------------------------
+Executing realign
+APADAFDVWAAERRPELAAKYPDANDEELEALLREEWAALTPAEKAPYVERAAALAA
+Reward Trajectory: [np.float64(0.7021)]
+Global elapsed time: 1.173985 s
+Progress: 7 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2KRU
+100%|██████████| 1/1 [00:33<00:00, 33.90s/it]100%|██████████| 1/1 [00:33<00:00, 33.90s/it]
+----------------------------------
+Executing realign
+MLKWTPEAEALLATIPAELQPTVRKLVEEYAKEIGSEVVTAEVFKKALEAYG
+Reward Trajectory: [np.float64(0.6267)]
+Global elapsed time: 1.083520 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPAEVQPLVRALVERYAREIGAPTVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.7171)]
+Global elapsed time: 1.081670 s
+----------------------------------
+Executing realign
+MLEWTPEAEALLAELPAEIRPEVRARVEAYAREIGSPVVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.6277)]
+Global elapsed time: 1.080558 s
+----------------------------------
+Executing realign
+ELAWTPEALALLATVPPERQPEVRAQVEAYARELGRPVVTAEVLREALAALA
+Reward Trajectory: [np.float64(0.6166)]
+Global elapsed time: 1.071440 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPAEVQPEVRARVEAYAREIGAPTVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.6173)]
+Global elapsed time: 1.086038 s
+----------------------------------
+Executing realign
+MLKWTPEAEALLATIPAEKRAEVRAKVEAYAREIGAETVTAEVLKRALEAYG
+Reward Trajectory: [np.float64(0.6599)]
+Global elapsed time: 1.081277 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPADVRPEVRARVEAFARERGHAVVTAEVLREALRALG
+Reward Trajectory: [np.float64(0.6485)]
+Global elapsed time: 1.078413 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATIPAERRPEVRAAVEAYAREIGAPVVTAEVFRRALEALG
+Reward Trajectory: [np.float64(0.6373)]
+Global elapsed time: 1.079453 s
+----------------------------------
+Executing realign
+ELAWTPEAEALLATLPAEVQPEVRARVEAYAREIGAPVVTAEVFRRALAALG
+Reward Trajectory: [np.float64(0.6452)]
+Global elapsed time: 1.283677 s
+----------------------------------
+Executing realign
+PLEWTPEAEALLAEVPEAERPRVRAAVEAYAREIGAPVVTAEVLRRALAALG
+Reward Trajectory: [np.float64(0.6139)]
+Global elapsed time: 1.079874 s
+----------------------------------
+Executing realign
+MLKWTPEAEALLAELPEEIRPEVRALVEEYAREIGAEVVTAEVLREALAAYG
+Reward Trajectory: [np.float64(0.6358)]
+Global elapsed time: 1.093971 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATVPEDVRPEVRAKVEEYAREIGAPVVTAEVFRRALEAYG
+Reward Trajectory: [np.float64(0.6495)]
+Global elapsed time: 1.067394 s
+----------------------------------
+Executing realign
+ELEWTPEAEALLATLPADVRPEVRARVEAYAREIGAPVVTAEVLRRALAALG
+Reward Trajectory: [np.float64(0.6469)]
+Global elapsed time: 1.068397 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATIPPEERPRVRAEVEAYAREIGAPVVTAEVLERALKAYG
+Reward Trajectory: [np.float64(0.6952)]
+Global elapsed time: 1.084391 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPAEVRPEVRAAVEAYAREIGAPVVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.6283)]
+Global elapsed time: 1.077611 s
+----------------------------------
+Executing realign
+ELEWTPEAEALLATLPPEIQPEVRARVEEYAREIGAEVVTAEVLEEALRAYG
+Reward Trajectory: [np.float64(0.6077)]
+Global elapsed time: 1.081578 s
+----------------------------------
+Executing realign
+ELAWTPEAEALLATLPEHIRPEVRRRVEEYARERGHETVTAEVLREALEAYG
+Reward Trajectory: [np.float64(0.683)]
+Global elapsed time: 1.092425 s
+----------------------------------
+Executing realign
+MLEWTPEAEALLATLPAHVRPAVRAAVEAYAREIGAPVVTAEVLARALEALG
+Reward Trajectory: [np.float64(0.6302)]
+Global elapsed time: 1.078347 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPAEVRPEVRARVEAYAREIGAPVVTAEVLRRALAALG
+Reward Trajectory: [np.float64(0.6475)]
+Global elapsed time: 1.085793 s
+----------------------------------
+Executing realign
+ELEWTPEAEALLATIPAEERPAVRARVEEYAREIGAPVVTAEVLRRALEAYG
+Reward Trajectory: [np.float64(0.6771)]
+Global elapsed time: 1.083317 s
+----------------------------------
+Executing realign
+MLEWTPEAEALLATVPAERQPEVRAQVEAYAREIGAPVVTAEVLRRALAALA
+Reward Trajectory: [np.float64(0.6053)]
+Global elapsed time: 1.093637 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATVPAEERPKVRALVEAYAREIGAPTVTAEVLRRALEAYG
+Reward Trajectory: [np.float64(0.6902)]
+Global elapsed time: 1.085597 s
+----------------------------------
+Executing realign
+PLEWTPEAEALLATIPAERRPEVRAAVERYAREIGEPVVTAEVFRRALEAYG
+Reward Trajectory: [np.float64(0.6652)]
+Global elapsed time: 1.106893 s
+----------------------------------
+Executing realign
+MLEWTPEAEALLATLPPEVRPEVRARVEEYARERGHPVVTAEVLEEALRAYG
+Reward Trajectory: [np.float64(0.5832)]
+Global elapsed time: 1.077603 s
+----------------------------------
+Executing realign
+MLEWTPEAEALLAEVPAERQPEVRALVEEYAREIGAPVVTAEVLRRALEAYG
+Reward Trajectory: [np.float64(0.653)]
+Global elapsed time: 1.083158 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPADVRPEVRAAVEAYAREIGAPTVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.5984)]
+Global elapsed time: 1.075208 s
+----------------------------------
+Executing realign
+ELAWTPEAEALLATVPAEERPRVRAEVEAYARERGHPVVTAEVLREALAALG
+Reward Trajectory: [np.float64(0.6218)]
+Global elapsed time: 1.086322 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATVPADRRPEVRARVEEYARRIGAPVVTAEVLREALAAYG
+Reward Trajectory: [np.float64(0.6203)]
+Global elapsed time: 1.086482 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLATLPAEVQPEVRAAVERYAREIGAPVVTAEVLRRALAALG
+Reward Trajectory: [np.float64(0.616)]
+Global elapsed time: 1.069906 s
+----------------------------------
+Executing realign
+MLAWTPEAEALLAEIPAERRPEVRARVEAYAREIGAPVVTAEVLRRALEALG
+Reward Trajectory: [np.float64(0.6171)]
+Global elapsed time: 1.076697 s
+Progress: 8 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2L09
+100%|██████████| 1/1 [00:33<00:00, 33.67s/it]100%|██████████| 1/1 [00:33<00:00, 33.67s/it]
+----------------------------------
+Executing realign
+ALAWTAEARALLAEVPAELRAEVRARVEAIARAEGSDTITAEMVRRALSELA
+Reward Trajectory: [np.float64(0.6843)]
+Global elapsed time: 1.077059 s
+----------------------------------
+Executing realign
+MLKMTAEARALLAQVPAERRAEVLARVEELARAEGSDTITAEMVERALAEFA
+Reward Trajectory: [np.float64(0.6627)]
+Global elapsed time: 1.088122 s
+----------------------------------
+Executing realign
+MLRWTAEARALLAEVPEDRRAEVLARVEEIAREEGSDTITAEMVRRALEEFA
+Reward Trajectory: [np.float64(0.664)]
+Global elapsed time: 1.101267 s
+----------------------------------
+Executing realign
+ALAMTPEARALLAEVPAERRAEILARVERIARERGSDTITAEMVREALSEFA
+Reward Trajectory: [np.float64(0.6469)]
+Global elapsed time: 1.073340 s
+----------------------------------
+Executing realign
+MLKWTAEARRLLAEVPAERRAEVRALVERLARERGSDTITAEMVREALALLE
+Reward Trajectory: [np.float64(0.6722)]
+Global elapsed time: 1.087466 s
+----------------------------------
+Executing realign
+MLRWTPEARALLAEVPAELRAEVRKLVEELAREEGSDTITAEMVRRALSRLA
+Reward Trajectory: [np.float64(0.6424)]
+Global elapsed time: 1.079172 s
+----------------------------------
+Executing realign
+ALKWTAEARALLAEVPAERRAEVLARVEALARERGSSTVTAEMVREALAEFA
+Reward Trajectory: [np.float64(0.6671)]
+Global elapsed time: 1.078708 s
+----------------------------------
+Executing realign
+MLAYTAEAEALLAEVPEELRAEVRALVEEIARAEGSDTITAEMVRRALSLLK
+Reward Trajectory: [np.float64(0.7068)]
+Global elapsed time: 1.085802 s
+----------------------------------
+Executing realign
+ALAWTPEARALLAEVPAERRAEVRALVEELAREEGSDTITAEMVERALALLA
+Reward Trajectory: [np.float64(0.662)]
+Global elapsed time: 1.093316 s
+----------------------------------
+Executing realign
+MLKWTAEARALLAEVPAELRAEVLALVEELARQRGSETVTAEMVREALSLLA
+Reward Trajectory: [np.float64(0.7062)]
+Global elapsed time: 1.083755 s
+----------------------------------
+Executing realign
+RLAYTAEARALLAEVPEHLRAEVRRRVEELARERNSSTITAEMVEEALSLFA
+Reward Trajectory: [np.float64(0.5913)]
+Global elapsed time: 1.067579 s
+----------------------------------
+Executing realign
+ALRWTAEARALLAEVPAERRAEVLALVEELARAEGSDTVTAEMVRRALSLLA
+Reward Trajectory: [np.float64(0.685)]
+Global elapsed time: 1.090722 s
+----------------------------------
+Executing realign
+MLRYTAEAEALLAAVPAELRAEVRALVERLAREAGSDTVTAEMVRRALALLA
+Reward Trajectory: [np.float64(0.6798)]
+Global elapsed time: 1.079250 s
+----------------------------------
+Executing realign
+ALAFTAEARALLAQVPAHLRAEVRALVEQLARERNSSTVTAEMVEEALALLK
+Reward Trajectory: [np.float64(0.6682)]
+Global elapsed time: 1.069005 s
+----------------------------------
+Executing realign
+MLRYTAEARALLAEVPAERREAIRARVEELAREEGSDTITAEMVRRALEEFA
+Reward Trajectory: [np.float64(0.6094)]
+Global elapsed time: 1.086336 s
+----------------------------------
+Executing realign
+ALAWTAEARRLLAEVPAERRAEVRALVEELARREGRSTITAEMVRRALSLLA
+Reward Trajectory: [np.float64(0.6756)]
+Global elapsed time: 1.072280 s
+----------------------------------
+Executing realign
+MLRYTAEAKALLAEVPAELRAEVLALVEQLAREENSDTITAEMVRRALSLLA
+Reward Trajectory: [np.float64(0.7368)]
+Global elapsed time: 1.080599 s
+----------------------------------
+Executing realign
+ALAWTEEARALLAQVPAELRARVRELVERLARERGSSTVTAEMVREALSLLA
+Reward Trajectory: [np.float64(0.6853)]
+Global elapsed time: 1.089845 s
+----------------------------------
+Executing realign
+ALAWTAEARALLAAVPAHLRAEVRALVERIARERGSDTVTAEMVEEALSLLA
+Reward Trajectory: [np.float64(0.687)]
+Global elapsed time: 1.084446 s
+----------------------------------
+Executing realign
+MLRYTAEAKALLAEVPEERREEVLALVERLAREEGSSTITAEMVRRALSLLE
+Reward Trajectory: [np.float64(0.6652)]
+Global elapsed time: 1.077117 s
+----------------------------------
+Executing realign
+PLAWTAEAEALLAEVPADRRAEVRALVERLARERGSRTVTAEMVREALSLLA
+Reward Trajectory: [np.float64(0.6599)]
+Global elapsed time: 1.079915 s
+----------------------------------
+Executing realign
+MLAWTEEARALLAEVPEERRAEVRALVEKLARERGSSTVTAEMVREALSLLE
+Reward Trajectory: [np.float64(0.6455)]
+Global elapsed time: 1.088379 s
+----------------------------------
+Executing realign
+MLKYTEEAKALLAEVPEDRREEVLALVERIARERGSDTITAEMVEEALSLLE
+Reward Trajectory: [np.float64(0.59)]
+Global elapsed time: 1.063446 s
+----------------------------------
+Executing realign
+MLAWTEEAKALLAQVPAEQRAEVRELVERLARERNSATITAEMVREALSLLA
+Reward Trajectory: [np.float64(0.6437)]
+Global elapsed time: 1.087546 s
+----------------------------------
+Executing realign
+MLAYTAEARALLAEVPADRRAEVLALVERIARERGSTTITPEMVREALSLLA
+Reward Trajectory: [np.float64(0.6831)]
+Global elapsed time: 1.075918 s
+----------------------------------
+Executing realign
+ALRWTAEAEALLAEVPPELRAEVRARVEELARERGSDTITAEMVREALSTMA
+Reward Trajectory: [np.float64(0.6338)]
+Global elapsed time: 1.073342 s
+----------------------------------
+Executing realign
+MLKWTAEAERLLAEVPADKRAEVRALVERLAREENSDTITAEMVRRALSLLA
+Reward Trajectory: [np.float64(0.6786)]
+Global elapsed time: 1.085132 s
+----------------------------------
+Executing realign
+MLRWTAEARARLAEVPAELRAAVRARVEELARARNSDTITAEMVEEALAEFA
+Reward Trajectory: [np.float64(0.665)]
+Global elapsed time: 1.094201 s
+----------------------------------
+Executing realign
+MLAWTEEARRLLAEVPEERREEVLARVEELARAEGSDTITAEMVERALSEFA
+Reward Trajectory: [np.float64(0.6379)]
+Global elapsed time: 1.069838 s
+----------------------------------
+Executing realign
+MLRWTAEARALLAEVPAEERERVRALVEELAREEGSDTITAEMVERALSLLA
+Reward Trajectory: [np.float64(0.675)]
+Global elapsed time: 1.086473 s
+Progress: 9 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 4G3O
+100%|██████████| 1/1 [00:32<00:00, 32.38s/it]100%|██████████| 1/1 [00:32<00:00, 32.38s/it]
+----------------------------------
+Executing realign
+DEEARLEAMAEALAKRFPDVPREKILAALKVTRSVAATEQLIREGKI
+Reward Trajectory: [np.float64(0.6522)]
+Global elapsed time: 1.034726 s
+----------------------------------
+Executing realign
+AEEARLEAMAEALARRFPDVPREKILAALRVTRSVARTEELIRQGLI
+Reward Trajectory: [np.float64(0.7143)]
+Global elapsed time: 1.027402 s
+----------------------------------
+Executing realign
+DEEERLEAMAEELARRFPEVPREKILAALRVTRSVAKTERLIREGRI
+Reward Trajectory: [np.float64(0.6538)]
+Global elapsed time: 1.034605 s
+----------------------------------
+Executing realign
+SEEERLRAMAERLAKRFPDVPFEKILAALRVTRSVARTEELIRRGEI
+Reward Trajectory: [np.float64(0.6717)]
+Global elapsed time: 1.029598 s
+----------------------------------
+Executing realign
+DEEEQLRAMAERLARLFPEVPLEKILAALRVTRSVEKTTELIRRGEI
+Reward Trajectory: [np.float64(0.6581)]
+Global elapsed time: 1.037731 s
+----------------------------------
+Executing realign
+EREERLAAMAERLAREFPDVPRELILAALRRTRSVAETRRLIEEGLI
+Reward Trajectory: [np.float64(0.6613)]
+Global elapsed time: 1.046768 s
+----------------------------------
+Executing realign
+DREAQLEAMAERLAKEFPEVPREKILAALRVTLSVEKTRELILRGEI
+Reward Trajectory: [np.float64(0.7633)]
+Global elapsed time: 1.044876 s
+----------------------------------
+Executing realign
+SEEERLEAMAEALAKRFPDVPREKILAALRVTRSVAKTEELIRAGKI
+Reward Trajectory: [np.float64(0.6411)]
+Global elapsed time: 1.038261 s
+----------------------------------
+Executing realign
+AEEERLEAMAERLAREFPDVPREKILAALRVTRSVAETRRLIEEGLI
+Reward Trajectory: [np.float64(0.746)]
+Global elapsed time: 1.030087 s
+----------------------------------
+Executing realign
+DEEARLEAMAERLARRFPDVPRELILAALRVTRSVARTEELIRRGEI
+Reward Trajectory: [np.float64(0.7034)]
+Global elapsed time: 1.033687 s
+----------------------------------
+Executing realign
+SEEARLEAMAERLAKRYPDVPRELILAALRVTRSVARTTRLIEEGLI
+Reward Trajectory: [np.float64(0.681)]
+Global elapsed time: 1.036633 s
+----------------------------------
+Executing realign
+AEEERLRAMAERLARRFPEVPRELILAALRETRSVAETERLIREGRI
+Reward Trajectory: [np.float64(0.6238)]
+Global elapsed time: 1.038108 s
+----------------------------------
+Executing realign
+SEEEELEAMAERLAKEFPEVPREKILAALKVYRSVEKTREAILRGEI
+Reward Trajectory: [np.float64(0.7158)]
+Global elapsed time: 1.049681 s
+----------------------------------
+Executing realign
+DEEARLEAMARRLAERFPDVPLEKILAALRVTRSVAATEELIRRGLI
+Reward Trajectory: [np.float64(0.6998)]
+Global elapsed time: 1.034233 s
+----------------------------------
+Executing realign
+SREEILRAMAERLAREFPDVPLEKILAALKVTRSVAATRELIERGLI
+Reward Trajectory: [np.float64(0.6886)]
+Global elapsed time: 1.050142 s
+----------------------------------
+Executing realign
+SREARLEAMAERLAREFPEVPREKILAALRVTLSVEATRRLIEEGLI
+Reward Trajectory: [np.float64(0.7403)]
+Global elapsed time: 1.036395 s
+----------------------------------
+Executing realign
+DREARLEAMAERLARRFPEVPREKILAALRVTRSVAATERLILEGRI
+Reward Trajectory: [np.float64(0.6258)]
+Global elapsed time: 1.036570 s
+----------------------------------
+Executing realign
+AEEARLEAMTARLQREFPDVPPELIRAALRETRSVARTRRLIEEGRI
+Reward Trajectory: [np.float64(0.5576)]
+Global elapsed time: 1.038015 s
+----------------------------------
+Executing realign
+DREARLEAMAERLAAEFPEVPREKILAALRVTRSVAATRRLIEEGLI
+Reward Trajectory: [np.float64(0.7276)]
+Global elapsed time: 1.036720 s
+----------------------------------
+Executing realign
+AEEAELERMAEELAREYPEVPREKILAALRVTKSVAATRKLIEEGRI
+Reward Trajectory: [np.float64(0.7508)]
+Global elapsed time: 1.043580 s
+----------------------------------
+Executing realign
+DEEARLEAMAARLAERFPEVPRERILAALRVTRSVAATEELIRRGEI
+Reward Trajectory: [np.float64(0.6695)]
+Global elapsed time: 1.041078 s
+----------------------------------
+Executing realign
+AEEAELERMAAELAARFPEVPREKILAALRVTRSVAATEEAIRRGEI
+Reward Trajectory: [np.float64(0.6146)]
+Global elapsed time: 1.047669 s
+----------------------------------
+Executing realign
+SEEEELRRMAERLAREFPDVPLEKILAALRETRSVAATREAIREGRI
+Reward Trajectory: [np.float64(0.6195)]
+Global elapsed time: 1.037870 s
+----------------------------------
+Executing realign
+SEERRLEAMAERLARRFPDVPREKILAALRVTRSVAATARLIEEGRI
+Reward Trajectory: [np.float64(0.5983)]
+Global elapsed time: 1.046035 s
+----------------------------------
+Executing realign
+DREARLEAMAERLAREFPEVPREKILAALRVTLSVAKTRELIEKGLI
+Reward Trajectory: [np.float64(0.7394)]
+Global elapsed time: 1.047329 s
+----------------------------------
+Executing realign
+AEEARLRAMAEALAREFPEVPLERILAALRRTRSVARTRELILRGEI
+Reward Trajectory: [np.float64(0.7475)]
+Global elapsed time: 1.047141 s
+----------------------------------
+Executing realign
+SREKELEAMAERLKREFPEVPYEKILAALKVTRSVAKTRQLILEGKI
+Reward Trajectory: [np.float64(0.6376)]
+Global elapsed time: 1.057794 s
+----------------------------------
+Executing realign
+AEEARLEAMAERLARRFPDVPREKILAALRVTRSVAATERLIREGRI
+Reward Trajectory: [np.float64(0.65)]
+Global elapsed time: 1.046425 s
+----------------------------------
+Executing realign
+AEEARLEAMAEALARRYPDVPREKILAALRVTRSVAATARLIEEGRI
+Reward Trajectory: [np.float64(0.6803)]
+Global elapsed time: 1.052572 s
+----------------------------------
+Executing realign
+DREAELEAMAERLARRFPEVPREKILAALRVTRSVAATEELIRRGEI
+Reward Trajectory: [np.float64(0.6391)]
+Global elapsed time: 1.050096 s
+Progress: 10 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2LVN
+100%|██████████| 1/1 [00:31<00:00, 31.85s/it]100%|██████████| 1/1 [00:31<00:00, 31.85s/it]
+----------------------------------
+Executing realign
+DLEEMAEALAREFPHVPRELILAELERTRSVEETRRRIERGEIVVP
+Reward Trajectory: [np.float64(0.6807)]
+Global elapsed time: 1.044041 s
+----------------------------------
+Executing realign
+DLEKMAEKLAKEFPHVPRELILEALKKTKSVAKTRELIERGEIKVP
+Reward Trajectory: [np.float64(0.6526)]
+Global elapsed time: 1.022540 s
+----------------------------------
+Executing realign
+RLEEMAERLAREFPHVPRELILAELRRTRSVERTRRAIEEGRIRVP
+Reward Trajectory: [np.float64(0.5548)]
+Global elapsed time: 1.043655 s
+----------------------------------
+Executing realign
+RLEEMAEALARRFPHVPRELILAELRRTRSVAATEEAIRRGEIVVP
+Reward Trajectory: [np.float64(0.456)]
+Global elapsed time: 1.027837 s
+----------------------------------
+Executing realign
+TLEEMAEALKKEFPHVPYELILEELKKTKSVEETRKKIERGEIKVP
+Reward Trajectory: [np.float64(0.6195)]
+Global elapsed time: 1.026468 s
+----------------------------------
+Executing realign
+DLERMAERLAREFPHVPRELILEELRRTRSVEETRRAILEGRIRVP
+Reward Trajectory: [np.float64(0.6528)]
+Global elapsed time: 1.012093 s
+----------------------------------
+Executing realign
+DLEAMAEALARRFPHVPRELILAELRRTRSVAATEKAIREGRIVVP
+Reward Trajectory: [np.float64(0.6074)]
+Global elapsed time: 1.020494 s
+----------------------------------
+Executing realign
+DLERMAEALARRFPHVPRELILAELRRTRSVAATERAIREGRIKVP
+Reward Trajectory: [np.float64(0.5544)]
+Global elapsed time: 1.014083 s
+----------------------------------
+Executing realign
+SLAAMAERLAREFPHVPRELILAELARTRSVAATRRAIEEGRIRVP
+Reward Trajectory: [np.float64(0.5935)]
+Global elapsed time: 1.028964 s
+----------------------------------
+Executing realign
+RLEEMAEALARRFPHVPRELILAELRVTRSVAATEERILRGEIKVP
+Reward Trajectory: [np.float64(0.704)]
+Global elapsed time: 1.013222 s
+----------------------------------
+Executing realign
+RLEEMAERLAREFPHVPRELILAELRVTRSVRRTRRAILEGRIKVP
+Reward Trajectory: [np.float64(0.5892)]
+Global elapsed time: 1.021746 s
+----------------------------------
+Executing realign
+DLERMAEALARRFPHVPRELILAELRRTRSVRLTARAIEEGRIRVP
+Reward Trajectory: [np.float64(0.5298)]
+Global elapsed time: 1.019755 s
+----------------------------------
+Executing realign
+DLERMAERLAREFPHVPRELILARLRETRSVEATREAIERGEIRVP
+Reward Trajectory: [np.float64(0.5802)]
+Global elapsed time: 1.018912 s
+----------------------------------
+Executing realign
+RLEEMAEALAREFPHVPRELILAELRRTRSVRATRRAIEEGRIVVP
+Reward Trajectory: [np.float64(0.641)]
+Global elapsed time: 1.028683 s
+----------------------------------
+Executing realign
+DLERMAERLAKEFPHVPRELILARLKETKSVEKTREAIERGEIKVP
+Reward Trajectory: [np.float64(0.5135)]
+Global elapsed time: 1.002269 s
+----------------------------------
+Executing realign
+RLLEMAERLAREFPHVPLELILERLRVTRSVAETRRAIERGEIVVP
+Reward Trajectory: [np.float64(0.5977)]
+Global elapsed time: 1.023080 s
+----------------------------------
+Executing realign
+SLEAMAEALAREFPHVPRELILAELKRTKSVAATRRAIEQGEIRVP
+Reward Trajectory: [np.float64(0.5301)]
+Global elapsed time: 1.008067 s
+----------------------------------
+Executing realign
+DLEKMAEKLKKEFPEVPLELILEELKKTKSVEETRKKIEKGEIKVP
+Reward Trajectory: [np.float64(0.5417)]
+Global elapsed time: 1.023805 s
+----------------------------------
+Executing realign
+ELEEMAAALARRFPHVPRHLILEALRVTRSVAATAELIRRGEIKVP
+Reward Trajectory: [np.float64(0.5539)]
+Global elapsed time: 1.021956 s
+----------------------------------
+Executing realign
+DLEAMAERLAREFPHVPRELILAELRVTRSVAATRRAIEEGRIVVP
+Reward Trajectory: [np.float64(0.6495)]
+Global elapsed time: 1.012871 s
+----------------------------------
+Executing realign
+RLEEMAEALAREFPHVPRELILAELRRTKSVEATRRAILEGRIVVP
+Reward Trajectory: [np.float64(0.7247)]
+Global elapsed time: 1.028708 s
+----------------------------------
+Executing realign
+DLPAMAERLAREFPHVPLELILAELRRTRSVEATRRAIERGEIKVP
+Reward Trajectory: [np.float64(0.567)]
+Global elapsed time: 1.011292 s
+----------------------------------
+Executing realign
+DLEEMARALAEEFPHVPLELILAALRETKSVARTREAIERGEIVVP
+Reward Trajectory: [np.float64(0.6569)]
+Global elapsed time: 1.021001 s
+----------------------------------
+Executing realign
+RLDEMARALAREYPHVPYELILAELKRTRSVAATRRAIERGEIRVP
+Reward Trajectory: [np.float64(0.5533)]
+Global elapsed time: 1.022088 s
+----------------------------------
+Executing realign
+RLEEMAERLAKEFPHVPRELILAELERTRSVARTRRAIEEGRIKVP
+Reward Trajectory: [np.float64(0.5466)]
+Global elapsed time: 1.024399 s
+----------------------------------
+Executing realign
+TLEAMAERLAREFPHVPYHLILERLRVTRSVAATREAIERGEIKVP
+Reward Trajectory: [np.float64(0.6028)]
+Global elapsed time: 1.015620 s
+----------------------------------
+Executing realign
+DLERMAEALARRFPHVPRELILAELKRTRSVALTEERIRRGEIKVP
+Reward Trajectory: [np.float64(0.6565)]
+Global elapsed time: 1.018111 s
+----------------------------------
+Executing realign
+RLEEMAERLAREFPHVPRELILEALRRTRSVRKTREAILRGEIKVP
+Reward Trajectory: [np.float64(0.6114)]
+Global elapsed time: 1.017592 s
+----------------------------------
+Executing realign
+TLEEMAEALARRFPHVPRELILAALKETKSVAKTEELIRRGEIKVP
+Reward Trajectory: [np.float64(0.6495)]
+Global elapsed time: 1.024180 s
+----------------------------------
+Executing realign
+RLEAMAEALARRFPHVPRELILAELRRTRSVRATERAIREGRIVVP
+Reward Trajectory: [np.float64(0.5901)]
+Global elapsed time: 1.000898 s
+Progress: 11 / 12
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: v2K43S_2KVV
+100%|██████████| 1/1 [00:36<00:00, 36.98s/it]100%|██████████| 1/1 [00:36<00:00, 36.98s/it]
+INFO:root:Sampling wall-time columns added: 'sampling_wall_time_s' (per sample), 'protein_sampling_wall_time_s' (sum per protein)
+INFO:root:Saving to file /u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/pretrained_test_ddg_bon_N=100_tilt_beta=1.0.csv
+----------------------------------
+Executing realign
+MEWIKESELMKKTGLSRSTITKLKKTKLKEGIHYRRVSKDGKESPDATILYNLEEIMKLLK
+Reward Trajectory: [np.float64(0.5234)]
+Global elapsed time: 1.191119 s
+----------------------------------
+Executing realign
+ERWVRESELMKLTGLARSTITRLKRTALREGEHYRRVSADGLPSPDATTLYNLERILALLA
+Reward Trajectory: [np.float64(0.5056)]
+Global elapsed time: 1.188128 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLKRSTITKLRKTKLKEGEHYRRVSPNGLDSPDATILYNLEKILELLK
+Reward Trajectory: [np.float64(0.4288)]
+Global elapsed time: 1.196434 s
+----------------------------------
+Executing realign
+EEWIKESELMKKTGLKRSTITKLRKTKLKEGIHYRRVSADGKDSPDATILYNLEKILELLK
+Reward Trajectory: [np.float64(0.3948)]
+Global elapsed time: 1.188974 s
+----------------------------------
+Executing realign
+MRWVKESELMKLTGLKRSTITKLRKTKLEEGKHYRRVSADGKDSPDATILYNLEEILALLK
+Reward Trajectory: [np.float64(0.5216)]
+Global elapsed time: 1.189427 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLKRSTITKLRKTKLKEGEHYRRVSADGKDSPDATIYYNLEKILKLLK
+Reward Trajectory: [np.float64(0.4462)]
+Global elapsed time: 1.195671 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLKRSTITKLRKTKLKEGEHYRRVSADGKPSPDATILYNLEKILELLK
+Reward Trajectory: [np.float64(0.4567)]
+Global elapsed time: 1.191803 s
+----------------------------------
+Executing realign
+ERWVRESELMKLTGLSRSTITRLRRTKLKEGVHYRRVSADGRDSPDATVLYNLEKILALLE
+Reward Trajectory: [np.float64(0.516)]
+Global elapsed time: 1.180478 s
+----------------------------------
+Executing realign
+ERWVREAELMRLTGLSRSTITRLRRTALREGEHYRRVSADGKDSPDATVLYNLERILALLA
+Reward Trajectory: [np.float64(0.6064)]
+Global elapsed time: 1.194879 s
+----------------------------------
+Executing realign
+ERWIRESELMAETGLARSTLSALRRTALREGEHYRRVSADGKDSPDATTYYNLERIRALLA
+Reward Trajectory: [np.float64(0.5594)]
+Global elapsed time: 1.191079 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLRRSTISRLRRTKLKEGEHYRRVSADGKDSPDATILYNLEKILALLE
+Reward Trajectory: [np.float64(0.4522)]
+Global elapsed time: 1.188206 s
+----------------------------------
+Executing realign
+MRWIKESELMKETGLSRSTITKLRKTKLEEGKHYRRVSADGKDSPDATIYYNLEEILELLK
+Reward Trajectory: [np.float64(0.4995)]
+Global elapsed time: 1.190402 s
+----------------------------------
+Executing realign
+ERWVVERELMELTGLRRSTITALRRTALEEGKHYRRVSADGRDSPDATILYNLEAILALLK
+Reward Trajectory: [np.float64(0.5766)]
+Global elapsed time: 1.189731 s
+----------------------------------
+Executing realign
+ERWIPVSELMKETGLTRSTITKLRKTKLKEGEHYRRVSADGKDSPDATILYNLEKILALLE
+Reward Trajectory: [np.float64(0.458)]
+Global elapsed time: 1.198180 s
+----------------------------------
+Executing realign
+ARWVRESELMRLTGLSRSTITALRRTRLREGEHYRRVSADGLPSPDATVLYNLERIEALLA
+Reward Trajectory: [np.float64(0.5508)]
+Global elapsed time: 1.200843 s
+----------------------------------
+Executing realign
+ERWVREAELMRLTGLSPSTIARLRRTRLEEGRHYRRVSADGRPSPDATVLYNLEAIEALLA
+Reward Trajectory: [np.float64(0.5251)]
+Global elapsed time: 1.202819 s
+----------------------------------
+Executing realign
+ERWLVERELMRETGLAPSTLTRLRRTRLREGEHYRRVSADGRDSPDATILYNLEAIRALLA
+Reward Trajectory: [np.float64(0.5784)]
+Global elapsed time: 1.179501 s
+----------------------------------
+Executing realign
+ERWVVESELMKLTGLSRSTITRLRKTKLKEGEHYRRVSADGKDSPDATILYNLEKILALLE
+Reward Trajectory: [np.float64(0.5211)]
+Global elapsed time: 1.197119 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLKRSTITKLRKTELKEGIHYRRVSADGKDSPDATILYNLEKILELLK
+Reward Trajectory: [np.float64(0.5097)]
+Global elapsed time: 1.197586 s
+----------------------------------
+Executing realign
+ERWIKESELMKETGLKRSTITKLRKTKLKEGIHYRRVSADGKDSPDATIYYNLEEIMKLLK
+Reward Trajectory: [np.float64(0.5077)]
+Global elapsed time: 1.190992 s
+----------------------------------
+Executing realign
+EEWIKESELMKKTGLSRSTITKLKKTKLKEGIHYRRVSADGKESKDATILYNLEKIKELLK
+Reward Trajectory: [np.float64(0.4307)]
+Global elapsed time: 1.187503 s
+----------------------------------
+Executing realign
+ERWVKESELMKLTGLKRSTITKLRKTKLKEGEHYRRVSADGKDSPDATILYNLEKILELLK
+Reward Trajectory: [np.float64(0.4588)]
+Global elapsed time: 1.198986 s
+----------------------------------
+Executing realign
+ERWVRESELMRLTGLRRSTITRLRRTALREGEHYRRVSADGRPSPDATVLYNLEAIEALLA
+Reward Trajectory: [np.float64(0.5334)]
+Global elapsed time: 1.197699 s
+----------------------------------
+Executing realign
+EEWIKINELMKKTGLKRSTIRKLMKTKLKEGIHYRRVSKDGKPSKDATIYFNLEKIMELLK
+Reward Trajectory: [np.float64(0.5084)]
+Global elapsed time: 1.186150 s
+----------------------------------
+Executing realign
+MEWIKENELMKKTGLKRSTITKLRKTKLKEGIHYRRVSADGKDSPNATILYNLEEILKLLK
+Reward Trajectory: [np.float64(0.4894)]
+Global elapsed time: 1.202400 s
+----------------------------------
+Executing realign
+ERWVRESELMKLTGLSPSTITRLRKTKLKEGEHYRRVSADGKDSPDATIYYNLEKILALLK
+Reward Trajectory: [np.float64(0.5083)]
+Global elapsed time: 1.191734 s
+----------------------------------
+Executing realign
+ERWVRESELMRLTGLSRATIARLRRTRLREGEHYRRVSADGRDSPDATILYNLERIMALLA
+Reward Trajectory: [np.float64(0.6077)]
+Global elapsed time: 1.194328 s
+----------------------------------
+Executing realign
+ERWVRESELMKLTGLSRSTITRLRRTRLKEGVHYRRVSADGKDSPDATILYNLERIEALLA
+Reward Trajectory: [np.float64(0.539)]
+Global elapsed time: 1.190716 s
+----------------------------------
+Executing realign
+ERWVRESELMRLTGLSRSTISALRRTRLKEGEHYRRVSPDGRDSPDATVLYNLERILALLA
+Reward Trajectory: [np.float64(0.5664)]
+Global elapsed time: 1.198991 s
+----------------------------------
+Executing realign
+ERWVRESELMRLTGLRRSTITRLRRTALREGEHYRRVSADGRDSPDATILYNLERIEALLA
+Reward Trajectory: [np.float64(0.5327)]
+Global elapsed time: 1.200035 s
+Progress: 12 / 12

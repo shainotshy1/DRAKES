@@ -51,7 +51,7 @@ except ImportError:
 _PYRO_INIT = False
 
 # Default CSV ``protein_name`` values (native PDBs under AlphaFold_model_PDBs/)
-DEFAULT_FIG5_PROTEINS = "2KRU.pdb,r6_560_TrROS_Hall.pdb"
+DEFAULT_FIG5_PROTEINS =  "v2K43S_2KVV.pdb"#"2KRU.pdb,r6_560_TrROS_Hall.pdb"
 
 
 def protein_display_stem(protein_name: str) -> str:

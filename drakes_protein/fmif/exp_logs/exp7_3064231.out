@@ -1,0 +1,1046 @@
+Running worker with ID: 0
+Number of workers: 1
+Running with Reward Samples: 64
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 5)
+INFO:root:Loading PRETRAINED model state dict (/u/sdickman/DRAKES/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=ddg, N=1, feedback_steps=1, max_spec_order=20, feedback_method=spectral, num_spec_masks=2048, rmax=False, {})
+INFO:root:Reading protein set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Reading validation set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/processed_data/dpo_valid_dict_wt.pkl)
+INFO:root:Executing on validation set (Batch repeats: 1, Proteins per batch: 1, Total proteins: 10)
+INFO:root:WorkerID: 0, Assigned proteins: 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 1ZHC
+----------------------------------
+Executing realign
+Previous true reward: -0.6943739056587219
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.61s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.73s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.77s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.79s/it][A100%|██████████| 4/4 [00:07<00:00,  1.76s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3029 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.3337 s]
+Clean Sequence: SDFEEVRKELYKNDPEYKEIYDKKKELEEKIKKLKEEKAKKEEIEKLEKEKKELEKKLKEKEIEYLKK
+-DFEE---ELYKNDPE--EIYD-K-EL-E-IKKLKEEKA-K-E-EK-E-E-KE-EKK-KEK-IE-LKK Targets: [0, 5, 6, 7, 16, 17, 22, 24, 27, 29, 39, 41, 43, 46, 48, 50, 53, 57, 61, 64]
+Executing realign
+SDFEEAKKELYKNDPEFKEIYDKKKELEEKIKKLKEEKAEKEEIEKLEKELKELEKKLKEKIIEYLKK
+Reward Trajectory: [np.float64(-0.6944), np.float64(0.1545)]
+Global elapsed time: 13.176113 s
+----------------------------------
+Executing realign
+Previous true reward: 0.4220077693462372
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.61s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.73s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.77s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.79s/it][A100%|██████████| 4/4 [00:07<00:00,  1.77s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2747 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.1235 s]
+Clean Sequence: GKFEEARKKLYAENPEFKKIYDKYKELEKKIEELKKENAPEEEINKLEKERKELEEKLEEMIKAYLEK
+G-F-EARKKLYAEN--FKK-YDKY-EL--K-EELK--NAPE-EINKLE-ER-E-E-K-EEM--AY-EK Targets: [1, 3, 14, 15, 19, 24, 27, 28, 30, 35, 36, 41, 48, 51, 53, 55, 57, 61, 62, 65]
+Executing realign
+GKFEEARKKLYAENPEFKKIYDKYKELKKKIEELKKENAPEEEINKLEKERKELEKKLEEMIKAYLEK
+Reward Trajectory: [np.float64(0.422), np.float64(0.5214)]
+Global elapsed time: 13.856836 s
+----------------------------------
+Executing realign
+Previous true reward: 0.37625935673713684
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.60s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.73s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.77s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.79s/it][A100%|██████████| 4/4 [00:07<00:00,  1.77s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2746 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.3585 s]
+Clean Sequence: GAFEEARARLYAEDPEFRALLDRREELAAEIERLRAENAAPEEIAALEAERAELERALEERILAYLAA
+G-F--A--RLYAEDPE-R-LLDRR-ELAA-I--LRA-NA-PEEIAALEAE-AE--R-L-ER-LAYLA- Targets: [1, 3, 4, 6, 7, 16, 18, 24, 29, 31, 32, 36, 39, 50, 53, 54, 56, 58, 61, 67]
+Executing realign
+GAFAEARARLYAEDPEYRALLDRRDELAARIARLRAENAAPEEIAALEAERAELDRALRERELAYLAA
+Reward Trajectory: [np.float64(0.3763), np.float64(-0.2563)]
+Global elapsed time: 15.092240 s
+----------------------------------
+Executing realign
+Previous true reward: 0.30979475378990173
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.60s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.73s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.77s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.79s/it][A100%|██████████| 4/4 [00:07<00:00,  1.77s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2862 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.7464 s]
+Clean Sequence: NKYEKVKKELYKNNPEFKAILDKRKELEEKIAKLKAENAAPEEIAKLEAEKKQLEEKLKEMIEKYLKS
+-KYEKVK-ELY----EFKAI-DKRKEL-EKIA--KAEN-AP-EIAK-EAE--Q--EK--EMIEKY-KS Targets: [0, 7, 11, 12, 13, 14, 20, 27, 32, 33, 38, 41, 46, 50, 51, 53, 54, 57, 58, 65]
+Executing realign
+GKYEKVKEELYKNDPEFKAIYDKRKELEEKIAKLKAENAAPEEIAKLEAELKQLEEKIKEMIEKYLKS
+Reward Trajectory: [np.float64(0.3098), np.float64(0.595)]
+Global elapsed time: 13.485301 s
+----------------------------------
+Executing realign
+Previous true reward: -0.9131792187690735
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.61s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.73s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.77s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.79s/it][A100%|██████████| 4/4 [00:07<00:00,  1.77s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:15<00:00, 75.36s/it]100%|██████████| 1/1 [01:15<00:00, 75.36s/it]
+ [Fourier fitting overhead: 0.3183 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.5376 s]
+Clean Sequence: GKYEEARKKLYEEDPEFKAIDEERKELEKEIEEAKKAKAPEEYIKELEKKKKELDEKLEEKIKEYLEK
+GKYEEARKK-YE-DPE-KA--EERK-L-----EAK-AKAPEEYIKE-EKK--E-D-K-E--IKEYLEK Targets: [9, 12, 16, 19, 20, 25, 27, 28, 29, 30, 31, 35, 46, 50, 51, 53, 55, 57, 59, 60]
+Executing realign
+GKYEEARKKLYEEDPEFKAIYEERKKLEKEIEEAKKAKAPEEYIKELEKKKEELDKKLEEKIKEYLEK
+Reward Trajectory: [np.float64(-0.9132), np.float64(0.0599)]
+Global elapsed time: 14.323817 s
+Progress: 1 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 1UZC
+----------------------------------
+Executing realign
+Previous true reward: -0.2285224199295044
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2665 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 7.4780 s]
+Clean Sequence: MKKFATREEAKEAFKKLLEKKKVPVDATFEEAEAKVKPDEEYKALKKLEDKKKAFEEWKEEHK
+------REE-KEA-KKLLE-KKVP-D-TFEEAEA--K--E-YK-LKKLEDKKKA-E-WK-EHK Targets: [0, 1, 2, 3, 4, 5, 9, 13, 19, 24, 26, 34, 35, 37, 38, 40, 43, 54, 56, 59]
+Executing realign
+MKVFKTREEAKEAFKKLLEEKKVPVDATFEEAEAMVKEDERYKALKKLEDKKKAFEEWKKEHK
+Reward Trajectory: [np.float64(-0.2285), np.float64(0.0157)]
+Global elapsed time: 15.641347 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5291083455085754
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2361 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.3219 s]
+Clean Sequence: MVRCATREEAERLFRELLARKRVPVDATFEEAAALVEGDPEYAALPREEDRRRAFAAWVAEQR
+M--CAT-E-AER-FREL-ARK---VDATFE--AALV-G-P--A-LPREEDRRRA-AA-V-EQ- Targets: [1, 2, 6, 8, 12, 17, 21, 22, 23, 30, 31, 36, 38, 40, 41, 43, 54, 57, 59, 62]
+Executing realign
+MVRCATREEAERLFRELLARKRVPVDATFEEAAALVEGDPRYAALPREEDRRRAFAAYVAEQR
+Reward Trajectory: [np.float64(0.5291), np.float64(0.4397)]
+Global elapsed time: 12.454271 s
+----------------------------------
+Executing realign
+Previous true reward: 0.19045358896255493
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.65s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2827 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 3.9048 s]
+Clean Sequence: MIKCKTKEEAKELFKKLLEEKKVPVDATFEEAKKLVESDERYKALKKEEDKKKAFEEYKKSKK
+---CK-KE---ELFKKLLEE--VPV--T-E-AKKLVESDERY-AL--EED--KA-EEYKK-KK Targets: [0, 1, 2, 5, 8, 9, 10, 20, 21, 25, 26, 28, 30, 42, 45, 46, 50, 51, 54, 60]
+Executing realign
+MIKCKTKEEAKELFKKLLEEKKVPVDATFEEAKKLVESDERYKALKKEEDRKKAFEEYKKEKK
+Reward Trajectory: [np.float64(0.1905), np.float64(0.3684)]
+Global elapsed time: 12.078825 s
+----------------------------------
+Executing realign
+Previous true reward: 0.2819289267063141
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2342 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.5525 s]
+Clean Sequence: MYKFKTKEEAKEAFKKLLEEKKVPVDATFEEAKKMVESDERYKALKKEEDRKKAFEEYKKEKK
+-Y-F-TKE--KEA-KKLLE-KKV--DAT-EEAKK-V-SDE-YKA--KE-DR-K--EEYKKEKK Targets: [0, 2, 4, 8, 9, 13, 19, 23, 24, 28, 34, 36, 40, 44, 45, 48, 51, 53, 54]
+Executing realign
+MYKFKTKEEAKEAFKKLLEEKKVPVDATFEEAKKLVESDEIYKALKKEEDRKKAFEEYKKEKK
+Reward Trajectory: [np.float64(0.2819), np.float64(0.4081)]
+Global elapsed time: 13.673244 s
+----------------------------------
+Executing realign
+Previous true reward: 0.1380085051059723
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.65s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:08<00:00, 68.40s/it]100%|██████████| 1/1 [01:08<00:00, 68.40s/it]
+ [Fourier fitting overhead: 0.2534 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.1524 s]
+Clean Sequence: MIKCKTEEEAKELFKELLKEKKVPVDATFEEAESLVKKDPRYKALKKLEDKKKAFEEYKKEQK
+-I-CK--EEA---F-ELLKEK--P-D--FE-AESLVK-D-RYKALKKLEDKK-AFE---KEQK Targets: [0, 2, 5, 6, 10, 11, 12, 14, 21, 22, 24, 26, 27, 30, 37, 39, 52, 56, 57, 58]
+Executing realign
+MIKCKTKEEAKKLFKELLKEKKVPVDATFEEAESLVKPDERYKALKKEEDKKKAFEEYKKEQK
+Reward Trajectory: [np.float64(0.138), np.float64(0.2589)]
+Global elapsed time: 14.284844 s
+Progress: 2 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2LQK
+----------------------------------
+Executing realign
+Previous true reward: 0.21320980787277222
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.65s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3793 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.2704 s]
+Clean Sequence: KEFKAGDKVILPPYGEGVVKGVKKITINGVEQDFYEVYFPSTNETAYVPVSSPESVGLKFAK
+KE-KAGD--ILPPYGE-VVKG-KKITINGVE-D-Y--Y-PSTN--A---V--P-S-G-KFAK Targets: [2, 7, 8, 16, 21, 31, 33, 35, 36, 38, 43, 44, 46, 47, 48, 50, 51, 53, 55, 57]
+Executing realign
+KEFKAGDKVILPPYGEGVVKGIKKITINGVEKDYYEVYFPSTNETAYVPVDNPESVGLKFAK
+Reward Trajectory: [np.float64(0.2132), np.float64(0.41)]
+Global elapsed time: 13.569649 s
+----------------------------------
+Executing realign
+Previous true reward: 0.4813291132450104
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2399 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.1524 s]
+Clean Sequence: EEFKAGDKVVLPPYGEGVVKGVKEITVNGVKQKYYEVYFPSTNKTAYVPVSSPESVGLKKAE
+---KA--KVVLPP-GEGVV-GV-E-TV-GVK-KYYEV-F-ST-KTAYV-VS-P-S---KKAE Targets: [0, 1, 2, 5, 6, 13, 19, 22, 24, 27, 31, 37, 39, 42, 48, 51, 53, 55, 56, 57]
+Executing realign
+EEFKAGDKVVLPPYGEGVVKGVKEITVNGVKQKYYEVYFPSTGKTAYVPVSDPESVGLKKAE
+Reward Trajectory: [np.float64(0.4813), np.float64(0.6219)]
+Global elapsed time: 14.231898 s
+----------------------------------
+Executing realign
+Previous true reward: 0.2873006761074066
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2502 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.2484 s]
+Clean Sequence: EAFKAGDKVVLPPYGEGVVKGVKKVTVNGVKQEFYEVYFPSTNETALVPVANPEAVGLKKAA
+-AFK-GDKVVLPP-GEGVVKG-KK-T-NGV--E-Y-VY-PST--T--V-V-NPE--G-KKAA Targets: [0, 4, 13, 21, 24, 26, 30, 31, 33, 35, 38, 42, 43, 45, 46, 48, 50, 54, 55, 57]
+Executing realign
+EAFKAGDKVVLPPYGEGVVKGVKKITINGVEKEYYEVYFPSTNETAYVPVDNPEAVGLKKAA
+Reward Trajectory: [np.float64(0.2873), np.float64(0.5668)]
+Global elapsed time: 14.427781 s
+----------------------------------
+Executing realign
+Previous true reward: 0.3024252951145172
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.47s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2645 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.0280 s]
+Clean Sequence: KEFKAGDKVILPPYGEGVVKGVKKITVDGVEKDFYEVYFPSTNETAYVPVENPESVGLKFAE
+K-FKA-D-VI-PPY-EG-V-GVKKITVDGVEKD---VYFPSTN-T-Y-P--N-E----KFAE Targets: [1, 5, 7, 10, 14, 17, 19, 33, 34, 35, 43, 45, 47, 49, 50, 52, 54, 55, 56, 57]
+Executing realign
+KAFKAGDKVILPPYGEGVVKGVKKITVDGVEKDYYEVYFPSTNETAYVPVDNPEAVGLKFAE
+Reward Trajectory: [np.float64(0.3024), np.float64(0.5036)]
+Global elapsed time: 14.219452 s
+----------------------------------
+Executing realign
+Previous true reward: 0.46195492148399353
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.48s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.60s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.64s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.66s/it][A100%|██████████| 4/4 [00:06<00:00,  1.63s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:10<00:00, 70.23s/it]100%|██████████| 1/1 [01:10<00:00, 70.23s/it]
+ [Fourier fitting overhead: 0.2683 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.3144 s]
+Clean Sequence: KEFKAGDKVVLPPYGEGIVEGVEEITIDGVKKKYYKVYFPSTNKTAYVPVESPESVGLKFAE
+KEFKAGD-V---PYGEG-VE---E-TI-GVK-K-YKV-F-ST-K--Y--VESPES-GLKFAE Targets: [7, 9, 10, 11, 17, 20, 21, 22, 24, 27, 31, 33, 37, 39, 42, 44, 45, 47, 48, 55]
+Executing realign
+KEFKAGDKVVLPPYGEGIVEGIEEITIDGVKKKFYKVYFPSTGKTAYVPVESPEEVGLKFAE
+Reward Trajectory: [np.float64(0.462), np.float64(0.4026)]
+Global elapsed time: 13.514623 s
+Progress: 3 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2MCK
+----------------------------------
+Executing realign
+Previous true reward: -1.176609992980957
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.45s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.57s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.61s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.63s/it][A100%|██████████| 4/4 [00:06<00:00,  1.60s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2871 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 9.4642 s]
+Clean Sequence: SEEKEKKAKLYKSGKYAGKPVTKEDAKIILKKEWKKKKKKNPNLKLDISDETINKKFPHLK
+S-E-E--AKLYKSGKYAGKPVT-EDAK--LKKE---K-KK---L-LD-SDE-I--K-PHLK Targets: [1, 3, 5, 6, 22, 27, 28, 33, 34, 35, 37, 40, 41, 42, 44, 47, 51, 53, 54, 56]
+Executing realign
+SKEKEKKAKLYKSGKYAGKPVTKEDAKIILKKEYLEKKKKEPDLKLDISDEVIYKKFPHLK
+Reward Trajectory: [np.float64(-1.1766), np.float64(0.0348)]
+Global elapsed time: 17.521451 s
+----------------------------------
+Executing realign
+Previous true reward: -0.12049584090709686
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.45s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.57s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.61s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.63s/it][A100%|██████████| 4/4 [00:06<00:00,  1.60s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2552 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.5607 s]
+Clean Sequence: SEEKEKKAKLYKSGPYAGKPVTKEDAKIILKKEYLEEKKKNPDLKLDISDETIYKKFPHLK
+SE--EKK---YKS-PYAGKP--KE-A---L-KEYLEEKKK-PDLK-D-SDE-I--K-PHLK Targets: [2, 3, 7, 8, 9, 13, 20, 21, 24, 26, 27, 28, 30, 40, 45, 47, 51, 53, 54, 56]
+Executing realign
+SEIKEKKAKLYKSGPYAGKPITKEDAKIILEKEYLEEKKKNPDLKLDISDEVIYKKFPHLK
+Reward Trajectory: [np.float64(-0.1205), np.float64(0.0321)]
+Global elapsed time: 13.590994 s
+----------------------------------
+Executing realign
+Previous true reward: 0.20781588554382324
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.45s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.57s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.61s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.63s/it][A100%|██████████| 4/4 [00:06<00:00,  1.60s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2508 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.2326 s]
+Clean Sequence: EELKEPKAKLYKSGPNAGKPVTKEDAKIILLKEYLEEKKKNPDLKLDISDEEIYKRFPHLK
+EEL-EPKAK-YK-GP-AG--VT--DA---L-KEYLEEK-K---L-LD-S-EEIY-RFPHLK Targets: [3, 9, 12, 15, 18, 19, 22, 23, 26, 27, 28, 30, 38, 40, 41, 42, 44, 47, 49, 54]
+Executing realign
+EELKEPKAKLYKSGPHAGEPVTKEDAKIILLKEYLEEKKKNPDLKLDISDEEIYKRFPHLK
+Reward Trajectory: [np.float64(0.2078), np.float64(0.1893)]
+Global elapsed time: 13.157399 s
+----------------------------------
+Executing realign
+Previous true reward: 0.15787678956985474
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.45s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.57s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.61s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.63s/it][A100%|██████████| 4/4 [00:06<00:00,  1.60s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2543 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.4329 s]
+Clean Sequence: SELKPPVAKLHESGPLAGQPVTKEDARILLLQEWLKEKKKNPDLKLDISDETINARFPHLA
+S-L-PPV-K--E-GP-AGQ-VT-ED-RI-LLQEWLKEK--NPDLKLD-SDE-I---FP-L- Targets: [1, 3, 7, 9, 10, 12, 15, 19, 22, 25, 28, 38, 39, 47, 51, 53, 54, 55, 58, 60]
+Executing realign
+STLEPPVAKLYESGPYAGQPVTKEDARIILLQEWLKEKKKNPDLKLDISDEVIYEKFPHLK
+Reward Trajectory: [np.float64(0.1579), np.float64(0.4739)]
+Global elapsed time: 13.451672 s
+----------------------------------
+Executing realign
+Previous true reward: 0.391116738319397
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.45s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.57s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.61s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.63s/it][A100%|██████████| 4/4 [00:06<00:00,  1.60s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:12<00:00, 72.36s/it]100%|██████████| 1/1 [01:12<00:00, 72.36s/it]
+ [Fourier fitting overhead: 0.2544 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.3310 s]
+Clean Sequence: SVPKEKVARLYKSGKYAGKPVTKEDARIILEKEYLERKKTEPDLKLDISDETIYKRFPHLK
+SVP-EKVAR-Y---KYAGKPVT---ARI--EK-YLERK-TEPD--L--S-E-IYKRFPH-- Targets: [3, 9, 11, 12, 13, 22, 23, 24, 28, 29, 32, 38, 43, 44, 46, 47, 49, 51, 59, 60]
+Executing realign
+SVPKEKVARLYKSGKYAGKPVTKEDARIILEKEYLERKKTEPDLKLDISDEVIYKRFPHLK
+Reward Trajectory: [np.float64(0.3911), np.float64(0.4269)]
+Global elapsed time: 14.370079 s
+Progress: 4 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 1JIC
+----------------------------------
+Executing realign
+Previous true reward: -1.5617395639419556
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.30s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.41s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.45s/it][A
+100%|██████████| 4/4 [00:05<00:00,  1.47s/it][A100%|██████████| 4/4 [00:05<00:00,  1.44s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2216 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 7.0047 s]
+Clean Sequence: SATFVKDGKTVTVPLSDVTKVWQEGDKIKFTYDAGNGVTGEGEVSVSDAPPELLK
+-ATFV-DGKTV--P-S-V---WQ-GDKIK--Y-AG-GV--EGEVSVSD--PE-L- Targets: [0, 5, 11, 12, 14, 16, 18, 19, 20, 23, 29, 30, 32, 35, 38, 39, 48, 49, 52, 54]
+Executing realign
+SATFVKDGKTVTVPLSKVTKVWQEGDKIKFTYDAGDGVIGEGEVSVSDAPPELLK
+Reward Trajectory: [np.float64(-1.5617), np.float64(-0.9361)]
+Global elapsed time: 14.355867 s
+----------------------------------
+Executing realign
+Previous true reward: -0.7901042699813843
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.31s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.41s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.45s/it][A
+100%|██████████| 4/4 [00:05<00:00,  1.47s/it][A100%|██████████| 4/4 [00:05<00:00,  1.44s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2571 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.4134 s]
+Clean Sequence: MATFVKDGKTVTVDLSKVTKVWQEGDKIKFTYDEGDGKIGEGEVTVDDAPAELKK
+MAT-V-DGKT--VDLSKV-K-WQEGDKIK-TYDEGDG-IGE-E-T--D--A-LKK Targets: [3, 5, 37, 41, 10, 11, 43, 45, 46, 48, 49, 18, 51, 20, 29]
+Executing realign
+MATFVKDGKTVTVDLSKVTKVWQEGDKIKFTYDEGDGKIGEGEVTIEDAPAELKK
+Reward Trajectory: [np.float64(-0.7901), np.float64(-0.5953)]
+Global elapsed time: 13.797615 s
+----------------------------------
+Executing realign
+Previous true reward: -1.5285046100616455
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.31s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.41s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.45s/it][A
+100%|██████████| 4/4 [00:05<00:00,  1.47s/it][A100%|██████████| 4/4 [00:05<00:00,  1.44s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2658 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.1701 s]
+Clean Sequence: SATFVKDGKTVTVPLSKVTKVWQDGDKIHFTYDEGDGKIGEGEVSVEDAPAELKK
+-A-F-KDG-TV-V-LSKVT-----GDK--F-YDE--GKIGEGEV---DAPAELK- Targets: [0, 2, 4, 8, 11, 13, 19, 20, 21, 22, 23, 27, 28, 30, 34, 35, 44, 45, 46, 54]
+Executing realign
+MATFVKDGKTVTVDLSKVTKVEQVGDKIKFTYDEGDGKIGEGEVSIEDAPAELKK
+Reward Trajectory: [np.float64(-1.5285), np.float64(-0.8965)]
+Global elapsed time: 13.567114 s
+----------------------------------
+Executing realign
+Previous true reward: -2.2408998012542725
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.31s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.42s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.45s/it][A
+100%|██████████| 4/4 [00:05<00:00,  1.47s/it][A100%|██████████| 4/4 [00:05<00:00,  1.44s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2484 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.7769 s]
+Clean Sequence: SATFIKNGKTVTVKLSDVTKVWQKGDKVHFTYKAGNGVIGEGEVSVSDAPEELLK
+-ATFIK--K-V---LS-V-K-WQKGDK--FT---G--VIGEGE--VSD-PEELLK Targets: [0, 6, 7, 9, 11, 12, 13, 16, 18, 20, 27, 28, 31, 32, 33, 35, 36, 43, 44, 48]
+Executing realign
+MATFIKDGKTVTVDLSKVTKVWQKGDKIHFTYDEGDGVIGEGEVSVSDAPEELLK
+Reward Trajectory: [np.float64(-2.2409), np.float64(-1.0005)]
+Global elapsed time: 14.171787 s
+----------------------------------
+Executing realign
+Previous true reward: -0.9392603039741516
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.31s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.41s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.45s/it][A
+100%|██████████| 4/4 [00:05<00:00,  1.47s/it][A100%|██████████| 4/4 [00:05<00:00,  1.44s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:09<00:00, 69.56s/it]100%|██████████| 1/1 [01:09<00:00, 69.56s/it]
+ [Fourier fitting overhead: 0.2632 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.0516 s]
+Clean Sequence: SATFIKDGKTVTVPLSKVTKVWQEGDKIKFTYDEGDGKIGEGEVSIDDAPPELKK
+-ATFIK---TV-V--SKV-K-WQ-GD--KFT-D-GDGK-GEGEV-I-DA-PELK- Targets: [0, 6, 7, 8, 11, 13, 14, 18, 20, 23, 26, 27, 31, 33, 38, 44, 46, 49, 54]
+Executing realign
+MATFIKDGKTVEVDLSKVTKVWQEGDKIKFTYDEGDGKIGEGEVSIKDAPPELKK
+Reward Trajectory: [np.float64(-0.9393), np.float64(-0.7585)]
+Global elapsed time: 13.406931 s
+Progress: 5 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2WQG
+----------------------------------
+Executing realign
+Previous true reward: -0.9241490960121155
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:00<00:02,  1.02it/s][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.06s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.09s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.10s/it][A100%|██████████| 4/4 [00:04<00:00,  1.08s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2478 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 9.5297 s]
+Clean Sequence: EIEFEKKSLEELKKLLKEKKLSTEGTKEELVEKLKEEYEKE
+-IEF----LEE-K-LL--K---TEGT-EEL--KLK--YE-E Targets: [0, 35, 4, 5, 6, 7, 36, 39, 11, 13, 16, 17, 19, 20, 21, 26, 30, 31]
+Executing realign
+KVEFEKYTLEELKKLLKEKKLSTEGTKEELVEKLKEWYEKE
+Reward Trajectory: [np.float64(-0.9241), np.float64(0.237)]
+Global elapsed time: 15.417446 s
+----------------------------------
+Executing realign
+Previous true reward: -1.1314283609390259
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:00<00:02,  1.02it/s][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.06s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.09s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.10s/it][A100%|██████████| 4/4 [00:04<00:00,  1.08s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2407 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.5600 s]
+Clean Sequence: EVDFEKKTEEELKKALKEAGLSTEGTKEEWVEKLRKHYEES
+EVDFE---E---KK---EA-L--E-T-EE--EK-R--YEE- Targets: [5, 6, 7, 9, 10, 11, 14, 15, 16, 19, 21, 22, 24, 26, 29, 30, 33, 35, 36, 40]
+Executing realign
+EVDFEKYTEEELKKKLEEAGLSTEGTKEEWVEKLRKYYEEK
+Reward Trajectory: [np.float64(-1.1314), np.float64(-0.045)]
+Global elapsed time: 11.405508 s
+----------------------------------
+Executing realign
+Previous true reward: -1.3636554479599
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:00<00:02,  1.02it/s][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.06s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.08s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.10s/it][A100%|██████████| 4/4 [00:04<00:00,  1.08s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2218 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 9.5659 s]
+Clean Sequence: EYKYEEKTEEELKEALKKAKLSTDGTKEEWVEKLKKYHEES
+-YK-EE--EEE-KE--KKA-LS-DG--EE--EK-KK--EE- Targets: [0, 33, 3, 36, 37, 6, 7, 40, 11, 14, 15, 19, 22, 25, 26, 29, 30]
+Executing realign
+EYKFEEKTEEELKEELKKAGLSTDGTKEEWVEKLKKYYEEK
+Reward Trajectory: [np.float64(-1.3637), np.float64(-0.7704)]
+Global elapsed time: 15.412925 s
+----------------------------------
+Executing realign
+Previous true reward: -1.7213424444198608
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:00<00:02,  1.03it/s][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.06s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.08s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.10s/it][A100%|██████████| 4/4 [00:04<00:00,  1.08s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2164 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 7.4801 s]
+Clean Sequence: EVKYEEKSLEELKEEAKKKKLSTSGTKEELVEKLKEYDEKS
+EVK--E--LEELKEE-----L---GT-E--VEK-K-Y-E-S Targets: [3, 4, 6, 7, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 33, 35, 37, 39]
+Executing realign
+EVKYEEKTLEELKEEAKKKKLSTEGTKEELVEKLKKYDEES
+Reward Trajectory: [np.float64(-1.7213), np.float64(-1.5646)]
+Global elapsed time: 13.335702 s
+----------------------------------
+Executing realign
+Previous true reward: -1.6245791912078857
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:00<00:02,  1.02it/s][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.06s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.08s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.10s/it][A100%|██████████| 4/4 [00:04<00:00,  1.08s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:08<00:00, 68.02s/it]100%|██████████| 1/1 [01:08<00:00, 68.02s/it]
+ [Fourier fitting overhead: 0.2185 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.3698 s]
+Clean Sequence: KVDYEKKTEEELKKALKEKGLSTKGTKEELVEKLRKADEES
+-VD-E-K--EEL-KAL-EKGL-T--T-EEL-EK-R--DEE- Targets: [0, 33, 3, 35, 5, 36, 7, 8, 40, 12, 16, 21, 23, 24, 26, 30]
+Executing realign
+KVDWEKKTLEELKKALKEKGLSTEGTKEELVEKLRKYDEEE
+Reward Trajectory: [np.float64(-1.6246), np.float64(-0.1594)]
+Global elapsed time: 12.214018 s
+Progress: 6 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: v2R31S|R32S_2N5D
+----------------------------------
+Executing realign
+Previous true reward: 0.47579506039619446
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.65s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.78s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.83s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.85s/it][A100%|██████████| 4/4 [00:07<00:00,  1.82s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3018 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.7394 s]
+Clean Sequence: EMSEEELAELLDKVRRRELSIEEAVARIEEHRKGKEKPEGLTPREILERYRRGELSREEAIALLQGKEPE
+E-SEE---ELL---RR--L--EE-VAR-EEHRKGKEKPEGL-PREI-ERYRRGE-S-EEAIALL-G--PE Targets: [1, 5, 6, 7, 11, 12, 13, 16, 17, 19, 20, 23, 27, 41, 46, 54, 56, 64, 66, 67]
+Executing realign
+ELSEEELRELLERVRRGELSIEEAVARIEEHRKGKEKPEGLTPREILERYRRGELSEEEAIALLRGEEPE
+Reward Trajectory: [np.float64(0.4758), np.float64(0.5816)]
+Global elapsed time: 13.748519 s
+----------------------------------
+Executing realign
+Previous true reward: 0.4364739954471588
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.65s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.78s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.82s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.84s/it][A100%|██████████| 4/4 [00:07<00:00,  1.82s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3005 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.8263 s]
+Clean Sequence: MMSREELRELLRKVREKKVTIEEAVALIEPHKKGGEKPEGVTPREILRRYKEGKLSEEEAIALLQGKEPK
+M---EELRELL-KVRE---TIEE-VALIE-H-KGG-KP-G-TPREIL-RYK-GKLSE-EA-A-LQ-K-PK Targets: [1, 2, 3, 11, 16, 17, 18, 23, 29, 31, 35, 38, 40, 47, 51, 57, 60, 62, 65, 67]
+Executing realign
+MMSEEELRELLKKVREEKLTIEEAVALIEKHKKGGEKPEGLTPREILERYKEGKLSEEEAIALLQGKKPK
+Reward Trajectory: [np.float64(0.4365), np.float64(0.6047)]
+Global elapsed time: 15.732853 s
+----------------------------------
+Executing realign
+Previous true reward: 0.4053354561328888
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.65s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.78s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.82s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.84s/it][A100%|██████████| 4/4 [00:07<00:00,  1.82s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3177 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.6116 s]
+Clean Sequence: MMSKEELEELLKKVKEEKLSIEEAVSLIEKHKKGEEKPEEITPKEILSRYKRGELSEEEAIALLQGKKPK
+MMS-E-L---L-KVKEE-LS-EEAV-LIEK-KK---KPE--T-KEILSRYKRGELSE---IALL-GKKPK Targets: [3, 5, 7, 8, 9, 11, 17, 20, 25, 30, 33, 34, 35, 39, 40, 42, 57, 58, 59, 64]
+Executing realign
+MMSEEELRELLKKVKEEKLSIEEAVKLIEKYKKGEKKPEKMTPKEILSRYKRGELSEEEAIALLQGKKPK
+Reward Trajectory: [np.float64(0.4053), np.float64(0.6091)]
+Global elapsed time: 13.618003 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5724753141403198
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.65s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.78s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.83s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.85s/it][A100%|██████████| 4/4 [00:07<00:00,  1.82s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2875 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.5199 s]
+Clean Sequence: AMSEEELRELLRAVRERRVSIAEAVARIEPHRKGGAAPEGLSPAEILRRYRAGRLSEAEAIALLQGREPA
+--S--ELRE-LRAVRE-R-SIAE--ARIE-H--GGAAP-GL-PAEIL-R-RAG-LSEAEAIA--QGR-PA Targets: [0, 1, 3, 4, 9, 16, 18, 23, 24, 29, 31, 32, 38, 41, 47, 49, 53, 62, 63, 67]
+Executing realign
+AMSEAELRELLRAVRERRLSIAEAVARIEPHRRGGAAPAGLTPAEILARYRAGELSEAEAIALLQGREPA
+Reward Trajectory: [np.float64(0.5725), np.float64(0.6301)]
+Global elapsed time: 14.510510 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5042324066162109
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.65s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.78s/it][A
+ 75%|███████▌  | 3/4 [00:05<00:01,  1.82s/it][A
+100%|██████████| 4/4 [00:07<00:00,  1.84s/it][A100%|██████████| 4/4 [00:07<00:00,  1.82s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:11<00:00, 71.69s/it]100%|██████████| 1/1 [01:11<00:00, 71.69s/it]
+ [Fourier fitting overhead: 0.2886 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.8644 s]
+Clean Sequence: AMSREELRALLRRVRARELSIEEAVALIEPHREGGEAPEGLTPREILRRYRAGELSEEEAIALLRGEEPK
+A-----LRALL-RVRA-E-SIEEAVALIEPH---GEAP-GLTPR-IL-RYRAGELS--EAIAL-RG--P- Targets: [1, 2, 3, 4, 5, 11, 16, 18, 31, 32, 33, 38, 44, 47, 56, 57, 63, 66, 67, 69]
+Executing realign
+AMSEEELRALLARVRAGELSIEEAVALIEPHRGGGEAPAGLTPREILARYRAGELSEAEAIALLRGEAPA
+Reward Trajectory: [np.float64(0.5042), np.float64(0.7101)]
+Global elapsed time: 13.794352 s
+Progress: 7 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: v2_4UZX
+----------------------------------
+Executing realign
+Previous true reward: 0.7424643635749817
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.36s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.48s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.51s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.53s/it][A100%|██████████| 4/4 [00:06<00:00,  1.51s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2348 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.2349 s]
+Clean Sequence: SAEEIQARALELLEARLAEAKATGAPEEEIARLEAEIARVRAEGVDLDSPLAKELGLV
+SAEEI---A-E-L--RLAEA-AT--PEEE-ARLEA-IAR--AEG-D---PLAK-LGL- Targets: [5, 6, 7, 9, 11, 13, 14, 20, 23, 24, 29, 35, 39, 40, 44, 46, 47, 48, 53, 57]
+Executing realign
+SAEEIRARALELLRARLAEARATGAPEEEIARLEAEIARVEAEGVDLDSPLAKELGLV
+Reward Trajectory: [np.float64(0.7425), np.float64(0.7672)]
+Global elapsed time: 12.852860 s
+----------------------------------
+Executing realign
+Previous true reward: 0.7048187851905823
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.36s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.47s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.51s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.53s/it][A100%|██████████| 4/4 [00:06<00:00,  1.51s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2293 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.0570 s]
+Clean Sequence: SAAEAQARALALLQARLAEARATGAPEAEIAALEAQIARVRAHGVDLDSPLAAELGLV
+-AA-AQAR----L--RLAE--ATGAPEA-I-AL---IARVRA--V-L--PLAAELGLV Targets: [0, 3, 8, 9, 10, 11, 13, 14, 19, 20, 28, 30, 33, 34, 35, 42, 43, 45, 47, 48]
+Executing realign
+SAAEAQARALELLEARLAEARATGAPEAEIAALEAEIARVRAEGVDLDSPLAAELGLV
+Reward Trajectory: [np.float64(0.7048), np.float64(0.7347)]
+Global elapsed time: 12.639572 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5481972098350525
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.37s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.48s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.51s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.53s/it][A100%|██████████| 4/4 [00:06<00:00,  1.51s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2507 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 8.2062 s]
+Clean Sequence: SAEEIQAKALELLEKQLAEAKATGAPAEEIAKLEAQIEEVKANGVDLNSPLAEQLGLV
+-AEEIQA-AL-LLE--LAEA-ATGAP--E-A-L-AQI--VKA---DL-SPL-E-LG-V Targets: [0, 7, 10, 14, 15, 20, 26, 27, 29, 31, 33, 37, 38, 42, 43, 44, 47, 51, 53, 56]
+Executing realign
+SAEEIQARALALLEARLAEARATGAPAAEIAALEAQIAAVKAHGVDLDSPLAEELGLV
+Reward Trajectory: [np.float64(0.5482), np.float64(0.747)]
+Global elapsed time: 15.849758 s
+----------------------------------
+Executing realign
+Previous true reward: 0.6426927447319031
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.36s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.47s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.51s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.53s/it][A100%|██████████| 4/4 [00:06<00:00,  1.51s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2530 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.6700 s]
+Clean Sequence: SAEEIQARALELLNAQLAEAKATGAPESEIAALEAQIARVKAHGVDLNSPLAEQLGLV
+SAEEI--RAL--LN--L-EA--TGAPE-E-AALEA-IARV-AH-VDL--P-A---GLV Targets: [5, 6, 10, 11, 14, 15, 17, 20, 21, 27, 29, 35, 40, 43, 47, 48, 50, 52, 53, 54]
+Executing realign
+SAEEIRARALALLNARLAEARATGAPEAEIAALEAEIARVEAHGVDLDSPLARELGLV
+Reward Trajectory: [np.float64(0.6427), np.float64(0.7751)]
+Global elapsed time: 13.356004 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5638419389724731
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.37s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.48s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.51s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.53s/it][A100%|██████████| 4/4 [00:06<00:00,  1.51s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:08<00:00, 68.50s/it]100%|██████████| 1/1 [01:08<00:00, 68.50s/it]
+ [Fourier fitting overhead: 0.2387 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 5.9118 s]
+Clean Sequence: SAKEIQEKALALLQAQLAEAKATGAPQSEIEKLEAQIEKVKAEGVDLNSPLAKELGLV
+-A-E-Q----A-L-A-LAEA-ATGAPQSEIE-LEAQIE---AE-VDL--PLAKEL--V Targets: [0, 2, 4, 6, 7, 8, 9, 11, 13, 15, 20, 31, 38, 39, 40, 43, 47, 48, 55, 56]
+Executing realign
+SAAEIQARALALLEARLAEARATGAPQSEIEALEAQIERVRAEGVDLDSPLAKELGLV
+Reward Trajectory: [np.float64(0.5638), np.float64(0.7661)]
+Global elapsed time: 13.536891 s
+Progress: 8 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 4UZW
+----------------------------------
+Executing realign
+Previous true reward: 0.16845422983169556
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.05s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.13s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.16s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.18s/it][A100%|██████████| 4/4 [00:04<00:00,  1.16s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2440 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 11.1484 s]
+Clean Sequence: EKEYEKLTEEELKKKLKEAGLSTEGNKEELVEKLKEYDREKAAE
+--E-EK-T-EEL-K----AGLS-E-N-EE-V-KLK--DRE--A- Targets: [0, 1, 3, 6, 8, 12, 14, 15, 16, 17, 22, 24, 26, 29, 31, 35, 36, 40, 41, 43]
+Executing realign
+EKEYEKLTEEELKKKLEEAGLSTEGTKEELVEKLKKYDREKAAK
+Reward Trajectory: [np.float64(0.1685), np.float64(0.192)]
+Global elapsed time: 17.373106 s
+----------------------------------
+Executing realign
+Previous true reward: 0.2362901270389557
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.05s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.14s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.16s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.18s/it][A100%|██████████| 4/4 [00:04<00:00,  1.16s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2141 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 8.3474 s]
+Clean Sequence: MKDFSKLTEEELKKKLKEAGLSTEGNKEELVERLVEYEKEKSSS
+--D--K-T-EE-K-K--EAGLS-E-NKE--V-R-V-YEK--SS- Targets: [0, 1, 3, 4, 6, 8, 11, 13, 15, 16, 22, 24, 28, 29, 31, 33, 35, 39, 40, 43]
+Executing realign
+MVDFSKMTEEELKKKLKEAGLSTEGNKEELVNRLVKYEKEKSSK
+Reward Trajectory: [np.float64(0.2363), np.float64(0.4035)]
+Global elapsed time: 14.498752 s
+----------------------------------
+Executing realign
+Previous true reward: -0.31395456194877625
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.05s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.13s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.16s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.18s/it][A100%|██████████| 4/4 [00:04<00:00,  1.16s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2271 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 6.6619 s]
+Clean Sequence: KKDYEKLTEEELKELLKKNNLSTKGNKKELIEKLKKYDEEKSSK
+K-D-E-LTEEEL-E-L-K--L-T------L-E-LKKY-EEK--K Targets: [1, 3, 5, 12, 14, 16, 18, 19, 21, 23, 24, 25, 26, 27, 28, 30, 32, 37, 41, 42]
+Executing realign
+KKDYEKLTEEELKELLKKNNLSTEGNKKELIEKLKKYDEEKKKK
+Reward Trajectory: [np.float64(-0.314), np.float64(-0.1744)]
+Global elapsed time: 12.833496 s
+----------------------------------
+Executing realign
+Previous true reward: 0.5521303415298462
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.05s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.13s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.16s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.18s/it][A100%|██████████| 4/4 [00:04<00:00,  1.16s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2342 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 7.8564 s]
+Clean Sequence: EVRYEELTEEELRRRLAEAGLSTEGDKEELVERLRAWDREQAAA
+E-RYE-L-E-E-RR-L-E--LSTEGDK-E-VER-RAWDR--AAA Targets: [1, 33, 5, 7, 39, 9, 40, 11, 14, 16, 18, 19, 27, 29]
+Executing realign
+ERRYEELTEEELRRLLAEAGLSTEGDKRELVERLRAWDREQAAA
+Reward Trajectory: [np.float64(0.5521), np.float64(0.6353)]
+Global elapsed time: 14.036900 s
+----------------------------------
+Executing realign
+Previous true reward: 0.35807710886001587
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:03,  1.05s/it][A
+ 50%|█████     | 2/4 [00:02<00:02,  1.13s/it][A
+ 75%|███████▌  | 3/4 [00:03<00:01,  1.16s/it][A
+100%|██████████| 4/4 [00:04<00:00,  1.18s/it][A100%|██████████| 4/4 [00:04<00:00,  1.16s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [01:14<00:00, 74.40s/it]100%|██████████| 1/1 [01:14<00:00, 74.40s/it]
+ [Fourier fitting overhead: 0.2138 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 9.3427 s]
+Clean Sequence: MVDYSKLTVEELKKKLKEAGLSTEGDKEELVEKLVKYDKEKSSL
+M-DYSK---EE----L-EA-L-TEG--EE--E-LVK-DKE--SL Targets: [1, 6, 7, 8, 11, 12, 13, 14, 16, 19, 21, 25, 26, 29, 30, 32, 36, 40, 41]
+Executing realign
+MKDYSKLTEEELKEKLKEAGLSTEGTKEELVEKLVKYDKEKASL
+Reward Trajectory: [np.float64(0.3581), np.float64(0.2225)]
+Global elapsed time: 15.418380 s
+Progress: 9 / 10
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2MCH
+----------------------------------
+Executing realign
+Previous true reward: 0.08042576164007187
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.50s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.62s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.66s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.68s/it][A100%|██████████| 4/4 [00:06<00:00,  1.66s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2673 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 2.3861 s]
+Clean Sequence: SEEEADDDPVARLYKSGPLAGKPVTREDARILLENEWRRAKKENPDLKLDISDETINARFPHLA
+-E--AD-D-VAR-YK-GP-AG-PVTRE-AR-LLE-E-RRA-KE-PDL-LDISDE-I--RF-HLA Targets: [0, 2, 3, 6, 8, 12, 15, 18, 21, 27, 30, 34, 36, 40, 43, 47, 54, 56, 57, 60]
+Executing realign
+AEPAADDDPVARLYKSGPLAGQPVTREDARILLEREWRRARKERPDLRLDISDEVIDARFPHLA
+Reward Trajectory: [np.float64(0.0804), np.float64(0.3933)]
+Global elapsed time: 10.654770 s
+----------------------------------
+Executing realign
+Previous true reward: -0.6961368918418884
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.50s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.62s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.66s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.68s/it][A100%|██████████| 4/4 [00:06<00:00,  1.66s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.3211 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.5195 s]
+Clean Sequence: EEEKEENNKKAKLYKSGPLKGKPVTKEDAKILLENEWKEEKKKNPDLKLDISDEVINKRFPHLA
+EEEK-E---KAK-YKSGPL-G-PVT-EDA--LLE-EW--E--K-PDLK-D-SDEVI-KR-PHLA Targets: [4, 6, 7, 8, 12, 19, 21, 25, 29, 30, 34, 37, 38, 40, 41, 43, 48, 50, 56, 59]
+Executing realign
+EEEKKEGLKKAKLYKSGPLAGQPVTKEDARILLENEWKKEKKKNPDLKLDISDEVINKRFPHLA
+Reward Trajectory: [np.float64(-0.6961), np.float64(-0.1331)]
+Global elapsed time: 12.798698 s
+----------------------------------
+Executing realign
+Previous true reward: -0.6886940002441406
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.50s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.62s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.66s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.68s/it][A100%|██████████| 4/4 [00:06<00:00,  1.66s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2994 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.4603 s]
+Clean Sequence: SSLEEDGDKKAKLYKSGPLAGKPVTKEDARIIIENEWKKEKKKNPDLKLDISDETINKKFPHLA
+SSL--DG---AKLY-SGPLAG--VT-EDAR-IIENEW--E--K-PDL-LDISDE-I-K-FPHL- Targets: [3, 4, 7, 8, 9, 14, 21, 22, 25, 30, 37, 38, 40, 41, 43, 47, 54, 56, 58, 63]
+Executing realign
+SSLKKDGKKKAKLYKSGPLAGQPVTKEDARIILENEWKEEKKKNPDLKLDISDEVINKRFPHLK
+Reward Trajectory: [np.float64(-0.6887), np.float64(-0.2326)]
+Global elapsed time: 12.769043 s
+----------------------------------
+Executing realign
+Previous true reward: -1.151830792427063
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.50s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.62s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.66s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.68s/it][A100%|██████████| 4/4 [00:06<00:00,  1.66s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients] [Fourier fitting overhead: 0.2551 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 4.8480 s]
+Clean Sequence: SKEEKKGLEKAKLYKSGKYAGKPVTKEDAKIILKNEYEEEKKKNPNLKLDISDETINKKFPHLK
+-KEEKKGLE-AKL-KSGKYAG-PVT-EDA--ILK-E--EE-KK-P-L-LD-S-E-I-K-FPHL- Targets: [0, 9, 13, 21, 25, 29, 30, 34, 36, 37, 40, 43, 45, 47, 50, 52, 54, 56, 58, 63]
+Executing realign
+EKEEKKGLEKAKLYKSGKYAGKPVTKEDAKIILKNEWLEEKKKNPNLKLDISDETINKKFPHLK
+Reward Trajectory: [np.float64(-1.1518), np.float64(-0.7278)]
+Global elapsed time: 13.118686 s
+----------------------------------
+Executing realign
+Previous true reward: -0.19246962666511536
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:01<00:04,  1.50s/it][A
+ 50%|█████     | 2/4 [00:03<00:03,  1.62s/it][A
+ 75%|███████▌  | 3/4 [00:04<00:01,  1.66s/it][A
+100%|██████████| 4/4 [00:06<00:00,  1.68s/it][A100%|██████████| 4/4 [00:06<00:00,  1.66s/it]
+Executing Edit Position Selection...
+ [Fitting Fourier Coefficients]100%|██████████| 1/1 [00:59<00:00, 59.88s/it]100%|██████████| 1/1 [00:59<00:00, 59.88s/it]
+INFO:root:Sampling wall-time columns added: 'sampling_wall_time_s' (per sample), 'protein_sampling_wall_time_s' (sum per protein)
+INFO:root:Saving to file /u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/exps7/r64/pretrained_validation_ddg_bon_N=1_feedbacksteps=1_feedbackmethod=spectral_maxspecorder=20_masks=2048_rmax=False__tilt_beta=0.25.csv
+ [Fourier fitting overhead: 0.2413 s]
+ => r2: 0.0
+ [Finding optimal mask]
+ [Fourier solving overhead: 2.0519 s]
+Clean Sequence: SSPKKENLKKAELYKSGPLAGKPKTKEDARIILKNEWLKEKKKNPNLKLDISDEVIHKRFPHLK
+--PKKE-LKKAELY-S-PLAG-P-T-E-AR-IL-NEWL-E-KKNPN-K-DIS-E-I--R-PHLK Targets: [0, 1, 6, 14, 16, 21, 23, 25, 27, 30, 33, 38, 40, 46, 48, 52, 54, 56, 57, 59]
+Executing realign
+PLPKKENLKKAELYKSGPLAGKPKTKEDARIILENEWLKEKKKNPNLKLDISDEVIYKRFPHLK
+Reward Trajectory: [np.float64(-0.1925), np.float64(0.1033)]
+Global elapsed time: 10.265570 s
+Progress: 10 / 10

@@ -1,0 +1,154 @@
+Running worker with ID: 3
+Number of workers: 12
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 1)
+INFO:root:Loading PRETRAINED model state dict (/u/sdickman/DRAKES/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=protgpt, N=1, feedback_steps=1, max_spec_order=20, feedback_method=exclusion)
+INFO:root:Reading protein set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Reading validation set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/processed_data/dpo_test_dict_wt.pkl)
+INFO:root:Executing on test set (Batch repeats: 1, Proteins per batch: 1, Total proteins: 12)
+INFO:root:WorkerID: 3, Assigned proteins: 1
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: 2MA4
+----------------------------------
+Executing realign
+Previous true reward: -223.6616668701172
+Running SPEX...
+
+  0%|          | 0/36 [00:00<?, ?it/s][A
+  3%|▎         | 1/36 [00:55<32:38, 55.95s/it][A
+  6%|▌         | 2/36 [01:52<31:47, 56.11s/it][A
+  8%|▊         | 3/36 [02:48<30:59, 56.34s/it][A
+ 11%|█         | 4/36 [03:45<30:04, 56.40s/it][A
+ 14%|█▍        | 5/36 [04:41<29:07, 56.36s/it][A
+ 17%|█▋        | 6/36 [05:38<28:15, 56.51s/it][A
+ 19%|█▉        | 7/36 [06:34<27:18, 56.51s/it][A
+ 22%|██▏       | 8/36 [07:31<26:23, 56.56s/it][A
+ 25%|██▌       | 9/36 [08:28<25:26, 56.54s/it][A
+ 28%|██▊       | 10/36 [09:24<24:29, 56.52s/it][A
+ 31%|███       | 11/36 [10:21<23:32, 56.52s/it][A
+ 33%|███▎      | 12/36 [11:17<22:34, 56.44s/it][A
+ 36%|███▌      | 13/36 [12:13<21:36, 56.37s/it][A
+ 39%|███▉      | 14/36 [13:10<20:41, 56.41s/it][A
+ 42%|████▏     | 15/36 [14:06<19:45, 56.43s/it][A
+ 44%|████▍     | 16/36 [15:02<18:49, 56.45s/it][A
+ 47%|████▋     | 17/36 [15:59<17:53, 56.52s/it][A
+ 50%|█████     | 18/36 [16:56<16:57, 56.52s/it][A
+ 53%|█████▎    | 19/36 [17:52<16:00, 56.51s/it][A
+ 56%|█████▌    | 20/36 [18:49<15:03, 56.48s/it][A
+ 58%|█████▊    | 21/36 [19:45<14:08, 56.55s/it][A
+ 61%|██████    | 22/36 [20:42<13:11, 56.55s/it][A
+ 64%|██████▍   | 23/36 [21:38<12:14, 56.53s/it][A
+ 67%|██████▋   | 24/36 [22:35<11:18, 56.51s/it][A
+ 69%|██████▉   | 25/36 [23:31<10:21, 56.49s/it][A
+ 72%|███████▏  | 26/36 [24:28<09:25, 56.56s/it][A
+ 75%|███████▌  | 27/36 [25:24<08:28, 56.55s/it][A
+ 78%|███████▊  | 28/36 [26:21<07:32, 56.53s/it][A
+ 81%|████████  | 29/36 [27:17<06:35, 56.50s/it][A
+ 83%|████████▎ | 30/36 [28:14<05:38, 56.49s/it][A
+ 86%|████████▌ | 31/36 [29:10<04:42, 56.49s/it][A
+ 89%|████████▉ | 32/36 [30:07<03:46, 56.52s/it][A
+ 92%|█████████▏| 33/36 [31:03<02:49, 56.48s/it][A
+ 94%|█████████▍| 34/36 [32:00<01:52, 56.45s/it][A
+ 97%|█████████▋| 35/36 [32:56<00:56, 56.50s/it][A
+100%|██████████| 36/36 [33:53<00:00, 56.46s/it][A100%|██████████| 36/36 [33:53<00:00, 56.48s/it]
+
+  0%|          | 0/36 [00:00<?, ?it/s][A
+  3%|▎         | 1/36 [00:55<32:32, 55.80s/it][A
+  6%|▌         | 2/36 [01:52<31:50, 56.20s/it][A
+  8%|▊         | 3/36 [02:48<31:01, 56.42s/it][A
+ 11%|█         | 4/36 [03:45<30:06, 56.46s/it][A
+ 14%|█▍        | 5/36 [04:41<29:07, 56.37s/it][A
+ 17%|█▋        | 6/36 [05:38<28:15, 56.50s/it][A
+ 19%|█▉        | 7/36 [06:34<27:18, 56.49s/it][A
+ 22%|██▏       | 8/36 [07:30<26:17, 56.36s/it][A
+ 25%|██▌       | 9/36 [08:27<25:23, 56.43s/it][A
+ 28%|██▊       | 10/36 [09:23<24:25, 56.37s/it][A
+ 31%|███       | 11/36 [10:20<23:30, 56.40s/it][A
+ 33%|███▎      | 12/36 [11:16<22:34, 56.43s/it][A
+ 36%|███▌      | 13/36 [12:13<21:38, 56.45s/it][A
+ 39%|███▉      | 14/36 [13:09<20:41, 56.41s/it][A
+ 42%|████▏     | 15/36 [14:05<19:43, 56.37s/it][A
+ 44%|████▍     | 16/36 [15:02<18:47, 56.39s/it][A
+ 47%|████▋     | 17/36 [15:59<17:53, 56.50s/it][A
+ 50%|█████     | 18/36 [16:55<16:57, 56.52s/it][A
+ 53%|█████▎    | 19/36 [17:52<16:00, 56.50s/it][A
+ 56%|█████▌    | 20/36 [18:48<15:03, 56.46s/it][A
+ 58%|█████▊    | 21/36 [19:45<14:08, 56.55s/it][A
+ 61%|██████    | 22/36 [20:41<13:08, 56.36s/it][A
+ 64%|██████▍   | 23/36 [21:37<12:13, 56.39s/it][A
+ 67%|██████▋   | 24/36 [22:34<11:17, 56.47s/it][A
+ 69%|██████▉   | 25/36 [23:30<10:19, 56.35s/it][A
+ 72%|███████▏  | 26/36 [24:26<09:23, 56.35s/it][A
+ 75%|███████▌  | 27/36 [25:23<08:28, 56.46s/it][A
+ 78%|███████▊  | 28/36 [26:19<07:30, 56.31s/it][A
+ 81%|████████  | 29/36 [27:15<06:34, 56.34s/it][A
+ 83%|████████▎ | 30/36 [28:12<05:38, 56.41s/it][A
+ 86%|████████▌ | 31/36 [29:08<04:42, 56.43s/it][A
+ 89%|████████▉ | 32/36 [30:05<03:45, 56.43s/it][A
+ 92%|█████████▏| 33/36 [31:01<02:49, 56.40s/it][A
+ 94%|█████████▍| 34/36 [31:57<01:52, 56.18s/it][A
+ 97%|█████████▋| 35/36 [32:53<00:56, 56.30s/it][A
+100%|██████████| 36/36 [33:50<00:00, 56.34s/it][A100%|██████████| 36/36 [33:50<00:00, 56.40s/it]
+
+  0%|          | 0/36 [00:00<?, ?it/s][A
+  3%|▎         | 1/36 [00:55<32:38, 55.97s/it][A
+  6%|▌         | 2/36 [01:52<31:53, 56.27s/it][A
+  8%|▊         | 3/36 [02:48<30:57, 56.28s/it][A
+ 11%|█         | 4/36 [03:45<30:05, 56.44s/it][A
+ 14%|█▍        | 5/36 [04:41<29:09, 56.44s/it][A
+ 17%|█▋        | 6/36 [05:38<28:14, 56.47s/it][A
+ 19%|█▉        | 7/36 [06:35<27:20, 56.55s/it][A
+ 22%|██▏       | 8/36 [07:31<26:22, 56.53s/it][A
+ 25%|██▌       | 9/36 [08:28<25:26, 56.55s/it][A
+ 28%|██▊       | 10/36 [09:24<24:28, 56.47s/it][A
+ 31%|███       | 11/36 [10:20<23:31, 56.45s/it][A
+ 33%|███▎      | 12/36 [11:17<22:32, 56.37s/it][A
+ 36%|███▌      | 13/36 [12:13<21:36, 56.38s/it][A
+ 39%|███▉      | 14/36 [13:09<20:40, 56.41s/it][A
+ 42%|████▏     | 15/36 [14:06<19:42, 56.33s/it][A
+ 44%|████▍     | 16/36 [15:02<18:47, 56.36s/it][A
+ 47%|████▋     | 17/36 [15:59<17:53, 56.48s/it][A
+ 50%|█████     | 18/36 [16:55<16:56, 56.49s/it][A
+ 53%|█████▎    | 19/36 [17:52<15:59, 56.46s/it][A
+ 56%|█████▌    | 20/36 [18:48<15:01, 56.34s/it][A
+ 58%|█████▊    | 21/36 [19:44<14:05, 56.37s/it][A
+ 61%|██████    | 22/36 [20:41<13:09, 56.42s/it][A
+ 64%|██████▍   | 23/36 [21:37<12:13, 56.40s/it][A
+ 67%|██████▋   | 24/36 [22:33<11:15, 56.29s/it][A
+ 69%|██████▉   | 25/36 [23:30<10:20, 56.39s/it][A
+ 72%|███████▏  | 26/36 [24:26<09:24, 56.43s/it][A
+ 75%|███████▌  | 27/36 [25:23<08:28, 56.52s/it][A
+ 78%|███████▊  | 28/36 [26:19<07:32, 56.50s/it][A
+ 81%|████████  | 29/36 [27:16<06:35, 56.49s/it][A
+ 83%|████████▎ | 30/36 [28:12<05:38, 56.47s/it][A
+ 86%|████████▌ | 31/36 [29:09<04:42, 56.47s/it][A
+ 89%|████████▉ | 32/36 [30:05<03:45, 56.34s/it][A
+ 92%|█████████▏| 33/36 [31:01<02:49, 56.39s/it][A
+ 94%|█████████▍| 34/36 [31:58<01:52, 56.41s/it][A
+ 97%|█████████▋| 35/36 [32:54<00:56, 56.43s/it][A
+100%|██████████| 36/36 [33:51<00:00, 56.48s/it][A100%|██████████| 36/36 [33:51<00:00, 56.43s/it]
+INFO:root:[[True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True], [True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True], [True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True]]
+INFO:root:cutoff = 1e-09
+INFO:root:res_energy_cutoff = 0.9
+Calls to value function: 55296
+The choice of b for the given budget was: 9
+Number of non-zero Fourier coefficients: 154
+Dictionary successfully saved to eval_results/followups/exps7/fourier_dict__2MA4_20260902-060833.pkl
+
+  0%|          | 0/2 [00:00<?, ?it/s][A
+ 50%|█████     | 1/2 [00:56<00:56, 56.01s/it][A
+100%|██████████| 2/2 [01:52<00:00, 56.25s/it][A100%|██████████| 2/2 [01:52<00:00, 56.21s/it]
+100%|██████████| 1/1 [1:46:11<00:00, 6371.52s/it]100%|██████████| 1/1 [1:46:11<00:00, 6371.52s/it]
+INFO:root:Sampling wall-time columns added: 'sampling_wall_time_s' (per sample), 'protein_sampling_wall_time_s' (sum per protein)
+INFO:root:Saving to file /u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/exps7/pretrained_test_protgpt_bon_N=1_feedbacksteps=1_feedbackmethod=exclusion_maxspecorder=20_tilt_beta=1.0_w3.csv
+Saving heldout masks and true values to text files.
+Clean Sequence: AKIMKKEDFEKIAKDYEKIGTVETKGKKSAEEARKEAVEKAEKAGADIVVITKEDPEDGVILKADIYKKK
+AKIMKKEDFEKIAKDYE-------K----A--A-KEAVE-AEKAGAD-VVI-KED-E--VILKADIYKKK Targets: [17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 30, 31, 33, 39, 47, 51, 55, 57, 58]
+Executing realign
+AKIMKKEDFEKIAKDYEKIGTVETKGKKSAEEARKEAVEKAEKAGADIVVIEKEDEEEEVILKADIYKKK
+Reward Trajectory: [np.float64(-223.6617), np.float64(-227.5322)]
+Global elapsed time: 6354.551661 s
+Progress: 1 / 1

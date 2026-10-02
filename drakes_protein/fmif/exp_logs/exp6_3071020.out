@@ -1,0 +1,992 @@
+Running worker with ID: 0
+Number of workers: 1
+INFO:root:Seting device cuda:0
+INFO:root:Generating dataset evaluator (Repeats per protein: 15)
+INFO:root:Loading PRETRAINED model state dict (/u/sdickman/DRAKES/data_and_model/pmpnn/outputs/pretrained_if_model.pt)
+INFO:root:Setting up interpolant
+INFO:root:Loading ddg reward model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_ft.pt)
+INFO:root:Loading ddg reward evaluation model (/u/sdickman/DRAKES/data_and_model/protein_oracle/outputs/reward_oracle_eval.pt)
+INFO:root:Setup execution function (align_type=bon, oracle_mode=balanced, N=1, balanced_alpha=0.8, feedback_steps=5, max_spec_order=10, feedback_method=lasso, num_spec_masks=2048, rmax=False, lassolambda=0.0001)
+INFO:root:Reading protein set (/u/sdickman/DRAKES/data_and_model/proteindpo_data/AlphaFold_model_PDBs)
+INFO:root:Executing on single set (Batch repeats: 1, Proteins per batch: 1, Total proteins: 1)
+INFO:root:WorkerID: 0, Assigned proteins: 1
+  0%|          | 0/1 [00:00<?, ?it/s]INFO:root:Executing protein: r6_560_TrROS_Hall
+----------------------------------
+Executing realign
+Previous true reward: -0.08378426730632782
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.99s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.27s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.30s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.34s/it][A100%|██████████| 4/4 [00:49<00:00, 12.30s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.2945
+Clean Sequence: SKPPKVVTVEVAVTKPDGKTELVKVTFTNLPRELKPGDTVTIPETGQKATVVKIIP
+S-PP-VVTVEV-V-K-DG-TELVKVTFTNLPREL-PGD-VTIPETGQKAT-V-IIP Targets: [1, 34, 4, 38, 11, 13, 15, 18, 50, 52]
+Executing realign
+Previous true reward: 0.03972694277763367
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:12<00:36, 12.15s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.36s/it][A
+ 75%|███████▌  | 3/4 [00:37<00:12, 12.57s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.55s/it][A100%|██████████| 4/4 [00:49<00:00, 12.50s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3825
+Clean Sequence: SKPPKVVTVEVAVTKADGKTELVKVTFTNLPRELKPGDVVTIPETGQKATIVKIIP
+S-PP-V-TVEVA--KADGKTELVKVT-TN-PR-L-PGDVVTIPETGQKATIV-IIP Targets: [32, 1, 34, 4, 6, 12, 13, 52, 26, 29]
+Executing realign
+Previous true reward: 0.07005521655082703
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:12<00:36, 12.07s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.32s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.37s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.47s/it][A100%|██████████| 4/4 [00:49<00:00, 12.41s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4283
+Clean Sequence: SVPPKVVTVEVAVTKADGKTELVKVTFTNLPRELKPGDVVTIPETGQKATIVKIIP
+-VPP-V-TVEVAVTKADGKTELVKV--TN-PREL-PGDVVT-PETG-KATIV-IIP Targets: [0, 34, 4, 6, 41, 46, 52, 25, 26, 29]
+Executing realign
+Previous true reward: 0.2565148174762726
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.70s/it][A
+ 50%|█████     | 2/4 [00:23<00:24, 12.02s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.08s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.14s/it][A100%|██████████| 4/4 [00:48<00:00, 12.08s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4336
+Clean Sequence: AVPPRVVTVEVAVTKADGKTELVKVTLTNLPRELKPGDVVTLPETGQKATIVRIIP
+AVPPRVVTVE-A-TKADGKTELVK-TLT--PR-L-PGDVVTLP--GQK-TIVRIIP Targets: [32, 34, 10, 43, 12, 44, 48, 24, 28, 29]
+Executing realign
+Previous true reward: 0.2684457004070282
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.78s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.12s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.22s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.28s/it][A100%|██████████| 4/4 [00:48<00:00, 12.21s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4123
+Clean Sequence: AVPPRVVTVEVAVTKADGKTELVKVTLTGLPRELKPGDVVTLPETGQKATIVRIIP
+AVPPRV-TVEVA-TKADG-TELVK-TLTG--REL--GDVVTLP-TGQK-TIVRIIP Targets: [34, 35, 6, 43, 12, 48, 18, 24, 29, 30]
+Executing realign
+AVPPRVVTVEVAVTKADGKTELVKVTLTGLPRELKPGDVVTLPETGQKATIVRIIP
+Reward Trajectory: [np.float64(-0.0838), np.float64(0.0397), np.float64(0.0701), np.float64(0.2565), np.float64(0.2684), np.float64(0.2684)]
+Global elapsed time: 251.740361 s
+----------------------------------
+Executing realign
+Previous true reward: -0.3021959662437439
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.30s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.57s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.61s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.74s/it][A100%|██████████| 4/4 [00:46<00:00, 11.66s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6503
+Clean Sequence: MKPPKKVKVLVAVENPDGKVEEVEVEFTNLPRELKPGDEVTIPETGKKAKIVKVLP
+MKPPKK-KVLVA--NPDGKVE-VEVEFTN-PRELKPGD-VT-P-T-K-AKIVKVLP Targets: [6, 38, 41, 43, 12, 13, 45, 47, 21, 29]
+Executing realign
+Previous true reward: -0.3021959662437439
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.59s/it][A100%|██████████| 4/4 [00:46<00:00, 11.54s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6177
+Clean Sequence: MKPPKKVKVLVAVENPDGKVEEVEVEFTNLPRELKPGDEVTIPETGKKAKIVKVLP
+M-PPKK-KVLVAVENPDGK-E-VEVE-TN-PRELKPGD-VTIP-TGK-AKIVK-LP Targets: [1, 6, 38, 43, 47, 19, 21, 53, 26, 29]
+Executing realign
+Previous true reward: -0.025949232280254364
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.43s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.56s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.67s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.67s/it][A100%|██████████| 4/4 [00:46<00:00, 11.64s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.591
+Clean Sequence: MKPPKKVKVLVAVENPDGKVELVEVEFTNVPRELKPGDTVTIPETGKKAKIVKILP
+MK-PKKV-VLVA-ENPDGK-ELVEVE-TN-P--LKPGD-VTIPE-GKKAKIVKILP Targets: [32, 2, 38, 7, 12, 44, 19, 26, 29, 31]
+Executing realign
+Previous true reward: 0.04064922034740448
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:23, 11.51s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.65s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.63s/it][A100%|██████████| 4/4 [00:46<00:00, 11.59s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6159
+Clean Sequence: MKPPKKVKVLVAVENPDGKVELVEVEFTNLPRELKPGDIVTIPETGKKAKIVKILP
+MKPPK-V-VLVAV-NPDGK-ELVEVE-TN-PREL-PGDIVTIPET-KK--IVKILP Targets: [34, 5, 7, 13, 45, 48, 49, 19, 26, 29]
+Executing realign
+Previous true reward: 0.07898268103599548
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.34s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.58s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.73s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.76s/it][A100%|██████████| 4/4 [00:46<00:00, 11.70s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5426
+Clean Sequence: MKPPKKVKVLVAVTNPDGKTELVEVEFTNLPRELKPGDIVTIPETGKKAKIVKILP
+MKPPKK--VLVA--NPDGKTELVE-E-TN-PREL-PGDIVTIPE-GKK-KIVKILP Targets: [34, 6, 7, 12, 13, 44, 48, 24, 26, 29]
+Executing realign
+MKPPKKVKVLVAVTNPDGKTELVEVEFTNVPRELKPGDIVTIPETGKKAKIVKILP
+Reward Trajectory: [np.float64(-0.3022), np.float64(-0.3022), np.float64(-0.0259), np.float64(0.0406), np.float64(0.079), np.float64(0.0592)]
+Global elapsed time: 237.825826 s
+----------------------------------
+Executing realign
+Previous true reward: -0.6127667427062988
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.38s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.68s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.66s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.70s/it][A100%|██████████| 4/4 [00:46<00:00, 11.67s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4208
+Clean Sequence: APPPRVVRARVAVTEPDGRTVLREVTFTGLPRELRPGDTVTIPETGREATVVELLP
+APPPRV-R--VAVTEPDGRTVLREVTFTG-PRELRPGDTVTIPETG-E--VV---P Targets: [6, 8, 9, 46, 48, 49, 52, 53, 54, 29]
+Executing realign
+Previous true reward: 0.3029511868953705
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.53s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.57s/it][A100%|██████████| 4/4 [00:46<00:00, 11.53s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4876
+Clean Sequence: APPPRVVRVLVAVTEPDGRTVLREVTFTGLPRELRPGDTVRIPETGEEAVVVEVLP
+APPPRV-RVLV-VTEPDGRTVLREVT-T--PRELRP-DTVRIPETGEE-V-V-V-P Targets: [36, 6, 11, 48, 50, 52, 54, 26, 28, 29]
+Executing realign
+Previous true reward: 0.3129385709762573
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.23s/it][A
+ 50%|█████     | 2/4 [00:22<00:23, 11.55s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.58s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.57s/it][A100%|██████████| 4/4 [00:46<00:00, 11.55s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5208
+Clean Sequence: APPPRVVRVLVAVTEPDGRTVLREVTLTGLPRELRPGDTVRIPETGEEAVVVEVLP
+APPPRVVRVLV-VTEP-GRTVLREVTLTG-PREL-P-DTV--PETGEE-VVV-VL- Targets: [34, 36, 40, 41, 11, 16, 48, 52, 55, 29]
+Executing realign
+Previous true reward: 0.35289353132247925
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.14s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.40s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.45s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.50s/it][A100%|██████████| 4/4 [00:45<00:00, 11.45s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4437
+Clean Sequence: APPPRVVRVLVAVTEPDGRTVLREVTLTGLPRELRPGDTVRLPETGEEAVVVEVLP
+-PPPRV-RVL-AV-EPDGRTVLREVTLTG--RELRPGDTV-LPETGEEAVVV---P Targets: [0, 6, 40, 10, 13, 52, 53, 54, 29, 30]
+Executing realign
+Previous true reward: 0.35488396883010864
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.18s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.43s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.48s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.51s/it][A100%|██████████| 4/4 [00:45<00:00, 11.47s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.447
+Clean Sequence: APPPRVVRVLVAVTEPDGRTVLREVTLTGLPRELRPGDTVTLPETGEEAVVVEVLP
+-PPPRVVRVLV-VTEP-GRTVLREVTLT---RELRP-DTVTLPETGE--VVV-VLP Targets: [0, 36, 11, 47, 16, 48, 52, 28, 29, 30]
+Executing realign
+APPPRVVRVLVAVTEPDGRTVLREVTLTGLPRELRPGDTVTLPETGEEAVVVEVLP
+Reward Trajectory: [np.float64(-0.6128), np.float64(0.303), np.float64(0.3129), np.float64(0.3529), np.float64(0.3549), np.float64(0.3549)]
+Global elapsed time: 236.010103 s
+----------------------------------
+Executing realign
+Previous true reward: 0.04756000638008118
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.21s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.44s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.49s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.56s/it][A100%|██████████| 4/4 [00:46<00:00, 11.51s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3769
+Clean Sequence: AVPPRKVTVLVSVTQPDGKTVEVEVELTNLPRELKPGDVVTLPETGQKATVVKVLP
+AVPPR-V-VLV-VTQPDGKTVEVEV-LT--PREL-PGDVVTLP-TGQKAT-V-VLP Targets: [34, 5, 7, 11, 43, 50, 52, 25, 28, 29]
+Executing realign
+Previous true reward: 0.26619669795036316
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.12s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.31s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.38s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.40s/it][A100%|██████████| 4/4 [00:45<00:00, 11.36s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6847
+Clean Sequence: AVPPRRVRVLVAVTQPDGKTVEVEVELTGLPRELRPGDVVTLPETGQKATIVRVLP
+AVPPRR-RVLVAVT--DG-TV-VE-ELTG-PRELRPGDVVTLP-TGQKATI-R-LP Targets: [6, 43, 14, 15, 18, 51, 21, 53, 24, 29]
+Executing realign
+Previous true reward: 0.35339391231536865
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.08s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.32s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.39s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.42s/it][A100%|██████████| 4/4 [00:45<00:00, 11.38s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5673
+Clean Sequence: AVPPRRVRVLVAVTLPDGRTVLVEVELTGLPRELRPGDVVTLPETGQKATIVRVLP
+AVPPRR-RVLV-VTLPDGRTVL-EVELTG-PREL---DVVTLP--GQKATIVR-LP Targets: [34, 35, 36, 6, 11, 43, 44, 53, 22, 29]
+Executing realign
+Previous true reward: 0.36116066575050354
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.08s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.30s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.38s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.42s/it][A100%|██████████| 4/4 [00:45<00:00, 11.38s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.64
+Clean Sequence: AVPPRRVRVLVAVTLPDGRTVLREVELTGLPRELRPGDVVTLPETGQKATIVRVLP
+AVPPRR-RVLV-V--P-GRTVLREVELTG-PREL-P-DVVTLPETG-K-TIVRVLP Targets: [34, 36, 6, 11, 13, 14, 46, 16, 48, 29]
+Executing realign
+Previous true reward: 0.342828631401062
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.79s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.76s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.67s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.62s/it][A100%|██████████| 4/4 [00:46<00:00, 11.66s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6497
+Clean Sequence: AVPPRRVRVLVAVTEPDGRTVLREVELTGLPRELRPGDVVTLPETGRKATIVRVLP
+-VPPR--RVLVAV-EPDGRTVLRE-ELT--PRELRPGDVVTLPETG-K-TIVRVL- Targets: [0, 5, 6, 13, 46, 48, 55, 24, 28, 29]
+Executing realign
+AVPPRRVRVLVAVTEPDGRTVLREVELTGLPRELRPGDVVTLPETGEKATIVRVLP
+Reward Trajectory: [np.float64(0.0476), np.float64(0.2662), np.float64(0.3534), np.float64(0.3612), np.float64(0.3428), np.float64(0.4015)]
+Global elapsed time: 234.599875 s
+----------------------------------
+Executing realign
+Previous true reward: -0.9723718762397766
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.71s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.76s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.69s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.66s/it][A100%|██████████| 4/4 [00:46<00:00, 11.68s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.7804
+Clean Sequence: AVPPKKVKVKVAVTNEDGKTEEVEVEFENVPRELKPGDKVTIPETGKEATVVEIIP
+AVPP--VKVKVA-TNEDGKTE-VEV-FEN-PRELKPGD-VTIP-TGKE-T-VEIIP Targets: [4, 5, 38, 43, 12, 48, 50, 21, 25, 29]
+Executing realign
+Previous true reward: -0.04889897257089615
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.93s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.22s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.26s/it][A100%|██████████| 4/4 [00:48<00:00, 12.22s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6401
+Clean Sequence: AVPPKKVKVKVAITNEDGKTEIVEVEFENLPRELKPGDKVTIPETGKEATIVEIIP
+-VPP--VKVKVAITNEDGKTEIVEV--EN-PREL-P-DKVTIP-TGKE-TIVEIIP Targets: [0, 34, 4, 5, 36, 43, 48, 25, 26, 29]
+Executing realign
+Previous true reward: -0.009915828704833984
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.92s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.30s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.31s/it][A100%|██████████| 4/4 [00:49<00:00, 12.26s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.656
+Clean Sequence: MVPPKKVKVKVAITNEDGKTEIVEVELENLPRELKPGDKVTIPETGKEATIVEIIP
+MVPPK-V-VKVAITNEDGKTEIVE--LEN-PREL-PGDKVT-P-TGKE-T-VEIIP Targets: [34, 5, 7, 41, 43, 48, 50, 24, 25, 29]
+Executing realign
+Previous true reward: 0.06480899453163147
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.94s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.17s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.25s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.28s/it][A100%|██████████| 4/4 [00:48<00:00, 12.24s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4968
+Clean Sequence: MVPPKKVKVKVAITNEDGKTEIVEVELENVPRELKPGDKVTLPETGKEATIVEIIP
+MV-P--V-V-VAITNEDGKTEIVE--LENVPRELKP-D-VTLP-TGKEATIVEIIP Targets: [2, 4, 5, 36, 7, 38, 9, 43, 24, 25]
+Executing realign
+Previous true reward: 0.06480899453163147
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.92s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.17s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.24s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.28s/it][A100%|██████████| 4/4 [00:48<00:00, 12.24s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.498
+Clean Sequence: MVPPKKVKVKVAITNEDGKTEIVEVELENVPRELKPGDKVTLPETGKEATIVEIIP
+MVPP---KVKVAITNED-KTEIVE--LE-VPREL-P-DKVTLP-TGKEATIVEIIP Targets: [34, 4, 5, 6, 36, 43, 17, 24, 25, 28]
+Executing realign
+MVPPKKVKVKVAITNEDGKTEIVEVELENVPRELKPGDKVTLPETGKEATIVEIIP
+Reward Trajectory: [np.float64(-0.9724), np.float64(-0.0489), np.float64(-0.0099), np.float64(0.0648), np.float64(0.0648), np.float64(0.0648)]
+Global elapsed time: 248.112858 s
+----------------------------------
+Executing realign
+Previous true reward: -0.35695934295654297
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.04s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.26s/it][A
+ 75%|███████▌  | 3/4 [00:33<00:11, 11.31s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.35s/it][A100%|██████████| 4/4 [00:45<00:00, 11.31s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6014
+Clean Sequence: APPPRRVRVRVAVTGPDGRTELREVELEGLPREVRPGDTLTLPETGAAARVVEVLP
+APPPRR-RV-VAVTGPDGRT-LRE-ELEG-PREVRPGDT-TLPETG--A-VV-VLP Targets: [6, 39, 9, 46, 47, 49, 20, 52, 24, 29]
+Executing realign
+Previous true reward: 0.16014501452445984
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.23s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.34s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.38s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.40s/it][A100%|██████████| 4/4 [00:45<00:00, 11.37s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.392
+Clean Sequence: APPPRRVRVLVAVTGPDGRTELREVELEGLPREVRPGDTLTLPETGEEARVVRVLP
+APPPRR-RVLVAVT-PDGR-ELREVEL---PREVRPGD--TLPETGEEA-V-RVLP Targets: [6, 38, 39, 14, 49, 19, 51, 27, 28, 29]
+Executing realign
+Previous true reward: 0.25779592990875244
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.11s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.32s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.39s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.44s/it][A100%|██████████| 4/4 [00:45<00:00, 11.39s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4227
+Clean Sequence: APPPRRVRVLVAVTRPDGRTELREVELEGLPREVRPGDRLTLPETGEEAVVVRVLP
+APPPRR-RVLVA-TRP-GRTELREVEL-G-PREV-P-DRLTLP-TGE-AVVVRVL- Targets: [34, 36, 6, 43, 12, 47, 16, 55, 27, 29]
+Executing realign
+Previous true reward: 0.25779592990875244
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.10s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.31s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.38s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.45s/it][A100%|██████████| 4/4 [00:45<00:00, 11.40s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4363
+Clean Sequence: APPPRRVRVLVAVTRPDGRTELREVELEGLPREVRPGDRLTLPETGEEAVVVRVLP
+APPPRR-RVLVAVTRPDGRTELREV-L-G-PREV-PGD--TLPETGE--VVVRV-P Targets: [34, 6, 38, 39, 47, 48, 54, 25, 27, 29]
+Executing realign
+Previous true reward: 0.2539735734462738
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.09s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.30s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.44s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.45s/it][A100%|██████████| 4/4 [00:45<00:00, 11.40s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3334
+Clean Sequence: APPPRRVRVLVAVTRPDGRTELREVELEGLPREVRPGDRVTLPETGEEAVVVRVLP
+APPPRR-RVLVAVTRPDGR-ELREVEL---PRE--PGD-VT-PET-EEAVVVRVLP Targets: [33, 34, 6, 38, 41, 45, 19, 27, 28, 29]
+Executing realign
+APPPRRVRVLVAVTRPDGRTELREVELEGLPRELRPGDRVTLPETGEEAVVVRVLP
+Reward Trajectory: [np.float64(-0.357), np.float64(0.1601), np.float64(0.2578), np.float64(0.2578), np.float64(0.254), np.float64(0.2899)]
+Global elapsed time: 232.947144 s
+----------------------------------
+Executing realign
+Previous true reward: 0.026243984699249268
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.87s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.90s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.89s/it][A
+100%|██████████| 4/4 [00:47<00:00, 11.94s/it][A100%|██████████| 4/4 [00:47<00:00, 11.92s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3843
+Clean Sequence: APPPRVVRVLVALTLPDGRTVEVEVTFTGLPREPRPGDVVTIPETGAEATILRILP
+APPPRV-RVLV-LTLPDGRTVEVEVT-TG-PREPRPGDVVT--ETG----ILRILP Targets: [6, 41, 42, 11, 46, 47, 48, 49, 26, 29]
+Executing realign
+Previous true reward: 0.14948827028274536
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.70s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.07s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.19s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.24s/it][A100%|██████████| 4/4 [00:48<00:00, 12.17s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4699
+Clean Sequence: APPPRVVRVLVALTLPDGRTVEVEVTLTGLPREPRPGDVVTLPETGAEARILRILP
+APPPRVVRVLVAL-LPDGRTVE-E-TLT--PRE-RPGDVV-L-ETG--ARILRILP Targets: [33, 40, 42, 13, 46, 47, 22, 24, 28, 29]
+Executing realign
+Previous true reward: 0.16366523504257202
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.92s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.24s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.33s/it][A100%|██████████| 4/4 [00:49<00:00, 12.27s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4745
+Clean Sequence: APPPRVVRVLVALTLPDGRTVELEVTLTGLPREPRPGDVVTLPETGAEARILRILP
+APPPRVVRVLV-L-LPDGR-VELE-TLTG-PRE--P-DVVTLPETG-EAR-LRILP Targets: [33, 34, 36, 11, 13, 46, 50, 19, 24, 29]
+Executing realign
+Previous true reward: 0.22615700960159302
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.92s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.15s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.21s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.27s/it][A100%|██████████| 4/4 [00:48<00:00, 12.22s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4232
+Clean Sequence: APPPRVVRVLVALELPDGRVVELEVTLTGLPRELRPGDVVTLPETGAEARVLRILP
+APPPRV-RVLV-L-LPDGR-VELEVTLT--PREL-PGDVVTLP-TG--ARVLRILP Targets: [34, 6, 11, 43, 13, 46, 47, 19, 28, 29]
+Executing realign
+Previous true reward: 0.2260989248752594
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.91s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.24s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.27s/it][A100%|██████████| 4/4 [00:48<00:00, 12.23s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4227
+Clean Sequence: APPPRVVRVLVALTLPDGRTVELEVTLTGLPRELRPGDVVTLPETGAEARVLRILP
+APPPRV-RVLV-L-LPDGR-VELE-TLT--PRELRP-DVVTLP-TG-EARVLRILP Targets: [36, 6, 11, 43, 13, 46, 19, 24, 28, 29]
+Executing realign
+APPPRVVRVLVALELPDGRVVELEVTLTGLPRELRPGDVVTLPETGAEARVLRILP
+Reward Trajectory: [np.float64(0.0262), np.float64(0.1495), np.float64(0.1637), np.float64(0.2262), np.float64(0.2261), np.float64(0.2262)]
+Global elapsed time: 248.516856 s
+----------------------------------
+Executing realign
+Previous true reward: -0.18634483218193054
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.23s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.45s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.53s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.56s/it][A100%|██████████| 4/4 [00:46<00:00, 11.52s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4635
+Clean Sequence: APPPRVVTVRVAVTLPSGETVEVEVTLEGLPREPKPGDRVTLPETGLEAEIVEVLP
+APPPRVV-V-VAVTLP-GETV-VEVTL-G-PRE-KPGDRVTLP-TGLEA-I-EVLP Targets: [33, 7, 9, 43, 16, 49, 51, 21, 27, 29]
+Executing realign
+Previous true reward: 0.05704832077026367
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:23, 11.51s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.50s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.54s/it][A100%|██████████| 4/4 [00:46<00:00, 11.51s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5338
+Clean Sequence: APPPRVVRVRVAVTLPNGETVLVEVTLEGLPREPKPGDRVTLPETGLEAEIVEVLP
+APPPRVVRV-VAVTLPNGET-LVE-TL---PRE-KPGDRVTLP-TGL-A-IVEVLP Targets: [33, 9, 43, 47, 49, 20, 24, 27, 28, 29]
+Executing realign
+Previous true reward: 0.28449875116348267
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.26s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.51s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.54s/it][A100%|██████████| 4/4 [00:46<00:00, 11.51s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6728
+Clean Sequence: APPPRVVRVRVAVTLPNGETRLVEVTLEGLPRELKPGDRVTLPETGLEATIVEVLP
+A-PPRV-RV-V-VTLPNGETRLVE-TL---PRELKPGD-VTLPETGLEATIV-VLP Targets: [1, 6, 38, 9, 11, 52, 24, 27, 28, 29]
+Executing realign
+Previous true reward: 0.3172079622745514
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.24s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.53s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.56s/it][A100%|██████████| 4/4 [00:46<00:00, 11.52s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5655
+Clean Sequence: APPPRVVRVLVAVTLPNGETRLVEVTLEGLPRELKPGDVVTLPETGLEATIVEVLP
+APPPRV-RVLVAVTLP-GETRLVE-TL-G-PRELKPGDVVTL--TGL-ATIV-V-P Targets: [6, 42, 43, 47, 16, 52, 54, 24, 27, 29]
+Executing realign
+Previous true reward: 0.32196044921875
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.29s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.53s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.56s/it][A100%|██████████| 4/4 [00:46<00:00, 11.53s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5342
+Clean Sequence: APPPRVVRVLVAVTLPDGETRLVEVTLEGLPRELKPGDVVTLPETGLEATIVEVLP
+APPPRVVRVLVAVTLPDGETRLVEVTL---PRELKP-DVVTLP-TGL--TIV-V-- Targets: [36, 43, 47, 48, 52, 54, 55, 27, 28, 29]
+Executing realign
+APPPRVVRVLVAVTLPDGETRLVEVTLEGLPRELKPGDVVTLPETGLEATIVEVLP
+Reward Trajectory: [np.float64(-0.1863), np.float64(0.057), np.float64(0.2845), np.float64(0.3172), np.float64(0.322), np.float64(0.322)]
+Global elapsed time: 235.732038 s
+----------------------------------
+Executing realign
+Previous true reward: 0.2652308940887451
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.22s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.39s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.49s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.51s/it][A100%|██████████| 4/4 [00:45<00:00, 11.47s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5332
+Clean Sequence: APPPRVVTVRVAVTNEDGKTVLVDVTLTGLPRELRPGDTVTLPETGKEATIVEVLP
+APPPRVVT--VAVTNEDGKTVLVD-TLTG-PRELRPGD-VTLP-TG-E--IVE-LP Targets: [38, 8, 9, 43, 46, 48, 49, 53, 24, 29]
+Executing realign
+Previous true reward: 0.33938902616500854
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.10s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.32s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.37s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.40s/it][A100%|██████████| 4/4 [00:45<00:00, 11.36s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5399
+Clean Sequence: APPPRVVTVRVAVTNEDGKTVLVDVTLTGLPRELRPGDVVTLPETGREAVIVEVLP
+AP-PRV-TV--AVT-EDGKT-LVD-TLTG-PRELRPGDVVTLP-TGRE-VIVEVLP Targets: [2, 6, 9, 10, 43, 14, 48, 20, 24, 29]
+Executing realign
+Previous true reward: 0.3576515316963196
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.15s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.38s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.43s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.46s/it][A100%|██████████| 4/4 [00:45<00:00, 11.43s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6493
+Clean Sequence: APPPRVVTVRVAVTEEDGKTRLVDVTLTGLPRELRPGDVVTLPETGREAVIVEVLP
+-PPPRV-TVRVAVTEEDGKTRLVD-T-T--P-ELRPGDVVTLPETGRE-VIVEV-- Targets: [0, 6, 48, 54, 55, 24, 26, 28, 29, 31]
+Executing realign
+Previous true reward: 0.3576515316963196
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.14s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.43s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.46s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.46s/it][A100%|██████████| 4/4 [00:45<00:00, 11.43s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6128
+Clean Sequence: APPPRVVTVRVAVTEEDGKTRLVDVTLTGLPRELRPGDVVTLPETGREAVIVEVLP
+--PPRV-TVRVAVTEEDGKTRLVDVTLTG-P-EL--GDVVTLPETGRE-VIVE--P Targets: [0, 1, 34, 35, 6, 48, 53, 54, 29, 31]
+Executing realign
+Previous true reward: 0.3576515316963196
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.12s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.33s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.38s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.43s/it][A100%|██████████| 4/4 [00:45<00:00, 11.39s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6454
+Clean Sequence: APPPRVVTVRVAVTEEDGKTRLVDVTLTGLPRELRPGDVVTLPETGREAVIVEVLP
+APPPRVVTVRVAVTE--GKT-LVDVTLT--PREL-P-DVVTLPETGRE-VIVEV-- Targets: [34, 36, 15, 16, 48, 20, 54, 55, 28, 29]
+Executing realign
+APPPRVVTVRVAVTEPDGKTRLVDVTLTGLPRELRPGDVVTLPETGREAVIVEVLP
+Reward Trajectory: [np.float64(0.2652), np.float64(0.3394), np.float64(0.3577), np.float64(0.3577), np.float64(0.3577), np.float64(0.3462)]
+Global elapsed time: 233.632689 s
+----------------------------------
+Executing realign
+Previous true reward: -0.23266085982322693
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.91s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.95s/it][A
+100%|██████████| 4/4 [00:47<00:00, 11.98s/it][A100%|██████████| 4/4 [00:47<00:00, 11.99s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4802
+Clean Sequence: AAPPRVVKVKVAVTQPDGKTELVEVEFTGLPRELKPGDTVTIPETGQEAVVVEVLP
+AAPPRVV-V-VAVT-PDG-TELVEVE-TG-PRELKPGD-VT-PETGQE-V-VEVLP Targets: [38, 7, 9, 41, 14, 48, 18, 50, 26, 29]
+Executing realign
+Previous true reward: 0.27032947540283203
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.63s/it][A100%|██████████| 4/4 [00:46<00:00, 11.57s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5222
+Clean Sequence: AAPPRVVRVRVAVTRPDGRTELVEVELSGLPRELKPGDVVTLPETGQEAVVVEVLP
+AAPPRV-RV-V-VTRPDGRTE-VE-ELSG-PRELKPGDVVTLP-T-QE-VVVEVL- Targets: [6, 9, 11, 43, 45, 48, 21, 55, 24, 29]
+Executing realign
+Previous true reward: 0.27032947540283203
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.29s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.58s/it][A100%|██████████| 4/4 [00:46<00:00, 11.54s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5473
+Clean Sequence: AAPPRVVRVRVAVTRPDGRTELVEVELSGLPRELKPGDVVTLPETGQEAVVVEVLP
+AAPPRV-RV-V-V-RPDGRTELVE-ELSG-PRELKP-DVV-LP-TGQE-VVVEVLP Targets: [36, 6, 40, 9, 11, 43, 13, 48, 24, 29]
+Executing realign
+Previous true reward: 0.28180456161499023
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.27s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.57s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.65s/it][A100%|██████████| 4/4 [00:46<00:00, 11.58s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5217
+Clean Sequence: AAPPRVVRVRVAVTRPDGRTELVEVELSGLPRELKPGDVVRLPETGQEAVVVEVLP
+AAPPRV-RV---VTRPDGRTELVE-ELSG-P-ELKPGDVVRLPE-GQE-VVVEVL- Targets: [6, 9, 10, 11, 44, 48, 55, 24, 29, 31]
+Executing realign
+Previous true reward: 0.28180456161499023
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.26s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.58s/it][A100%|██████████| 4/4 [00:46<00:00, 11.54s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4969
+Clean Sequence: AAPPRVVRVRVAVTRPDGRTELVEVELSGLPRELKPGDVVRLPETGQEAVVVEVLP
+AAPPRV-RV---VTRPDGRTELVE-ELSG-P-ELKP-DVVRLPETGQE-VV-EVLP Targets: [36, 6, 9, 10, 11, 48, 51, 24, 29, 31]
+Executing realign
+AAPPRVVRVRVAVTRPDGRTELVEVELSGLPRELKPGDVVRLPETGQEAVVVEVLP
+Reward Trajectory: [np.float64(-0.2327), np.float64(0.2703), np.float64(0.2703), np.float64(0.2818), np.float64(0.2818), np.float64(0.2818)]
+Global elapsed time: 238.399529 s
+----------------------------------
+Executing realign
+Previous true reward: 0.1673639565706253
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.45s/it][A
+ 50%|█████     | 2/4 [00:23<00:24, 12.01s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.12s/it][A
+100%|██████████| 4/4 [00:47<00:00, 11.96s/it][A100%|██████████| 4/4 [00:47<00:00, 11.95s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6571
+Clean Sequence: AAPPRVVDVVVAVTNADGKTELKTVTLTGLPRELKPGDVVTLPETGQKATIVKILP
+A-PPR---VVVAVTNADGK--L-T-TLTG-PREL-PGDVVTLPETGQKATIVKILP Targets: [1, 34, 5, 6, 7, 19, 20, 22, 24, 29]
+Executing realign
+Previous true reward: 0.26941391825675964
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.43s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.54s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.66s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.64s/it][A100%|██████████| 4/4 [00:46<00:00, 11.62s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.469
+Clean Sequence: APPPRVVEVVVAVTNADGKTELKTVTLTGLPRELKPGDVVTLPETGQKATIVKILP
+APPPR--EVVVAVT-ADGKTEL---TLTG-PREL-PGDVVTLP-TGQKATIV-ILP Targets: [34, 5, 6, 43, 14, 52, 22, 23, 24, 29]
+Executing realign
+Previous true reward: 0.325202077627182
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.28s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.48s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.53s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.55s/it][A100%|██████████| 4/4 [00:46<00:00, 11.52s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5102
+Clean Sequence: APPPRRVEVVVAVTRADGKTELVRVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+APPPRRVEVVV--TRADGKTEL-RVTLTG-PRELRP-DVVT-P--GQKATIV-IL- Targets: [36, 41, 11, 12, 43, 44, 52, 22, 55, 29]
+Executing realign
+Previous true reward: 0.33534836769104004
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.28s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.63s/it][A100%|██████████| 4/4 [00:46<00:00, 11.57s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6504
+Clean Sequence: APPPRRVEVVVAVTRADGKTELRRVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+-P-PR-VEVVVAVT-A-GKTELRR--LTG-PRELRPGDVVTLPETG-KATIVEIL- Targets: [0, 2, 5, 14, 46, 16, 55, 24, 25, 29]
+Executing realign
+Previous true reward: 0.3814004063606262
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.11s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.36s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.43s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.49s/it][A100%|██████████| 4/4 [00:45<00:00, 11.44s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6288
+Clean Sequence: APPPRVVEVVVAVTLADGKTELRRVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+-P-PRV-EVVV---LADGKTELRRVTLTG-PRELRPGDVVTLPETG-KATI--ILP Targets: [0, 2, 6, 11, 12, 13, 46, 51, 52, 29]
+Executing realign
+APPPRVVEVVVAVTLADGKTELRRVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+Reward Trajectory: [np.float64(0.1674), np.float64(0.2694), np.float64(0.3252), np.float64(0.3353), np.float64(0.3814), np.float64(0.3814)]
+Global elapsed time: 237.678372 s
+----------------------------------
+Executing realign
+Previous true reward: 0.26446110010147095
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.08s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.30s/it][A
+ 75%|███████▌  | 3/4 [00:33<00:11, 11.37s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.40s/it][A100%|██████████| 4/4 [00:45<00:00, 11.36s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3191
+Clean Sequence: APPPRVVRVLVAVTNPDGKTELVEVELTGLPRELRPGDVVTLPETGKEATVVRVLP
+-PPPRVVRVLV-VTN-DG-TELVEVELTG-PRELRP-DVVTLP-TG--ATV-RVLP Targets: [0, 36, 11, 43, 46, 15, 47, 18, 51, 29]
+Executing realign
+Previous true reward: 0.3127027750015259
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.12s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.33s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.41s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.47s/it][A100%|██████████| 4/4 [00:45<00:00, 11.42s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3951
+Clean Sequence: APPPRVVRVLVAVTNPDGRTELVEVELTGLPRELRPGDVVTLPETGRRATVVRVLP
+APPPRVVRVL--VTNPDGRT-LVE-ELTG-PREL-PGDVVTLP-TGRRATV-R-L- Targets: [34, 10, 11, 43, 51, 20, 53, 55, 24, 29]
+Executing realign
+Previous true reward: 0.3127027750015259
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.24s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.38s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.44s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.44s/it][A100%|██████████| 4/4 [00:45<00:00, 11.42s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4259
+Clean Sequence: APPPRVVRVLVAVTNPDGRTELVEVELTGLPRELRPGDVVTLPETGRRATVVRVLP
+APPPRVVRVLV-VTNPD-RT-LVE-ELTG-PREL-PGDVVTLP-TGRRATV-RV-- Targets: [34, 11, 43, 17, 51, 20, 54, 55, 24, 29]
+Executing realign
+Previous true reward: 0.3127027750015259
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.15s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.36s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.44s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.44s/it][A100%|██████████| 4/4 [00:45<00:00, 11.41s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3915
+Clean Sequence: APPPRVVRVLVAVTNPDGRTELVEVELTGLPRELRPGDVVTLPETGRRATVVRVLP
+APPPRVVRVLV-VTNPDGR--LVE-E-TG-PRELRP-DVVTLP-TGRR-TV-RVLP Targets: [36, 11, 43, 48, 19, 20, 51, 24, 26, 29]
+Executing realign
+Previous true reward: 0.3127027750015259
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.09s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.33s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.45s/it][A
+100%|██████████| 4/4 [00:45<00:00, 11.46s/it][A100%|██████████| 4/4 [00:45<00:00, 11.42s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3734
+Clean Sequence: APPPRVVRVLVAVTNPDGRTELVEVELTGLPRELRPGDVVTLPETGRRATVVRVLP
+APPPRVVRVL--VTNP-GRT-LVE-ELTG-PREL--GDVVTLPETGRRATV-RVL- Targets: [34, 35, 10, 11, 16, 51, 20, 55, 24, 29]
+Executing realign
+APPPRVVRVLVAVTNPDGRTELVEVELTGLPRELRPGDVVTLPETGRRATVVRVLP
+Reward Trajectory: [np.float64(0.2645), np.float64(0.3127), np.float64(0.3127), np.float64(0.3127), np.float64(0.3127), np.float64(0.3127)]
+Global elapsed time: 233.441949 s
+----------------------------------
+Executing realign
+Previous true reward: -1.311384916305542
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.93s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.25s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.31s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.31s/it][A100%|██████████| 4/4 [00:49<00:00, 12.28s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.6479
+Clean Sequence: AEPPKKVKVKVAVTNEDGKTEEKEVTFTNLPREPKPGDEVTIPETGKKAKIVKIIP
+AEPP--VKV-VAVTNEDGKTE-KEVTFTN-PRE--PGD--TIPETGK-AKIVKIIP Targets: [33, 34, 4, 5, 38, 39, 9, 47, 21, 29]
+Executing realign
+Previous true reward: -0.038624487817287445
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.99s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.23s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.30s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.34s/it][A100%|██████████| 4/4 [00:49<00:00, 12.29s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5403
+Clean Sequence: AEPPKVVKVLVAVTNEDGKTEIKEVTFTNLPREPKPGDIVTIPETGKKAKIVKIIP
+AEPP-VV-VLV-VTNEDGKTEIKEVT-TN-PR---PGDI-TIPETGK-AKIVKIIP Targets: [32, 33, 34, 4, 7, 39, 11, 47, 26, 29]
+Executing realign
+Previous true reward: 0.0018524378538131714
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.94s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.17s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.24s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.28s/it][A100%|██████████| 4/4 [00:48<00:00, 12.24s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5472
+Clean Sequence: AEPPKVVKVLVEVTNEDGKTEIKEVTFTNLPREPKPGDIVTIPETGKKAKIVKIIP
+AEPP-VV-VLVEVTNEDGKTEIKEVT-T--PRE--PGDI-TIPETGK-A-IVKIIP Targets: [33, 34, 4, 7, 39, 47, 49, 26, 28, 29]
+Executing realign
+Previous true reward: 0.09525555372238159
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.93s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.16s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.25s/it][A
+100%|██████████| 4/4 [00:48<00:00, 12.29s/it][A100%|██████████| 4/4 [00:48<00:00, 12.24s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5727
+Clean Sequence: AEPPKVVKVLVEVTNEDGKTEIKEVTFTNLPREPKPGDIVTIPETGKKARIVKIIP
+-EPP-VV-VLVEVTNEDGKTEIKEVT-TN-PR---PGDI-TIP-TGKKARIVKIIP Targets: [0, 32, 33, 34, 4, 7, 39, 43, 26, 29]
+Executing realign
+Previous true reward: 0.1493464708328247
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:12<00:36, 12.09s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.23s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.27s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.29s/it][A100%|██████████| 4/4 [00:49<00:00, 12.26s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5716
+Clean Sequence: SEPPRVVKVLVEVTNEDGKTEIKEVTFTNLPRKLKPGDIVTIPETGKKARIVKIIP
+SEPPRV--VLVEVTNEDGKTEIKEVTFT--PR-L-PGDIVTIP-T--K-RIVKIIP Targets: [32, 34, 6, 7, 43, 45, 46, 48, 28, 29]
+Executing realign
+SEPPRVVKVLVEVTNEDGKTEIKEVTFTNLPRELKPGDIVTIPETGKKARIVKIIP
+Reward Trajectory: [np.float64(-1.3114), np.float64(-0.0386), np.float64(0.0019), np.float64(0.0953), np.float64(0.1493), np.float64(0.1956)]
+Global elapsed time: 250.898641 s
+----------------------------------
+Executing realign
+Previous true reward: 0.08578832447528839
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:34, 11.55s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.77s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.81s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.73s/it][A100%|██████████| 4/4 [00:46<00:00, 11.73s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4468
+Clean Sequence: APPPRVVTVVVAVTEDDGKTVLKTVTFEGLPRELKPGDTVTIPETGKKATVVEILP
+APPPRV-TVVVAVTE-DGKTVLKTVT--G-PREL-PGD-VT-PETG-KAT-VEILP Targets: [34, 6, 38, 41, 46, 15, 50, 26, 27, 29]
+Executing realign
+Previous true reward: 0.2806868255138397
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.33s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.70s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.66s/it][A
+100%|██████████| 4/4 [00:47<00:00, 11.83s/it][A100%|██████████| 4/4 [00:47<00:00, 11.75s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.37
+Clean Sequence: APPPRVVTVVVAVTEPDGKTVLKTVTLSGLPRELKPGDVVTLPETGQKATVVEILP
+APPPRV-TVVVAVTEPDG-T-L-TVTLS--PREL-PGDVVTLP-TGQK-T-VEILP Targets: [34, 6, 43, 48, 18, 50, 20, 22, 28, 29]
+Executing realign
+Previous true reward: 0.3025895357131958
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.32s/it][A
+ 50%|█████     | 2/4 [00:23<00:23, 11.89s/it][A
+ 75%|███████▌  | 3/4 [00:35<00:11, 11.92s/it][A
+100%|██████████| 4/4 [00:47<00:00, 12.05s/it][A100%|██████████| 4/4 [00:47<00:00, 11.96s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5006
+Clean Sequence: APPPRVVTVVVAVTEADGKTTLKTVTLTGLPRELKPGDVVTLPETGQKATIVEILP
+APPPRV-TVV-AVTEA--KT-L-T-TLTG-PREL-PGDVVTLP-TGQKATIVEILP Targets: [34, 6, 10, 43, 16, 17, 20, 22, 24, 29]
+Executing realign
+Previous true reward: 0.3765360116958618
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.26s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.47s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.54s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.62s/it][A100%|██████████| 4/4 [00:46<00:00, 11.56s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.623
+Clean Sequence: APPPRVVTVVVAVTEADGKTVLRTVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+APPPRV-T-V-A-TEA-G-TVLRT-TLTG-PRELRPGDVVTLP-TG-KATIVEILP Targets: [6, 8, 10, 43, 12, 46, 16, 18, 24, 29]
+Executing realign
+Previous true reward: 0.38134559988975525
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:33, 11.25s/it][A
+ 50%|█████     | 2/4 [00:22<00:22, 11.46s/it][A
+ 75%|███████▌  | 3/4 [00:34<00:11, 11.52s/it][A
+100%|██████████| 4/4 [00:46<00:00, 11.66s/it][A100%|██████████| 4/4 [00:46<00:00, 11.58s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.631
+Clean Sequence: APPPRVVTVVVAVTEADGRTVLRTVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+AP-PRV-TVVVA-TEA-GRTVLRT-TLT--PRELRPGDVVTLP-TG-K-TIVEILP Targets: [2, 6, 43, 12, 46, 16, 48, 24, 28, 29]
+Executing realign
+APPPRVVTVVVAVTEADGRTVLRTVTLTGLPRELRPGDVVTLPETGQKATIVEILP
+Reward Trajectory: [np.float64(0.0858), np.float64(0.2807), np.float64(0.3026), np.float64(0.3765), np.float64(0.3813), np.float64(0.3813)]
+Global elapsed time: 239.997991 s
+----------------------------------
+Executing realign
+Previous true reward: -0.030716396868228912
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.93s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.17s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.25s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.34s/it][A100%|██████████| 4/4 [00:49<00:00, 12.27s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5843
+Clean Sequence: SKPPKKVEVVVSVTNADGKTELVTVTLENLPRELKPGDVVTLPETGKKATVVKIIP
+S-PP-KVEVVV-VTNADGKTELVT-TL---PREL-PGDVVTLP-TGKKAT-VKIIP Targets: [1, 34, 4, 11, 43, 50, 24, 27, 28, 29]
+Executing realign
+Previous true reward: 0.2140217423439026
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.96s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.21s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.28s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.32s/it][A100%|██████████| 4/4 [00:49<00:00, 12.27s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.5346
+Clean Sequence: SVPPKKVEVVVAVTNADGKTELVTVTLENVPRELKPGDVVTLPSTGKKATIVKIIP
+SVPP-KVEVVVAV-NA-GKTEL-TVTLENVPRELKP-DVVTLP--GKK--IV-IIP Targets: [4, 36, 43, 44, 13, 16, 48, 49, 52, 22]
+Executing realign
+Previous true reward: 0.16420860588550568
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.99s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.22s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.31s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.34s/it][A100%|██████████| 4/4 [00:49<00:00, 12.29s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.4652
+Clean Sequence: SVPPRKVEVVVAVTNADGKTELKTVTLENVPRELKPGDVVTLPETGKKATIVEIIP
+SVPPRKVEVVVAVT-ADGKT-L---TLENVPREL-PGDVVTLP-T--KATIV-IIP Targets: [34, 43, 45, 14, 46, 20, 52, 22, 23, 24]
+Executing realign
+Previous true reward: 0.2507098317146301
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.94s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.18s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.25s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.31s/it][A100%|██████████| 4/4 [00:49<00:00, 12.25s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO] => r2: 0.3276
+Clean Sequence: SVPPRKVEVVVAVTNADGKTELKRVTLENVPRELKPGDVVTLPSTGQKATIVEIIP
+SV-PRKVEVV-A-TNADGKT-L-RV-LENVPR-L--GDVVTLP-TGQKATIVEIIP Targets: [32, 2, 34, 35, 10, 43, 12, 20, 22, 25]
+Executing realign
+Previous true reward: 0.26031196117401123
+
+  0%|          | 0/4 [00:00<?, ?it/s][A
+ 25%|██▌       | 1/4 [00:11<00:35, 11.95s/it][A
+ 50%|█████     | 2/4 [00:24<00:24, 12.26s/it][A
+ 75%|███████▌  | 3/4 [00:36<00:12, 12.29s/it][A
+100%|██████████| 4/4 [00:49<00:00, 12.31s/it][A100%|██████████| 4/4 [00:49<00:00, 12.27s/it]
+Executing Edit Position Selection...
+ [Fitting LASSO]100%|██████████| 1/1 [1:00:25<00:00, 3625.40s/it]100%|██████████| 1/1 [1:00:25<00:00, 3625.40s/it]
+INFO:root:Sampling wall-time columns added: 'sampling_wall_time_s' (per sample), 'protein_sampling_wall_time_s' (sum per protein)
+INFO:root:Saving to file /u/sdickman/DRAKES/drakes_protein/fmif/eval_results/followups/exps6/pretrained_r6_560_TrROS_Hall_balanced_alpha=0.8_bon_N=1_feedbacksteps=5_feedbackmethod=lasso_maxspecorder=10_masks=2048_rmax=False_lassolambda=0.0001_tilt_beta=0.25.csv
+ => r2: 0.4153
+Clean Sequence: SVPPRKVEVVVAVTNADGKTELVRVTLENVPRELKPGDVVTLPETGQKATIVEIIP
+SVPPR-VEVVVA-T-ADG-TEL-R-TLENVPREL-PGDVVTLP-TGQK-TIV-IIP Targets: [34, 5, 43, 12, 14, 48, 18, 52, 22, 24]
+Executing realign
+SVPPRKVEVVVAVTRADGKTELVRETLENVPRELKPGDVVTLPSTGQKATIVEIIP
+Reward Trajectory: [np.float64(-0.0307), np.float64(0.214), np.float64(0.1642), np.float64(0.2507), np.float64(0.2603), np.float64(-0.2129)]
+Global elapsed time: 251.101211 s
+Progress: 1 / 1
